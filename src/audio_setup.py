@@ -128,6 +128,7 @@ MODEL_OPTS = [
     ("base", "base", "快 · 够用 (推荐)"),
     ("small", "small", "更准 · 稍慢"),
     ("medium", "medium", "很准 · 明显慢"),
+    ("large-v3-turbo", "large-v3-turbo", "≈最准 · 较快 (推荐给N卡)"),
     ("large-v3", "large-v3", "最准 · 最慢"),
 ]
 DEVICE_OPTS = [

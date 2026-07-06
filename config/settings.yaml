@@ -14,7 +14,7 @@ stt:
   # base 命中率≈small 但快一倍, CPU 上也才 0.5s -> 默认 base (甜蜜点)。
   #   想更准: 换 small / medium ;  卡特别弱且嫌慢: 可试 tiny(会漏指令, 不推荐)。
   # auto = 让程序按硬件自动选(有N卡→base, 无N卡→base+CPU)。
-  model: base
+  model: large-v3
   # auto = 有 N 卡自动用 cuda, 没有自动用 cpu (方便分享给无显卡的粉丝)
   device: auto
   # auto = cuda 用 float16, cpu 用 int8 (实测 GPU 上 int8 反而更慢, 故不默认量化)
