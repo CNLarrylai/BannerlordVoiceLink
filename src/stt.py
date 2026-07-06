@@ -80,12 +80,26 @@ def resolve_stt_config(s: dict):
 
 
 def bundled_model_path(model: str) -> str:
-    """打包后优先用内置模型目录(免联网下载); 找不到就返回原名交给 faster-whisper。"""
+    """解析模型引用。
+
+    源码: 直接返回模型名, faster-whisper 自己找缓存/联网下载。
+    打包: 优先内置目录; 其次本机已下载的缓存; 都没有则退回内置 base ——
+          这样粉丝(CPU包)误选了 large-v3 又下不动时不会崩, 自动用 base。
+    """
     base = getattr(sys, "_MEIPASS", None)
-    if base:
-        p = os.path.join(base, "models", f"faster-whisper-{model}")
-        if os.path.isdir(p):
-            return p
+    if not base:
+        return model
+    p = os.path.join(base, "models", f"faster-whisper-{model}")
+    if os.path.isdir(p):
+        return p
+    cache = os.path.expanduser(
+        f"~/.cache/huggingface/hub/models--Systran--faster-whisper-{model}")
+    if os.path.isdir(cache):
+        return model  # 用户下过, faster-whisper 会用缓存
+    fb = os.path.join(base, "models", "faster-whisper-base")
+    if os.path.isdir(fb):
+        print(f"[STT] 模型 {model} 未内置且未下载, 退回内置 base。")
+        return fb
     return model
 
 
