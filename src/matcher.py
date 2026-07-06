@@ -114,10 +114,12 @@ class Matcher:
                 else:
                     a = fuzz.partial_ratio_alignment(alias, text)
                     score, span = a.score, (a.dest_start, a.dest_end)
-                # 谐音兜底
-                if self.pinyin_match and score < 100 and text_py:
+                # 谐音兜底: 只在汉字明显对不上(<70)时才用, 且只对 >=2 字的别名
+                # (单字拼音太短、到处都能贴, 会乱路由), 拼音串也要够长才可信。
+                if (self.pinyin_match and score < 70 and len(alias) >= 2
+                        and text_py):
                     apy = self._alias_py.get(alias) or alias_pinyin(alias)
-                    if apy:
+                    if apy and len(apy) >= 4:
                         pa = fuzz.partial_ratio_alignment(apy, text_py)
                         if pa.score >= self.pinyin_threshold and pa.score > score:
                             span = self._map_span(pa.dest_start, pa.dest_end,
@@ -237,6 +239,12 @@ class Matcher:
             trace["coverage"] = cov
             if cov["is_chat"]:
                 trace["reason"] = cov["why"]
+                return trace
+            # 单字指令(冲/杀/停/放)只在"基本就说了这个字"时才算; 句中还有别的杂字,
+            # 多半是错听里蹭到的(如"撤锋"里的撤), 不执行, 免得乱发。
+            if len(o_alias) == 1 and cov["leftover"]:
+                trace["reason"] = (f"指令只命中单字「{o_alias}」, 句中还有"
+                                   f"「{cov['leftover']}」, 疑似错听, 不执行")
                 return trace
 
         order = {"name": o_key, "keys": o_data["keys"], "score": o_score}
