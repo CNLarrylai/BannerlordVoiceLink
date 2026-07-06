@@ -22,9 +22,11 @@ import yaml
 
 from matcher import CHAT_MARKERS, FILLERS, Matcher
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SETTINGS = os.path.join(ROOT, "config", "settings.yaml")
-COMMANDS = os.path.join(ROOT, "config", "commands.yaml")
+from paths import bundle_dir, config_path  # noqa: E402
+
+ROOT = bundle_dir()
+SETTINGS = config_path("settings.yaml")
+COMMANDS = config_path("commands.yaml")
 
 BG = "#101418"
 FG = "#e8edf2"
@@ -298,7 +300,11 @@ class CommandGUI:
             self.run_test()
 
     def open_doc(self):
-        os.startfile(os.path.join(ROOT, "docs", "bannerlord-orders.md"))
+        p = os.path.join(ROOT, "docs", "bannerlord-orders.md")
+        if os.path.exists(p):
+            os.startfile(p)
+        else:
+            self.status.config(text="指令树文档仅源码版附带", fg=DIM)
 
     def _print(self, text, tag=None):
         self.out.insert("end", text + "\n", tag or ())

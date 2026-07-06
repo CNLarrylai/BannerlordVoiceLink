@@ -18,11 +18,32 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
-for _s in (sys.stdout, sys.stderr):
+
+def _setup_stdio():
+    """打包成 windowed exe 时无控制台, sys.stdout 是 None, print 会崩。
+    有控制台(源码运行)就用 UTF-8; 没有(打包)就把日志写到文件供排错。
+    """
+    if sys.stdout is not None and sys.stderr is not None:
+        for s in (sys.stdout, sys.stderr):
+            try:
+                s.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+        return
     try:
-        _s.reconfigure(encoding="utf-8")
+        d = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+                         "BannerlordVoice", "logs")
+        os.makedirs(d, exist_ok=True)
+        logf = open(os.path.join(d, "app.log"), "a", encoding="utf-8", buffering=1)
     except Exception:
-        pass
+        logf = open(os.devnull, "w", encoding="utf-8")
+    if sys.stdout is None:
+        sys.stdout = logf
+    if sys.stderr is None:
+        sys.stderr = logf
+
+
+_setup_stdio()
 
 
 def main():

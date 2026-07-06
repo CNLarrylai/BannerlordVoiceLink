@@ -21,8 +21,9 @@ import numpy as np
 import sounddevice as sd
 import yaml
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SETTINGS = os.path.join(ROOT, "config", "settings.yaml")
+from paths import config_path  # noqa: E402
+
+SETTINGS = config_path("settings.yaml")
 
 BG = "#101418"
 FG = "#e8edf2"

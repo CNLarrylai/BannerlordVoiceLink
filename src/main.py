@@ -100,9 +100,10 @@ def boost_thread_priority():
 
 
 def load_cfg():
-    with open(os.path.join(ROOT, "config", "settings.yaml"), encoding="utf-8") as f:
+    from paths import config_path
+    with open(config_path("settings.yaml"), encoding="utf-8") as f:
         settings = yaml.safe_load(f)
-    with open(os.path.join(ROOT, "config", "commands.yaml"), encoding="utf-8") as f:
+    with open(config_path("commands.yaml"), encoding="utf-8") as f:
         commands = yaml.safe_load(f)
     return settings, commands
 

@@ -20,13 +20,11 @@ from audio import ContinuousListener  # noqa: E402
 from matcher import Matcher  # noqa: E402
 from stt import Transcriber  # noqa: E402
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
 def main():
-    with open(os.path.join(ROOT, "config", "settings.yaml"), encoding="utf-8") as f:
+    from paths import config_path
+    with open(config_path("settings.yaml"), encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
-    with open(os.path.join(ROOT, "config", "commands.yaml"), encoding="utf-8") as f:
+    with open(config_path("commands.yaml"), encoding="utf-8") as f:
         commands = yaml.safe_load(f)
 
     tr = Transcriber(cfg)

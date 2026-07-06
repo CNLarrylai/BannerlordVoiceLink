@@ -29,14 +29,30 @@ HALLUCINATIONS = (
 )
 
 
+def _cuda_libs_available():
+    """CUDA 运行库(cuBLAS/cuDNN)在不在。
+
+    源码: 装了 nvidia-*-cu12 就有。打包 CPU 版故意不带 -> 导入失败 -> False,
+    这样即便机器有 GPU 也会退回 CPU, 不会 cublas64_12.dll not found。
+    """
+    try:
+        import nvidia.cublas  # noqa: F401
+        import nvidia.cudnn   # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
 def detect_hardware():
-    """探测是否有可用的 NVIDIA GPU (CUDA)。返回 (has_cuda, 说明字符串)。"""
+    """探测能否真正用 GPU (既要有设备, 也要有 CUDA 运行库)。"""
     try:
         import ctranslate2
 
         n = ctranslate2.get_cuda_device_count()
-        if n > 0:
+        if n > 0 and _cuda_libs_available():
             return True, f"CUDA x{n}"
+        if n > 0:
+            return False, "CPU (检测到GPU但无CUDA运行库, 用CPU)"
     except Exception:
         pass
     return False, "CPU (无可用 CUDA)"
@@ -63,6 +79,16 @@ def resolve_stt_config(s: dict):
     return model, device, compute, hw
 
 
+def bundled_model_path(model: str) -> str:
+    """打包后优先用内置模型目录(免联网下载); 找不到就返回原名交给 faster-whisper。"""
+    base = getattr(sys, "_MEIPASS", None)
+    if base:
+        p = os.path.join(base, "models", f"faster-whisper-{model}")
+        if os.path.isdir(p):
+            return p
+    return model
+
+
 class Transcriber:
     def __init__(self, cfg: dict):
         s = cfg["stt"]
@@ -72,6 +98,7 @@ class Transcriber:
         self.temperature = s.get("temperature", 0)
         self.vad_filter = s.get("vad_filter", True)
         model, device, compute, hw = resolve_stt_config(s)
+        model = bundled_model_path(model)
         print(f"[STT] 硬件: {hw} -> 模型 {model} ({device}/{compute})")
         try:
             self.model = WhisperModel(model, device=device, compute_type=compute)

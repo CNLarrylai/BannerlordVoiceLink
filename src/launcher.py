@@ -38,9 +38,10 @@ def _spawn(mode, console):
     console=True 的功能(语音/测试)要有黑窗看日志; GUI 无窗。
     """
     if FROZEN:
-        # 打包后: exe 用 --mode 再拉起自己; 无控制台 exe 靠 CREATE_NEW_CONSOLE 出黑窗
+        # 打包后: exe 用 --mode 再拉起自己。全部 windowed(无黑窗), 日志写文件,
+        # 界面反馈靠浮层 —— 成品体验更干净。
         argv = [sys.executable, "--mode", mode]
-        flags = CREATE_NEW_CONSOLE if console else 0
+        flags = 0
     else:
         # 源码: console 模式用 python.exe(自带黑窗), GUI 用 pythonw.exe(无窗)
         exe = PY if console else PYW
