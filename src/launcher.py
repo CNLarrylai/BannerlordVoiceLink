@@ -81,9 +81,21 @@ class Launcher:
         self._mini(row, "📖\n指令词典", "看/加说法\n改键位", self.open_dict)
         self._mini(row, "🧪\n跑测试", "命中率+延迟\n改完就验证", self.run_tests)
 
-        self.status = tk.Label(self.root, text="提示: 语音程序里按 F10 可热重载词典",
+        # 底部: 查看日志 (自己排错 / 发给作者)
+        foot = tk.Frame(self.root, bg=BG)
+        foot.pack(pady=(14, 4))
+        tk.Button(foot, text="📋 查看日志", command=self.open_log,
+                  font=("Microsoft YaHei", 10), bg="#2a323a", fg=FG,
+                  activebackground="#3a444e", relief="flat", padx=12, pady=3).pack(
+            side="left", padx=5)
+        tk.Button(foot, text="📁 打开日志文件夹", command=self.open_log_folder,
+                  font=("Microsoft YaHei", 10), bg="#2a323a", fg=FG,
+                  activebackground="#3a444e", relief="flat", padx=12, pady=3).pack(
+            side="left", padx=5)
+
+        self.status = tk.Label(self.root, text="出问题？点「查看日志」，或发日志给作者排查",
                                fg=DIM, bg=BG, font=("Microsoft YaHei", 9))
-        self.status.pack(pady=(14, 18))
+        self.status.pack(pady=(6, 16))
 
         self.root.after(1000, self._poll_voice)
 
@@ -118,6 +130,20 @@ class Launcher:
     def open_dict(self):
         _spawn("dict", console=False)
         self._set("✓ 已打开指令词典")
+
+    def open_log(self):
+        from paths import log_file
+        p = log_file()
+        if os.path.exists(p) and os.path.getsize(p) > 0:
+            os.startfile(p)
+            self._set("✓ 已打开日志 (出问题可把它发给作者)")
+        else:
+            self._set("日志还是空的 —— 先运行一次语音指挥再看", GOLD)
+
+    def open_log_folder(self):
+        from paths import log_dir
+        os.startfile(log_dir())
+        self._set("✓ 已打开日志文件夹 (把 app.log 发给作者即可)")
 
     def run_tests(self):
         # 测试是开发向工具, 打包版里不带; 源码下才拉起

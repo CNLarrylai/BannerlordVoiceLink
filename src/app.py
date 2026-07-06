@@ -31,10 +31,8 @@ def _setup_stdio():
                 pass
         return
     try:
-        d = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
-                         "BannerlordVoice", "logs")
-        os.makedirs(d, exist_ok=True)
-        logf = open(os.path.join(d, "app.log"), "a", encoding="utf-8", buffering=1)
+        from paths import log_file
+        logf = open(log_file(), "a", encoding="utf-8", buffering=1)
     except Exception:
         logf = open(os.devnull, "w", encoding="utf-8")
     if sys.stdout is None:

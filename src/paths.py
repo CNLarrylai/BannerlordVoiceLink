@@ -47,3 +47,13 @@ def config_dir():
 
 def config_path(name):
     return os.path.join(config_dir(), name)
+
+
+def log_dir():
+    d = os.path.join(user_data_dir(), "logs")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def log_file():
+    return os.path.join(log_dir(), "app.log")
