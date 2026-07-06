@@ -107,19 +107,9 @@ class CommandGUI:
         self.root = tk.Tk()
         self.root.title("指令词典 — 骑砍语音指挥")
         self.root.configure(bg=BG)
-        self.root.geometry("1050x640")
+        self.root.geometry("1160x680")
 
-        main = tk.Frame(self.root, bg=BG)
-        main.pack(fill="both", expand=True, padx=16, pady=12)
-        main.columnconfigure(0, weight=1)
-        main.columnconfigure(1, weight=1)
-        main.rowconfigure(1, weight=1)
-
-        # ---------- 左侧: 词典 ----------
-        tk.Label(main, text="📖 指令词典 (说哪些话有效)", fg=GOLD, bg=BG,
-                 font=("Microsoft YaHei", 13, "bold")).grid(
-            row=0, column=0, sticky="w", pady=(0, 6))
-
+        self.root.minsize(880, 560)
         style = ttk.Style(self.root)
         style.theme_use("default")
         style.configure("Treeview", background="#161c22", fieldbackground="#161c22",
@@ -128,27 +118,60 @@ class CommandGUI:
                         font=("Microsoft YaHei", 10, "bold"))
         style.map("Treeview", background=[("selected", "#2a4a6a")])
 
-        self.tree = ttk.Treeview(main, columns=("keys", "aliases"), height=16)
+        # 左右两栏, 中间分隔条可拖动伸缩
+        paned = ttk.PanedWindow(self.root, orient="horizontal")
+        paned.pack(fill="both", expand=True, padx=14, pady=12)
+        self.paned = paned
+
+        # ========== 左: 词典树 + 完整说法 + 键位编辑 ==========
+        left = tk.Frame(paned, bg=BG)
+        paned.add(left, weight=3)
+        left.columnconfigure(0, weight=1)
+        left.rowconfigure(1, weight=1)
+        left.bind("<Configure>", self._on_left_resize)
+
+        tk.Label(left, text="📖 指令词典 (说哪些话有效)", fg=GOLD, bg=BG,
+                 font=("Microsoft YaHei", 13, "bold")).grid(
+            row=0, column=0, sticky="w", pady=(0, 6))
+
+        tree_wrap = tk.Frame(left, bg=BG)
+        tree_wrap.grid(row=1, column=0, sticky="nsew")
+        tree_wrap.rowconfigure(0, weight=1)
+        tree_wrap.columnconfigure(0, weight=1)
+        self.tree = ttk.Treeview(tree_wrap, columns=("keys", "aliases"))
         self.tree.heading("#0", text="指令")
         self.tree.heading("keys", text="按键")
         self.tree.heading("aliases", text="可以说的话 (别名)")
-        self.tree.column("#0", width=140, stretch=False)
-        self.tree.column("keys", width=90, stretch=False)
-        self.tree.column("aliases", width=280)
-        self.tree.grid(row=1, column=0, sticky="nsew", padx=(0, 12))
+        self.tree.column("#0", width=150, minwidth=110, stretch=False)
+        self.tree.column("keys", width=92, minwidth=70, stretch=False)
+        self.tree.column("aliases", width=360, minwidth=180, stretch=True)
+        vsb = ttk.Scrollbar(tree_wrap, orient="vertical", command=self.tree.yview)
+        hsb = ttk.Scrollbar(tree_wrap, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
         self.item_map = {}
         self._fill_tree()
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
 
-        # ---------- 左下: 键位编辑 (校准/自定义键位入口) ----------
-        keyedit = tk.Frame(main, bg=BG)
-        keyedit.grid(row=2, column=0, sticky="ew", pady=(8, 0), padx=(0, 12))
+        # 选中项的完整说法 (固定高度的只读框, 别名再长也不会挤压上面的树)
+        self.detail = tk.Text(
+            left, height=4, wrap="word", relief="flat", bg="#161c22", fg=DIM,
+            font=("Microsoft YaHei", 10), padx=12, pady=8,
+            highlightthickness=0, state="disabled", cursor="arrow")
+        self.detail.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        self._set_detail("👆 选中一条, 这里显示它的全部说法", DIM)
+
+        # ---------- 键位编辑 ----------
+        keyedit = tk.Frame(left, bg=BG)
+        keyedit.grid(row=3, column=0, sticky="ew", pady=(8, 0))
         keyedit.columnconfigure(1, weight=1)
         tk.Label(keyedit, text="✏ 改键位 (先在上面选一条):", fg=GOLD, bg=BG,
                  font=("Microsoft YaHei", 11, "bold")).grid(
             row=0, column=0, columnspan=3, sticky="w", pady=(0, 4))
         self.keyedit_label = tk.Label(keyedit, text="未选中", fg=DIM, bg=BG,
-                                      font=("Microsoft YaHei", 10), width=14,
+                                      font=("Microsoft YaHei", 10), width=12,
                                       anchor="w")
         self.keyedit_label.grid(row=1, column=0, padx=(0, 8))
         self.keys_entry = tk.Entry(keyedit, font=("Consolas", 12), bg="#1c2228",
@@ -158,20 +181,21 @@ class CommandGUI:
         tk.Button(keyedit, text="保存键位", command=self.save_keys,
                   font=("Microsoft YaHei", 11, "bold"), bg=GOLD, fg="#101418",
                   relief="flat", padx=14).grid(row=1, column=2)
-        tk.Label(keyedit,
-                 text="格式: 空格分隔按键序列, 如「f1 f3」; 兵种填一个键如「2」。"
-                      "必须与游戏指令菜单一致 → 参考 docs/bannerlord-orders.md",
-                 fg=DIM, bg=BG, font=("Microsoft YaHei", 9), anchor="w",
-                 justify="left", wraplength=430).grid(
-            row=2, column=0, columnspan=3, sticky="w", pady=(4, 0))
+        self.keyedit_hint = tk.Label(
+            keyedit,
+            text="格式: 空格分隔按键序列, 如「f1 f3」; 兵种填一个键如「2」。"
+                 "必须与游戏指令菜单一致。",
+            fg=DIM, bg=BG, font=("Microsoft YaHei", 9), anchor="w",
+            justify="left", wraplength=460)
+        self.keyedit_hint.grid(row=2, column=0, columnspan=3, sticky="w", pady=(4, 0))
         tk.Button(keyedit, text="📄 打开指令树文档 (键位事实来源)",
                   command=self.open_doc, font=("Microsoft YaHei", 9),
                   bg="#2a323a", fg=FG, relief="flat", padx=10).grid(
             row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
 
-        # ---------- 右侧: 测试台 ----------
-        right = tk.Frame(main, bg=BG)
-        right.grid(row=0, column=1, rowspan=3, sticky="nsew")
+        # ========== 右: 测试台 + 加别名 ==========
+        right = tk.Frame(paned, bg=BG)
+        paned.add(right, weight=2)
         right.columnconfigure(0, weight=1)
         right.rowconfigure(2, weight=1)
 
@@ -233,6 +257,7 @@ class CommandGUI:
                                fg=DIM, bg=BG, font=("Microsoft YaHei", 9))
         self.status.grid(row=5, column=0, sticky="w", pady=(6, 0))
 
+        self.root.after(80, self._init_sash)
         print("聊天特征词 (句中出现即忽略):", "、".join(CHAT_MARKERS))
         print("填充词 (下令时可夹带, 不影响判定):", "、".join(FILLERS))
 
@@ -255,11 +280,32 @@ class CommandGUI:
                                    values=("+".join(d["keys"]), "、".join(d["aliases"])))
             self.item_map[iid] = ("orders", k)
 
+    def _set_detail(self, text, color=FG):
+        self.detail.config(state="normal")
+        self.detail.delete("1.0", "end")
+        self.detail.insert("1.0", text)
+        self.detail.config(fg=color, state="disabled")
+
+    def _init_sash(self):
+        """把分隔条初始位置设到偏左宽一些, 让词典树默认就够宽显示别名。"""
+        try:
+            w = self.paned.winfo_width()
+            if w > 100:
+                self.paned.sashpos(0, int(w * 0.6))
+        except Exception:
+            pass
+
+    def _on_left_resize(self, event):
+        w = max(200, event.width - 30)
+        if getattr(self, "keyedit_hint", None) is not None:
+            self.keyedit_hint.config(wraplength=w)
+
     def _on_select(self, event=None):
         sel = self.tree.selection()
         self.keys_entry.delete(0, "end")
         if not sel or sel[0] not in self.item_map:
             self.keyedit_label.config(text="未选中", fg=DIM)
+            self._set_detail("👆 选中一条, 这里显示它的全部说法", DIM)
             self._selected = None
             return
         section, k = self.item_map[sel[0]]
@@ -268,6 +314,11 @@ class CommandGUI:
         self.keyedit_label.config(text=d["aliases"][0], fg=FG)
         cur = [d["key"]] if section == "groups" else d["keys"]
         self.keys_entry.insert(0, " ".join(cur))
+        kind = "兵种" if section == "groups" else "指令"
+        keydesc = f"按 {d['key']}" if section == "groups" else "+".join(d["keys"])
+        self._set_detail(
+            f"【{kind} · {d['aliases'][0]}】 键位 {keydesc}\n"
+            f"能说的话：{'、'.join(d['aliases'])}", FG)
 
     def save_keys(self):
         if not getattr(self, "_selected", None):
