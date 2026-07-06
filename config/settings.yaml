@@ -67,3 +67,6 @@ vad:
 overlay:
   enabled: true           # 显示浮层(给观众看识别到的指令)
   font_size: 22
+  # 浮层底部常驻一行小字 debug: 上一条听到什么→匹配成哪条→发了什么键。
+  # 方便排错; 不想让观众看到就设 false。
+  debug_line: true
