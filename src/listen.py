@@ -39,8 +39,7 @@ class ListenGUI:
             self.cfg = yaml.safe_load(f)
         with open(config_path("commands.yaml"), encoding="utf-8") as f:
             self.commands = yaml.safe_load(f)
-        self.matcher = Matcher(self.commands, self.cfg["control"]["match_threshold"],
-                               self.cfg["control"].get("chat_filter", True))
+        self.matcher = Matcher.from_config(self.commands, self.cfg["control"])
         self.prefixes = self.cfg["control"].get("command_prefix") or []
         self.sr = self.cfg["audio"]["samplerate"]
         self.q = queue.Queue()

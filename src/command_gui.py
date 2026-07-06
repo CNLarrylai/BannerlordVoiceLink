@@ -262,9 +262,7 @@ class CommandGUI:
         print("填充词 (下令时可夹带, 不影响判定):", "、".join(FILLERS))
 
     def _build_matcher(self):
-        c = self.settings["control"]
-        self.matcher = Matcher(self.commands, c["match_threshold"],
-                               c.get("chat_filter", True))
+        self.matcher = Matcher.from_config(self.commands, self.settings["control"])
 
     def _fill_tree(self):
         self.tree.delete(*self.tree.get_children())

@@ -34,7 +34,7 @@ if _snaps:
 
 # 这些包 PyInstaller 静态分析抓不全, 用 collect_all 兜底
 for pkg in ("faster_whisper", "ctranslate2", "av",
-            "sounddevice", "soundfile", "onnxruntime", "tokenizers"):
+            "sounddevice", "soundfile", "onnxruntime", "tokenizers", "pypinyin"):
     try:
         d, b, h = collect_all(pkg)
         datas += d

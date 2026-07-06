@@ -12,6 +12,9 @@ numpy>=1.26
 # 模糊匹配 / 意图识别
 rapidfuzz>=3.9
 
+# 谐音(拼音)匹配 —— 口音/同音字听岔也能命中
+pypinyin>=0.51
+
 # 按键注入 (DirectInput, 适配 DX 游戏如骑砍)
 pydirectinput>=1.0.4
 

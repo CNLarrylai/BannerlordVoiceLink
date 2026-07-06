@@ -16,6 +16,35 @@ import re
 
 from rapidfuzz import fuzz
 
+try:
+    from pypinyin import lazy_pinyin
+    _HAS_PINYIN = True
+except Exception:
+    _HAS_PINYIN = False
+
+
+def _char_py(ch):
+    try:
+        r = lazy_pinyin(ch)
+        return r[0] if r and r[0] else ""
+    except Exception:
+        return ""
+
+
+def alias_pinyin(s):
+    """整词的无声调拼音串 (逐字, 保证与 text_pinyin 对齐)。"""
+    return "".join(_char_py(c) for c in s)
+
+
+def text_pinyin(s):
+    """返回 (拼音串, pos2char): pos2char[i]=拼音串第 i 位对应原文的字下标。"""
+    py, pos2char = [], []
+    for ci, ch in enumerate(s):
+        syl = _char_py(ch)
+        pos2char.extend([ci] * len(syl))
+        py.append(syl)
+    return "".join(py), pos2char
+
 # 标点/空白, 匹配前先剥掉
 PUNCT_RE = re.compile(r"[\s,。!?、,.!?…~··:;:;\"'“”‘’()()【】\[\]\-—]+")
 
@@ -44,19 +73,39 @@ MAX_EFFECTIVE_LEN = 16
 
 
 class Matcher:
-    def __init__(self, commands: dict, threshold: int = 70, chat_filter: bool = True):
+    def __init__(self, commands: dict, threshold: int = 70, chat_filter: bool = True,
+                 pinyin_match: bool = True, pinyin_threshold: int = 85):
         self.groups = commands.get("groups", {})
         self.orders = commands.get("orders", {})
         self.threshold = threshold
         self.chat_filter = chat_filter
+        self.pinyin_match = pinyin_match and _HAS_PINYIN
+        self.pinyin_threshold = pinyin_threshold
+        # 预算每个别名的拼音, 匹配时不重复计算
+        self._alias_py = {}
+        if self.pinyin_match:
+            for table in (self.groups, self.orders):
+                for data in table.values():
+                    for al in data.get("aliases", []):
+                        if al not in self._alias_py:
+                            self._alias_py[al] = alias_pinyin(al)
 
-    def _best(self, text: str, table: dict):
-        """在 table 里找最匹配的一项。
+    @classmethod
+    def from_config(cls, commands, control):
+        """按 settings 的 control 段建 Matcher (统一读阈值/开关)。"""
+        return cls(commands, control["match_threshold"],
+                   control.get("chat_filter", True),
+                   control.get("pinyin_match", True),
+                   control.get("pinyin_threshold", 85))
+
+    def _best(self, text, table, text_py="", pos2char=None):
+        """在 table 里找最匹配的一项 (汉字匹配 + 谐音/拼音兜底)。
 
         返回 (key, 数据, 分数, 命中的别名, 命中区间(start,end))。
-        比较键 = (分数, 别名长度): 同分时优先更长更具体的别名。
+        谐音: 汉字对不上时, 比拼音 ("骑射"vs"起社"同为 qishe) 也能命中,
+        专治口音/同音字听岔。谐音分要更高 (pinyin_threshold) 才采纳, 防误触。
         """
-        best = (None, None, 0, "", (0, 0))  # key, data, score, alias, span
+        best = (None, None, 0, "", (0, 0))
         for key, data in table.items():
             for alias in data.get("aliases", []):
                 pos = text.find(alias)
@@ -65,9 +114,27 @@ class Matcher:
                 else:
                     a = fuzz.partial_ratio_alignment(alias, text)
                     score, span = a.score, (a.dest_start, a.dest_end)
+                # 谐音兜底
+                if self.pinyin_match and score < 100 and text_py:
+                    apy = self._alias_py.get(alias) or alias_pinyin(alias)
+                    if apy:
+                        pa = fuzz.partial_ratio_alignment(apy, text_py)
+                        if pa.score >= self.pinyin_threshold and pa.score > score:
+                            span = self._map_span(pa.dest_start, pa.dest_end,
+                                                  pos2char, len(text))
+                            score = pa.score
                 if (score, len(alias)) > (best[2], len(best[3])):
                     best = (key, data, score, alias, span)
         return best
+
+    @staticmethod
+    def _map_span(s, e, pos2char, n):
+        """把拼音串区间映射回原文字符区间。"""
+        if not pos2char:
+            return (0, n)
+        s = pos2char[s] if 0 <= s < len(pos2char) else 0
+        e = pos2char[e - 1] + 1 if 0 < e <= len(pos2char) else n
+        return (s, e)
 
     def _strip_fillers(self, text: str) -> str:
         for f in sorted(FILLERS, key=len, reverse=True):
@@ -130,8 +197,14 @@ class Matcher:
                 trace["reason"] = f"含聊天特征词「{hit}」, 判为聊天"
                 return trace
 
-        g_key, g_data, g_score, g_alias, g_span = self._best(clean, self.groups)
-        o_key, o_data, o_score, o_alias, o_span = self._best(clean, self.orders)
+        if self.pinyin_match:
+            text_py, pos2char = text_pinyin(clean)
+        else:
+            text_py, pos2char = "", None
+        g_key, g_data, g_score, g_alias, g_span = self._best(
+            clean, self.groups, text_py, pos2char)
+        o_key, o_data, o_score, o_alias, o_span = self._best(
+            clean, self.orders, text_py, pos2char)
         if g_key:
             trace["group"] = {
                 "name": g_key, "alias": g_alias, "score": round(g_score),

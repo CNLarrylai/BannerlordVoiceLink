@@ -134,9 +134,7 @@ class App:
         self.samplerate = settings["audio"]["samplerate"]
         self.silence_rms = settings["audio"].get("silence_rms", 0.006)
         self.slow_warn_sec = settings["stt"].get("slow_warn_sec", 3.0)
-        self.matcher = Matcher(
-            commands, c["match_threshold"], c.get("chat_filter", True)
-        )
+        self.matcher = Matcher.from_config(commands, c)
         if self.dry_run:
             print("[模式] dry-run: 只打印按键, 不真的发送。")
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
@@ -169,9 +167,7 @@ class App:
             return
         c = settings["control"]
         self.commands = commands
-        self.matcher = Matcher(
-            commands, c["match_threshold"], c.get("chat_filter", True)
-        )
+        self.matcher = Matcher.from_config(commands, c)
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
         self.prefixes = c.get("command_prefix") or []
         self.silence_rms = settings["audio"].get("silence_rms", self.silence_rms)
