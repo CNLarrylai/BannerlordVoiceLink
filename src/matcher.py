@@ -74,13 +74,17 @@ MAX_EFFECTIVE_LEN = 16
 
 class Matcher:
     def __init__(self, commands: dict, threshold: int = 70, chat_filter: bool = True,
-                 pinyin_match: bool = True, pinyin_threshold: int = 85):
+                 pinyin_match: bool = True, pinyin_threshold: int = 85,
+                 group_threshold=None, order_threshold=None):
         self.groups = commands.get("groups", {})
         self.orders = commands.get("orders", {})
-        self.threshold = threshold
+        # 兵种(就5个,叫法少)可松一点; 指令(20+,密,多同音)要严, 防乱路由。
+        self.group_threshold = 60 if group_threshold is None else group_threshold
+        self.order_threshold = threshold if order_threshold is None else order_threshold
         self.chat_filter = chat_filter
         self.pinyin_match = pinyin_match and _HAS_PINYIN
-        self.pinyin_threshold = pinyin_threshold
+        self.pinyin_threshold = pinyin_threshold           # 指令谐音: 严 (只认同音)
+        self.pinyin_group_threshold = max(55, pinyin_threshold - 8)  # 兵种谐音: 松
         # 预算每个别名的拼音, 匹配时不重复计算
         self._alias_py = {}
         if self.pinyin_match:
@@ -93,18 +97,22 @@ class Matcher:
     @classmethod
     def from_config(cls, commands, control):
         """按 settings 的 control 段建 Matcher (统一读阈值/开关)。"""
-        return cls(commands, control["match_threshold"],
+        base = control.get("match_threshold", 72)
+        return cls(commands, base,
                    control.get("chat_filter", True),
                    control.get("pinyin_match", True),
-                   control.get("pinyin_threshold", 85))
+                   control.get("pinyin_threshold", 85),
+                   group_threshold=control.get("group_threshold", 60),
+                   order_threshold=control.get("order_threshold", base))
 
-    def _best(self, text, table, text_py="", pos2char=None):
+    def _best(self, text, table, text_py="", pos2char=None, pinyin_threshold=None):
         """在 table 里找最匹配的一项 (汉字匹配 + 谐音/拼音兜底)。
 
         返回 (key, 数据, 分数, 命中的别名, 命中区间(start,end))。
         谐音: 汉字对不上时, 比拼音 ("骑射"vs"起社"同为 qishe) 也能命中,
         专治口音/同音字听岔。谐音分要更高 (pinyin_threshold) 才采纳, 防误触。
         """
+        pt = self.pinyin_threshold if pinyin_threshold is None else pinyin_threshold
         best = (None, None, 0, "", (0, 0))
         for key, data in table.items():
             for alias in data.get("aliases", []):
@@ -121,7 +129,7 @@ class Matcher:
                     apy = self._alias_py.get(alias) or alias_pinyin(alias)
                     if apy and len(apy) >= 4:
                         pa = fuzz.partial_ratio_alignment(apy, text_py)
-                        if pa.score >= self.pinyin_threshold and pa.score > score:
+                        if pa.score >= pt and pa.score > score:
                             span = self._map_span(pa.dest_start, pa.dest_end,
                                                   pos2char, len(text))
                             score = pa.score
@@ -203,33 +211,34 @@ class Matcher:
             text_py, pos2char = text_pinyin(clean)
         else:
             text_py, pos2char = "", None
+        # 兵种松(叫法少,安全); 指令严(密,多同音,防乱路由)
         g_key, g_data, g_score, g_alias, g_span = self._best(
-            clean, self.groups, text_py, pos2char)
+            clean, self.groups, text_py, pos2char, self.pinyin_group_threshold)
         o_key, o_data, o_score, o_alias, o_span = self._best(
-            clean, self.orders, text_py, pos2char)
+            clean, self.orders, text_py, pos2char, self.pinyin_threshold)
         if g_key:
             trace["group"] = {
                 "name": g_key, "alias": g_alias, "score": round(g_score),
-                "pass": g_score >= self.threshold,
+                "pass": g_score >= self.group_threshold,
                 "select": g_data["key"],
             }
         if o_key:
             trace["order"] = {
                 "name": o_key, "alias": o_alias, "score": round(o_score),
-                "pass": o_score >= self.threshold,
+                "pass": o_score >= self.order_threshold,
                 "keys": o_data["keys"],
             }
 
         # 必须有"指令"才执行; 只有兵种的半截匹配只会乱切编队, 忽略
-        if not o_key or o_score < self.threshold:
+        if not o_key or o_score < self.order_threshold:
             trace["reason"] = (
                 f"没有匹配到指令动作 (最接近: {o_key} {round(o_score)}分, "
-                f"阈值 {self.threshold})" if o_key else "没有匹配到任何指令动作"
+                f"阈值 {self.order_threshold})" if o_key else "没有匹配到任何指令动作"
             )
             return trace
 
         spans = [o_span]
-        group_ok = g_key and g_score >= self.threshold
+        group_ok = g_key and g_score >= self.group_threshold
         if group_ok:
             spans.append(g_span)
 
