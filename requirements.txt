@@ -1,0 +1,22 @@
+# 语音识别 (本地, GPU 加速)
+faster-whisper>=1.1.0
+
+# CUDA 运行库 (ctranslate2 需要 cuBLAS + cuDNN 9, 走 pip 安装最省心)
+nvidia-cublas-cu12
+nvidia-cudnn-cu12
+
+# 音频采集
+sounddevice>=0.4.6
+numpy>=1.26
+
+# 模糊匹配 / 意图识别
+rapidfuzz>=3.9
+
+# 按键注入 (DirectInput, 适配 DX 游戏如骑砍)
+pydirectinput>=1.0.4
+
+# 全局热键 (按住说话)
+keyboard>=0.13.5
+
+# 配置文件
+PyYAML>=6.0

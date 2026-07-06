@@ -1,0 +1,69 @@
+# ===== 总体设置 =====
+
+audio:
+  # 麦克风设备 (null = 系统默认输入设备)。运行 `py -m sounddevice` 可列出所有设备和编号。
+  device: "麦克风 (NVIDIA Broadcast)"
+  samplerate: 16000
+  # 音量门控: 整段音频的 RMS 低于此值视为静音/没说话, 直接跳过识别。
+  # 可防止 Whisper 对静音"脑补"出字幕话术。麦克风太灵敏可调低, 总误触可调高。
+  silence_rms: 0.006
+
+stt:
+  # Whisper 模型: auto / tiny / base / small / medium / large-v3
+  # 实测(4090, 短指令, 命中率): base 183ms 7/8 | small 363ms 7/8 | tiny 153ms 4/8(太差)
+  # base 命中率≈small 但快一倍, CPU 上也才 0.5s -> 默认 base (甜蜜点)。
+  #   想更准: 换 small / medium ;  卡特别弱且嫌慢: 可试 tiny(会漏指令, 不推荐)。
+  # auto = 让程序按硬件自动选(有N卡→base, 无N卡→base+CPU)。
+  model: base
+  # auto = 有 N 卡自动用 cuda, 没有自动用 cpu (方便分享给无显卡的粉丝)
+  device: auto
+  # auto = cuda 用 float16, cpu 用 int8 (实测 GPU 上 int8 反而更慢, 故不默认量化)
+  compute_type: auto
+  language: zh
+  beam_size: 1            # 1 = 最快; 越大越准但越慢。短指令 1 足够。
+  # temperature=0 => 只解码一次, 不做质量回退。默认 whisper 会在质量不达标时
+  # 用最多 6 档温度反复重解码, 战场嘈杂音下会滚成几十秒的延迟尖峰。定死 0
+  # 把单句延迟锁住(牺牲极少精度换稳定, 实时指挥值得)。
+  temperature: 0
+  # 内置 Silero VAD: 解码前先把一段音频里的静音/噪音切掉, 只喂真正的人声。
+  # 能防"一段战场噪音把模型带进重复幻觉"导致的超长识别, 也顺带更快更准。
+  vad_filter: true
+  # 单句识别超过这个秒数就在日志里告警(帮你发现卡顿), 不影响功能。
+  slow_warn_sec: 3.0
+  # 领域词表: 把指令关键词喂给模型, 大幅提升这些词的识别率(尤其阵型/全军)。
+  initial_prompt: "指挥军队。兵种：步兵、弓箭手、骑兵、骑射。全军听令：全军、所有人、大家、全体、兄弟们。移动：前进、后退、冲锋、突击、停止、撤退、跟随我、跟我走、护驾。变换队形/阵型：线阵、盾墙、散阵、圆阵、方阵、三角阵、竖排、排成一列、乱阵、楔阵。射击：自由射击、停止射击。上马、下马、交给AI。"
+
+control:
+  # 模式: continuous(一直监听, 像 VoiceAttack) 或 push_to_talk(按住说话)
+  mode: continuous
+  # push_to_talk 模式用的热键 (continuous 模式忽略它)
+  push_to_talk_key: "caps lock"
+  # 热重载键: 改完词典(commands.yaml)按它一下, 立即载入运行中的引擎,
+  # 不用关掉重启(Whisper 模型不重载, 秒生效)。留空则关闭此功能。
+  reload_key: "f10"
+  # 模糊匹配阈值 (0-100), 越高越严格。持续监听建议调高些(如 78)减少误触。
+  match_threshold: 72
+  # 聊天过滤: 区分"下指令"和"聊到指令词"。长句/带讨论词/指令占比低的
+  # 句子不执行。误拦太多可关掉 (false), 但直播聊天时会容易误触发。
+  chat_filter: true
+  # 口令前缀(唤醒词): 留空=听到任何匹配指令都执行(纯 VoiceAttack 式)。
+  # 填了之后(如 ["传令","听令","下令"]) 只有先说前缀才会执行, 直播时
+  # 跟观众聊天就不会误指挥军队。强烈建议直播时启用。匹配后前缀会被去掉。
+  command_prefix: []
+  # 每个按键之间的间隔(秒), 太快游戏可能吃不到键。
+  key_delay: 0.06
+  # 选中兵种后到下指令之间的间隔(秒)
+  select_delay: 0.12
+
+# 持续监听的语音活动检测 (VAD) 参数, 一般不用改
+vad:
+  start_rms: 0.02         # 超过这个音量算"开始说话"。麦克风灵敏可调高减少误触。
+  end_rms: 0.012          # 低于这个音量算"安静"
+  end_silence_sec: 0.45   # 说完静音多久判定一句结束(越小越跟手, 太小会切碎长句)
+  min_speech_sec: 0.3     # 一句话至少多长才算数
+  max_speech_sec: 8.0     # 单句最长
+  preroll_sec: 0.25       # 句首预收音, 防吃字
+
+overlay:
+  enabled: true           # 显示浮层(给观众看识别到的指令)
+  font_size: 22

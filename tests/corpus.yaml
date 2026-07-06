@@ -1,0 +1,46 @@
+# ============================================================
+#  测试黄金语料集 —— 所有量化测试的"标准答案"
+# ============================================================
+#  commands: 正样本, 期望识别并匹配到指定 兵种(group)/指令(order)
+#  chat    : 负样本, 期望被忽略 (聊天不该触发指令)
+#
+#  改词典/键位/模型后, 跑 tests/run_all.py 看命中率和延迟有没有退步。
+#  加新测试句直接往这里加, 再 python tests/gen_corpus.py 重新合成语音。
+# ============================================================
+
+commands:
+  # 覆盖各兵种 + 各指令类别
+  - {text: 步兵盾墙,        group: infantry,      order: shield_wall}
+  - {text: 弓箭手散开,      group: archers,       order: loose}
+  - {text: 骑兵冲锋,        group: cavalry,       order: charge}
+  - {text: 骑射跟随我,      group: horse_archers, order: follow_me}
+  - {text: 全军前进,        group: all,           order: advance}
+  - {text: 所有人停下,      group: all,           order: halt}
+  - {text: 步兵结圆阵,      group: infantry,      order: circle}
+  - {text: 弓箭手方阵,      group: archers,       order: square}
+  - {text: 全军撤退,        group: all,           order: retreat}
+  - {text: 弓箭手自由射击,  group: archers,       order: fire_at_will}
+  - {text: 弓箭手停止射击,  group: archers,       order: hold_fire}
+  - {text: 骑兵上马,        group: cavalry,       order: mount_toggle}
+  - {text: 全军线阵,        group: all,           order: line}
+  - {text: 步兵后退,        group: infantry,      order: fall_back}
+  - {text: 弓箭手就位,      group: archers,       order: to_position}
+  - {text: 步兵交给AI,      group: infantry,      order: ai_control}
+  # 难念指令的易念说法 (前面踩过坑的)
+  - {text: 骑兵三角阵,      group: cavalry,       order: skein}
+  - {text: 步兵排成一列,    group: infantry,      order: column}
+  - {text: 骑兵乱阵,        group: cavalry,       order: scatter}
+  # 口语 / 儿化音 / 全军口语
+  - {text: 大家跟我上,      group: all,           order: follow_me}
+  - {text: 大伙儿冲锋,      group: all,           order: charge}
+  - {text: 弓箭手往后退,    group: archers,       order: fall_back}
+  - {text: 全军举盾,        group: all,           order: shield_wall}
+  - {text: 所有人围成圈,    group: all,           order: circle}
+
+chat:
+  # 聊到指令词但不是下令, 应被忽略
+  - {text: 士兵冲锋真的很帅}
+  - {text: 我们来聊聊这个盾墙怎么用}
+  - {text: 今天天气真好}
+  - {text: 你怎么这么慢呢}
+  - {text: 比如说全军突击这样插一句}
