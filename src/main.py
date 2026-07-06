@@ -228,21 +228,21 @@ class App:
             print(f"    [⚠ 识别偏慢] {t_stt:.1f}s (音频 {secs:.1f}s) "
                   f"—— 多半是游戏在抢 GPU, 试试游戏内锁帧/关游戏模式")
         if not text:
-            print(f"    [耗时] 识别 {t_stt:.2f}s (没听清)")
+            print(f"    ✗ 没听清（识别 {t_stt:.2f}s，可能太轻/太快）")
             self._debug(f"上一条 ✗ 没听清（识别 {t_stt:.1f}s）")
             self._idle("(没听清)")
             return
 
         armed, cleaned = self._check_prefix(text)
         if not armed:
-            print(f"    [耗时] 识别 {t_stt:.2f}s (无口令前缀, 忽略)")
+            print(f"    · 听到「{text}」→ 无口令前缀, 忽略（识别 {t_stt:.2f}s）")
             self._debug(f"上一条 · 听到「{text}」→ 无口令前缀, 忽略")
             self._idle(f"听到: {text}")
             return
 
         parsed = self.matcher.parse(cleaned)
         if not parsed:
-            print(f"    [耗时] 识别 {t_stt:.2f}s (未匹配/聊天)")
+            print(f"    ✗ 听到「{text}」→ 未匹配/聊天, 未执行（识别 {t_stt:.2f}s）")
             self._debug(f"上一条 ✗ 听到「{text}」→ 未匹配/聊天, 未执行")
             self._set("未匹配", f"听到: {text}", "#ff8a8a")
             time.sleep(0.6)
@@ -256,7 +256,8 @@ class App:
         self.executor.execute(parsed)
         t_keys = time.perf_counter() - t0
         total = time.perf_counter() - t_seg
-        print(f"    [耗时] 识别 {t_stt:.2f}s + 按键 {t_keys:.2f}s = 共 {total:.2f}s")
+        print(f"    ✓ 听到「{text}」→ {desc} · 发键 {' '.join(keys)}"
+              f"（识别 {t_stt:.2f}s + 按键 {t_keys:.2f}s = 共 {total:.2f}s）")
         self._debug(f"上一条 ✓ 听到「{text}」→ {desc} · 发键 {' '.join(keys)}"
                     f"（{t_stt:.1f}s）")
         self._set(f"✓ {desc}", f"听到: {text}", "#7dff9b")
