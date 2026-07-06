@@ -1,5 +1,3 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0"
-".venv\Scripts\python.exe" src\listen.py
-pause
+start "" ".venv\Scripts\pythonw.exe" src\listen.py

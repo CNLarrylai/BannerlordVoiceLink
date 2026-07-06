@@ -1,10 +1,14 @@
-"""测试模式 —— 持续监听, 打印识别+匹配结果, 不发任何按键 (安全调试)。
+"""测试模式 GUI —— 持续监听, 窗口里实时显示"听到什么、匹配成哪条指令"，
+不发任何按键 (安全练习 / 调麦克风 / 验证说法)。
 
-单独跑: python src/listen.py   或   python src/app.py --mode listen
+源码与打包都有可见窗口。单独跑: python src/app.py --mode listen
 """
 import os
+import queue
 import sys
+import threading
 import time
+import tkinter as tk
 
 for _s in (sys.stdout, sys.stderr):
     try:
@@ -18,52 +22,150 @@ import yaml  # noqa: E402
 
 from audio import ContinuousListener  # noqa: E402
 from matcher import Matcher  # noqa: E402
-from stt import Transcriber  # noqa: E402
+from paths import config_path  # noqa: E402
+
+BG = "#101418"
+FG = "#e8edf2"
+DIM = "#9aa4ad"
+GOLD = "#d4af37"
+GREEN = "#7dff9b"
+RED = "#ff8a8a"
+BLUE = "#7Fd1ff"
+
+
+class ListenGUI:
+    def __init__(self):
+        with open(config_path("settings.yaml"), encoding="utf-8") as f:
+            self.cfg = yaml.safe_load(f)
+        with open(config_path("commands.yaml"), encoding="utf-8") as f:
+            self.commands = yaml.safe_load(f)
+        self.matcher = Matcher(self.commands, self.cfg["control"]["match_threshold"],
+                               self.cfg["control"].get("chat_filter", True))
+        self.prefixes = self.cfg["control"].get("command_prefix") or []
+        self.sr = self.cfg["audio"]["samplerate"]
+        self.q = queue.Queue()
+        self.running = True
+        self.listener = None
+
+        self.root = tk.Tk()
+        self.root.title("测试模式 · 只听不发键 — 骑砍语音指挥")
+        self.root.configure(bg=BG)
+        self.root.geometry("560x480")
+        self.root.minsize(420, 320)
+
+        tk.Label(self.root, text="🎧 测试模式（只听不发键）", fg=GOLD, bg=BG,
+                 font=("Microsoft YaHei", 14, "bold")).pack(padx=18, pady=(14, 2))
+        tk.Label(self.root,
+                 text="对着麦克风说指令，下面实时显示识别结果。不会往游戏发按键，随便练。",
+                 fg=DIM, bg=BG, font=("Microsoft YaHei", 9),
+                 wraplength=520, justify="left").pack(padx=18, pady=(0, 8))
+
+        self.status = tk.Label(self.root, text="启动中…", fg=BLUE, bg=BG,
+                               font=("Microsoft YaHei", 12, "bold"))
+        self.status.pack(padx=18, pady=(0, 8))
+
+        wrap = tk.Frame(self.root, bg=BG)
+        wrap.pack(fill="both", expand=True, padx=18, pady=(0, 14))
+        self.log = tk.Text(wrap, bg="#161c22", fg=FG, relief="flat", wrap="word",
+                           font=("Microsoft YaHei", 11), state="disabled",
+                           highlightthickness=0)
+        vsb = tk.Scrollbar(wrap, command=self.log.yview)
+        self.log.configure(yscrollcommand=vsb.set)
+        self.log.pack(side="left", fill="both", expand=True)
+        vsb.pack(side="right", fill="y")
+        for tag, color in (("ok", GREEN), ("bad", RED), ("dim", DIM), ("gold", GOLD)):
+            self.log.tag_configure(tag, foreground=color)
+
+        self.root.protocol("WM_DELETE_WINDOW", self.close)
+        threading.Thread(target=self._worker, daemon=True).start()
+        self.root.after(80, self._poll)
+
+    def _push(self, kind, *args):
+        self.q.put((kind, args))
+
+    def _worker(self):
+        # 模型加载慢, 放线程里, 窗口先显示出来
+        self._push("status", "加载识别模型中…（首次稍久）", GOLD)
+        try:
+            from stt import Transcriber
+            tr = Transcriber(self.cfg)
+        except Exception as e:
+            self._push("status", f"模型加载失败: {e}", RED)
+            return
+        self._push("status", "👂 监听中…（说指令试试）", BLUE)
+        if self.prefixes:
+            self._push("line", f"已开口令前缀 {self.prefixes}，要先说前缀。", "dim")
+        self.listener = ContinuousListener(self.cfg)
+        try:
+            for audio in self.listener.segments():
+                if not self.running:
+                    break
+                t0 = time.perf_counter()
+                text = tr.transcribe(audio)
+                dt = time.perf_counter() - t0
+                if not text:
+                    continue
+                cleaned = text
+                if self.prefixes:
+                    hit = next((p for p in self.prefixes if p in text), None)
+                    if not hit:
+                        self._push("item", "chat", text, "（无口令前缀，忽略）", dt)
+                        continue
+                    cleaned = text.replace(hit, "", 1).strip()
+                parsed = self.matcher.parse(cleaned)
+                if not parsed:
+                    self._push("item", "no", text, "未匹配 / 聊天，忽略", dt)
+                    continue
+                g, o = parsed.get("group"), parsed.get("order")
+                desc = []
+                if g:
+                    desc.append(self.commands["groups"][g["name"]]["aliases"][0])
+                if o:
+                    desc.append(self.commands["orders"][o["name"]]["aliases"][0])
+                keys = ([g["select"]] if g else []) + (o["keys"] if o else [])
+                self._push("item", "ok", text,
+                           f"{' · '.join(desc)}   → 按键 {' '.join(keys)}", dt)
+        except Exception as e:
+            self._push("status", f"麦克风/识别出错: {e}", RED)
+
+    def _poll(self):
+        try:
+            while True:
+                kind, args = self.q.get_nowait()
+                if kind == "status":
+                    self.status.config(text=args[0], fg=args[1])
+                elif kind == "line":
+                    self._append(args[0] + "\n", args[1])
+                elif kind == "item":
+                    verdict, heard, result, dt = args
+                    ts = time.strftime("%H:%M:%S")
+                    tag = {"ok": "ok", "no": "bad", "chat": "dim"}[verdict]
+                    mark = {"ok": "✓", "no": "✗", "chat": "·"}[verdict]
+                    self._append(f"[{ts}] {mark} {result}\n", tag)
+                    self._append(f"        听到:「{heard}」  识别{dt:.2f}s\n", "dim")
+        except queue.Empty:
+            pass
+        if self.running:
+            self.root.after(80, self._poll)
+
+    def _append(self, text, tag):
+        self.log.config(state="normal")
+        self.log.insert("end", text, tag)
+        self.log.see("end")
+        self.log.config(state="disabled")
+
+    def close(self):
+        self.running = False
+        if self.listener:
+            self.listener.stop()
+        self.root.destroy()
+
+    def run(self):
+        self.root.mainloop()
+
 
 def main():
-    from paths import config_path
-    with open(config_path("settings.yaml"), encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
-    with open(config_path("commands.yaml"), encoding="utf-8") as f:
-        commands = yaml.safe_load(f)
-
-    tr = Transcriber(cfg)
-    m = Matcher(commands, cfg["control"]["match_threshold"],
-                cfg["control"].get("chat_filter", True))
-    prefixes = cfg["control"].get("command_prefix") or []
-    sr = cfg["audio"]["samplerate"]
-
-    print("\n=== 持续监听中 (不发按键, 仅打印) === Ctrl+C 退出\n")
-    if prefixes:
-        print(f"已开口令前缀: {prefixes}  (要先说前缀才算指令)\n")
-
-    listener = ContinuousListener(cfg)
-    try:
-        for audio in listener.segments():
-            print(f"[{time.strftime('%H:%M:%S')}] 🎧 捕到语音 {audio.shape[0] / sr:.1f}s")
-            t0 = time.perf_counter()
-            text = tr.transcribe(audio)
-            print(f"    [耗时] 识别 {time.perf_counter() - t0:.2f}s")
-            if not text:
-                continue
-            cleaned = text
-            if prefixes:
-                hit = next((p for p in prefixes if p in text), None)
-                if not hit:
-                    print(f"  (忽略, 无口令前缀) 听到: {text}")
-                    continue
-                cleaned = text.replace(hit, "", 1).strip()
-            parsed = m.parse(cleaned)
-            if not parsed:
-                print(f"  ✗ 未匹配   听到: {text}")
-                continue
-            g, o = parsed.get("group"), parsed.get("order")
-            gs = f"{g['name']}->{g['select']}" if g else "—"
-            os_ = f"{o['name']}->{'+'.join(o['keys'])}" if o else "—"
-            print(f"  ✓ 兵种:{gs}  指令:{os_}   听到: {text}")
-    except KeyboardInterrupt:
-        listener.stop()
-        print("\n再见。")
+    ListenGUI().run()
 
 
 if __name__ == "__main__":

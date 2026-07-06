@@ -108,7 +108,7 @@ class Launcher:
         self._refresh_start_btn()
 
     def start_listen(self):
-        _spawn("listen", console=True)
+        _spawn("listen", console=False)
         self._set("✓ 测试模式已启动 (只听不发键)")
 
     def open_audio(self):
