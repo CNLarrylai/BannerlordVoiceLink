@@ -19,26 +19,71 @@ if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
 
-def _setup_stdio():
-    """打包成 windowed exe 时无控制台, sys.stdout 是 None, print 会崩。
-    有控制台(源码运行)就用 UTF-8; 没有(打包)就把日志写到文件供排错。
-    """
-    if sys.stdout is not None and sys.stderr is not None:
-        for s in (sys.stdout, sys.stderr):
+class _Tee:
+    """同时写多个流 (控制台 + 日志文件)。源码版黑窗实时看, 文件留存供排错。"""
+
+    def __init__(self, *streams):
+        self._streams = [s for s in streams if s is not None]
+
+    def write(self, s):
+        for st in self._streams:
             try:
-                s.reconfigure(encoding="utf-8")
+                st.write(s)
+                st.flush()
             except Exception:
                 pass
-        return
+        return len(s)
+
+    def flush(self):
+        for st in self._streams:
+            try:
+                st.flush()
+            except Exception:
+                pass
+
+    def isatty(self):
+        return False
+
+    def reconfigure(self, **kw):
+        pass
+
+
+def _setup_stdio():
+    """所有形态都把日志写到文件 (源码同时保留黑窗实时输出)。
+
+    - 源码运行: 有控制台 -> Tee(控制台, 文件), 两边都能看。
+    - 打包 windowed: 无控制台(stdout=None) -> 只写文件。
+    统一日志文件位置见 paths.log_file(), 排错时始终在一处找。
+    """
+    console_out, console_err = sys.stdout, sys.stderr
+    for s in (console_out, console_err):
+        try:
+            s.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+    logf = None
     try:
+        from datetime import datetime
         from paths import log_file
-        logf = open(log_file(), "a", encoding="utf-8", buffering=1)
+        p = log_file()
+        # 简单滚动: 超过 3MB 就备份一份, 防止无限增长。
+        try:
+            if os.path.exists(p) and os.path.getsize(p) > 3_000_000:
+                os.replace(p, p + ".old")
+        except Exception:
+            pass
+        logf = open(p, "a", encoding="utf-8", buffering=1)
+        mode = "?"
+        for i, a in enumerate(sys.argv):
+            if a == "--mode" and i + 1 < len(sys.argv):
+                mode = sys.argv[i + 1]
+        logf.write(f"\n===== 新会话 [{mode}] "
+                   f"{datetime.now():%Y-%m-%d %H:%M:%S} =====\n")
     except Exception:
-        logf = open(os.devnull, "w", encoding="utf-8")
-    if sys.stdout is None:
-        sys.stdout = logf
-    if sys.stderr is None:
-        sys.stderr = logf
+        logf = None
+    if logf is not None:
+        sys.stdout = _Tee(console_out, logf)
+        sys.stderr = _Tee(console_err, logf)
 
 
 _setup_stdio()

@@ -50,7 +50,10 @@ def config_path(name):
 
 
 def log_dir():
-    d = os.path.join(user_data_dir(), "logs")
+    # 日志统一放到 %LOCALAPPDATA%\BannerlordVoice\logs (源码/打包都是同一处,
+    # 方便"查看日志"按钮和排错时始终在一个地方找)。
+    d = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+                     APP_DIRNAME, "logs")
     os.makedirs(d, exist_ok=True)
     return d
 
