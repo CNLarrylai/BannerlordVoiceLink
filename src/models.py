@@ -11,9 +11,10 @@ import time
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 
+# 语言中立写法 (≈), 中英 UI 都能直接嵌用
 _SIZE = {
-    "tiny": "约 75 MB", "base": "约 145 MB", "small": "约 480 MB",
-    "medium": "约 1.5 GB", "large-v3": "约 3 GB", "large-v3-turbo": "约 1.6 GB",
+    "tiny": "≈ 75 MB", "base": "≈ 145 MB", "small": "≈ 480 MB",
+    "medium": "≈ 1.5 GB", "large-v3": "≈ 3 GB", "large-v3-turbo": "≈ 1.6 GB",
 }
 _CACHE = os.path.expanduser("~/.cache/huggingface/hub")
 
@@ -43,7 +44,7 @@ def is_ready(model):
 
 
 def size_hint(model):
-    return _SIZE.get(model, "大小未知")
+    return _SIZE.get(model, "?")
 
 
 def _repo_total_bytes(repo):

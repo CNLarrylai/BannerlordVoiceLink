@@ -26,6 +26,7 @@ from rapidfuzz import fuzz
 from audio import (ContinuousListener, Recorder, input_device_label,
                    resolve_input_device)
 from executor import Executor
+from i18n import t
 from matcher import Matcher
 from modlink import ModLink
 from overlay import Overlay
@@ -216,16 +217,17 @@ class App:
 
     def _idle(self, detail=""):
         if self.mode == "continuous":
-            self._set("👂 监听中…", detail or "说出指令即可", "#7Fd1ff")
+            self._set(t("👂 监听中…"), detail or t("说出指令即可"), "#7Fd1ff")
         else:
-            self._set("待命中…", detail or f"按住 [{self.ptt}] 说话", "#7Fd1ff")
+            self._set(t("待命中…"), detail or t("按住 [{k}] 说话").format(k=self.ptt),
+                      "#7Fd1ff")
 
     def reload_config(self):
         """热重载词典/阈值到运行中的引擎 (Whisper 模型不动)。热键回调。"""
         try:
             settings, commands = load_cfg()
         except Exception as e:
-            self._set("⚠ 词典重载失败", f"YAML 有错: {e}", "#ff8a8a")
+            self._set(t("⚠ 词典重载失败"), f"YAML: {e}", "#ff8a8a")
             return
         c = settings["control"]
         self.commands = commands
@@ -241,7 +243,7 @@ class App:
                 for sec in ("groups", "orders")
                 for d in commands.get(sec, {}).values())
         print(f"[重载] 词典已刷新: {n} 条别名, 立即生效。")
-        self._set("🔄 词典已重载", f"{n} 条说法已生效", "#7dff9b")
+        self._set(t("🔄 词典已重载"), t("{n} 条说法已生效").format(n=n), "#7dff9b")
 
     def _register_reload_hotkey(self):
         if not self.reload_key:
@@ -282,7 +284,7 @@ class App:
             self._idle("(没听到声音)")
             return
 
-        self._set("识别中…", "", "#c9a0ff")
+        self._set(t("识别中…"), "", "#c9a0ff")
         # 重试窗口内: 把上次差点命中的说法喂给识别器, 偏置这一遍听准
         hotwords = self.retry.hotwords()
         t0 = time.perf_counter()
@@ -293,15 +295,15 @@ class App:
                   f"—— 多半是游戏在抢 GPU, 试试游戏内锁帧/关游戏模式")
         if not text:
             print(f"    ✗ 没听清（识别 {t_stt:.2f}s，可能太轻/太快）")
-            self._debug(f"上一条 ✗ 没听清（识别 {t_stt:.1f}s）")
-            self._idle("(没听清)")
+            self._debug(t("上一条 ✗ 没听清（识别 {s}s）").format(s=f"{t_stt:.1f}"))
+            self._idle(t("(没听清)"))
             return
 
         armed, cleaned = self._check_prefix(text)
         if not armed:
             print(f"    · 听到「{text}」→ 无口令前缀, 忽略（识别 {t_stt:.2f}s）")
-            self._debug(f"上一条 · 听到「{text}」→ 无口令前缀, 忽略")
-            self._idle(f"听到: {text}")
+            self._debug(t("上一条 · 听到「{t}」→ 无口令前缀, 忽略").format(t=text))
+            self._idle(t("听到: {t}").format(t=text))
             return
 
         boost, boost_why = self.retry.boost_for(cleaned)
@@ -314,8 +316,8 @@ class App:
                 self._near(tr["group"], self.matcher.group_threshold),
                 self._near(tr["order"], self.matcher.order_threshold))
             print(f"    ✗ 听到「{text}」→ 未匹配/聊天, 未执行（识别 {t_stt:.2f}s）")
-            self._debug(f"上一条 ✗ 听到「{text}」→ 未匹配/聊天, 未执行")
-            self._set("未匹配", f"听到: {text}", "#ff8a8a")
+            self._debug(t("上一条 ✗ 听到「{t}」→ 未匹配/聊天, 未执行").format(t=text))
+            self._set(t("未匹配"), t("听到: {t}").format(t=text), "#ff8a8a")
             time.sleep(0.6)
             self._idle()
             return
@@ -329,7 +331,7 @@ class App:
         if self.retry.is_echo(g_key, o_key):
             print(f"    ⏸ 听到「{text}」→ {desc}: 冷却期内与刚执行的相同, "
                   f"判为回声/黏连, 忽略")
-            self._debug(f"上一条 ⏸ 回声抑制「{text}」")
+            self._debug(t("上一条 ⏸ 回声抑制「{t}」").format(t=text))
             self._idle()
             return
         if boost_why:
@@ -349,11 +351,13 @@ class App:
                 cleaned, self._near(tr["group"], self.matcher.group_threshold), {})
         t_keys = time.perf_counter() - t0
         total = time.perf_counter() - t_seg
-        how = "模组直达" if via_mod else f"发键 {' '.join(keys)}"
+        how = t("模组直达") if via_mod \
+            else t("发键 {keys}").format(keys=" ".join(keys))
         print(f"    ✓ 听到「{text}」→ {desc} · {how}"
               f"（识别 {t_stt:.2f}s + 执行 {t_keys:.2f}s = 共 {total:.2f}s）")
-        self._debug(f"上一条 ✓ 听到「{text}」→ {desc} · {how}（{t_stt:.1f}s）")
-        self._set(f"✓ {desc}", f"听到: {text}", "#7dff9b")
+        self._debug(t("上一条 ✓ 听到「{t}」→ {d} · {how}（{s}s）").format(
+            t=text, d=desc, how=how, s=f"{t_stt:.1f}"))
+        self._set(f"✓ {desc}", t("听到: {t}").format(t=text), "#7dff9b")
 
     # ---------- 持续监听模式 ----------
     def loop_continuous(self):

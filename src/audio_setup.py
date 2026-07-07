@@ -23,6 +23,7 @@ import numpy as np
 import sounddevice as sd
 import yaml
 
+from i18n import t  # noqa: E402
 from paths import config_path  # noqa: E402
 
 SETTINGS = config_path("settings.yaml")
@@ -107,20 +108,20 @@ def detect_gpu():
     except Exception:
         libs = False
     if n > 0 and libs:
-        return True, "✓ 检测到 NVIDIA 显卡, CUDA 可用 (可用 GPU 加速)"
+        return True, t("✓ 检测到 NVIDIA 显卡, CUDA 可用 (可用 GPU 加速)")
     if n > 0:
-        return False, "检测到显卡但缺 CUDA 运行库 → 本版本只能用 CPU"
-    return False, "未检测到可用 GPU → 用 CPU 运行"
+        return False, t("检测到显卡但缺 CUDA 运行库 → 本版本只能用 CPU")
+    return False, t("未检测到可用 GPU → 用 CPU 运行")
 
 
 def model_status(size):
     """base/small… 这个模型: 内置 / 已下载 / 需联网下载。"""
     from paths import bundle_dir
     if os.path.isdir(os.path.join(bundle_dir(), "models", f"faster-whisper-{size}")):
-        return "内置"
+        return t("内置")
     cache = os.path.expanduser(
         f"~/.cache/huggingface/hub/models--Systran--faster-whisper-{size}")
-    return "已下载" if os.path.isdir(cache) else "需联网下载"
+    return t("已下载") if os.path.isdir(cache) else t("需联网下载")
 
 
 # 模型选项: (值, 显示名, 提示)
@@ -173,23 +174,23 @@ class Meter:
 class SetupWindow:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("音频与识别设置 — 骑砍语音指挥")
+        self.root.title(t("音频与识别设置 — 骑砍语音指挥"))
         self.root.configure(bg=BG)
         self.root.attributes("-topmost", True)
 
         tk.Label(
-            self.root, text="⚙ 音频与识别设置",
+            self.root, text=t("⚙ 音频与识别设置"),
             fg=GOLD, bg=BG, font=("Microsoft YaHei", 14, "bold"),
         ).pack(padx=24, pady=(16, 8))
 
         self._build_engine_section()
 
         tk.Label(
-            self.root, text="🎙 麦克风：对着说话，看哪根音量条在跳，选中它，点保存",
+            self.root, text=t("🎙 麦克风：对着说话，看哪根音量条在跳，选中它，点保存"),
             fg=GOLD, bg=BG, font=("Microsoft YaHei", 12, "bold"),
         ).pack(padx=24, pady=(4, 2))
         tk.Label(
-            self.root, text="绿色条 = 有声音进来。选中后建议再说几句确认就是这一路。",
+            self.root, text=t("绿色条 = 有声音进来。选中后建议再说几句确认就是这一路。"),
             fg=DIM, bg=BG, font=("Microsoft YaHei", 9),
         ).pack(padx=24, pady=(0, 10))
 
@@ -211,7 +212,7 @@ class SetupWindow:
         self.bars = {}
 
         # "系统默认" 选项
-        self._add_row(frame, 0, None, "系统默认设备", saved is None)
+        self._add_row(frame, 0, None, t("系统默认设备"), saved is None)
         for row, (idx, name) in enumerate(self.devices, start=1):
             self._add_row(frame, row, idx, name, saved == name)
             self.meters[idx] = Meter(idx)
@@ -223,12 +224,12 @@ class SetupWindow:
         btns = tk.Frame(self.root, bg=BG)
         btns.pack(pady=(6, 18))
         tk.Button(
-            btns, text="💾 保存并使用这一路", command=self.save,
+            btns, text=t("💾 保存并使用这一路"), command=self.save,
             font=("Microsoft YaHei", 12, "bold"), bg=GOLD, fg="#101418",
             activebackground="#e8c95a", relief="flat", padx=18, pady=6,
         ).pack(side="left", padx=8)
         tk.Button(
-            btns, text="关闭", command=self.close,
+            btns, text=t("关闭"), command=self.close,
             font=("Microsoft YaHei", 12), bg="#2a323a", fg=FG,
             activebackground="#3a444e", relief="flat", padx=18, pady=6,
         ).pack(side="left", padx=8)
@@ -241,7 +242,7 @@ class SetupWindow:
                        highlightbackground="#2a323a")
         eng.pack(padx=24, pady=(0, 8), fill="x")
 
-        tk.Label(eng, text="🧠 识别引擎", fg=GOLD, bg="#161c22",
+        tk.Label(eng, text=t("🧠 识别引擎"), fg=GOLD, bg="#161c22",
                  font=("Microsoft YaHei", 12, "bold")).grid(
             row=0, column=0, columnspan=4, sticky="w", padx=12, pady=(10, 2))
 
@@ -252,14 +253,15 @@ class SetupWindow:
 
         cur_model, cur_device = current_stt()
 
-        tk.Label(eng, text="模型:", fg=FG, bg="#161c22",
+        tk.Label(eng, text=t("模型:"), fg=FG, bg="#161c22",
                  font=("Microsoft YaHei", 10)).grid(
             row=2, column=0, sticky="e", padx=(12, 4), pady=(0, 10))
         self.model_map = {}
         mvals = []
         for val, disp, hint in MODEL_OPTS:
+            disp = t(disp)
             tag = disp if val == "auto" else f"{disp} · {model_status(val)}"
-            label = f"{tag}   — {hint}"
+            label = f"{tag}   — {t(hint)}"
             self.model_map[label] = val
             mvals.append(label)
         self.model_box = ttk.Combobox(eng, state="readonly", values=mvals,
@@ -268,16 +270,16 @@ class SetupWindow:
         self.model_box.set(next((lb for lb, v in self.model_map.items()
                                  if v == cur_model), mvals[0]))
 
-        tk.Label(eng, text="运行:", fg=FG, bg="#161c22",
+        tk.Label(eng, text=t("运行:"), fg=FG, bg="#161c22",
                  font=("Microsoft YaHei", 10)).grid(
             row=2, column=2, sticky="e", padx=(16, 4), pady=(0, 10))
-        self.device_map = {disp: val for val, disp in DEVICE_OPTS}
+        self.device_map = {t(disp): val for val, disp in DEVICE_OPTS}
         self.device_box = ttk.Combobox(
-            eng, state="readonly", values=[d for _, d in DEVICE_OPTS],
-            font=("Microsoft YaHei", 10), width=13)
+            eng, state="readonly", values=list(self.device_map.keys()),
+            font=("Microsoft YaHei", 10), width=16)
         self.device_box.grid(row=2, column=3, sticky="w", padx=(0, 12), pady=(0, 10))
         self.device_box.set(next((d for d, v in self.device_map.items()
-                                  if v == cur_device), DEVICE_OPTS[0][1]))
+                                  if v == cur_device), t(DEVICE_OPTS[0][1])))
         self.model_box.bind("<<ComboboxSelected>>", self._on_model_change)
 
         # 下载状态 + 按钮
@@ -289,7 +291,8 @@ class SetupWindow:
         self.dl_status = tk.Label(dl, text="", bg="#161c22", fg=DIM,
                                   font=("Microsoft YaHei", 9), anchor="w")
         self.dl_status.grid(row=0, column=0, sticky="w")
-        self.dl_btn = tk.Button(dl, text="⬇ 下载所选模型", command=self._download_model,
+        self.dl_btn = tk.Button(dl, text=t("⬇ 下载所选模型"),
+                                command=self._download_model,
                                 font=("Microsoft YaHei", 9), bg=GOLD, fg="#101418",
                                 relief="flat", padx=12)
         self.dl_btn.grid(row=0, column=1, sticky="e")
@@ -300,7 +303,7 @@ class SetupWindow:
         self.dl_bar.grid_remove()
 
         tk.Label(eng,
-                 text="改了模型 / 运行方式后，重启语音指挥生效。",
+                 text=t("改了模型 / 运行方式后，重启语音指挥生效。"),
                  fg=DIM, bg="#161c22", font=("Microsoft YaHei", 9),
                  anchor="w").grid(row=4, column=0, columnspan=4, sticky="w",
                                   padx=12, pady=(2, 10))
@@ -319,11 +322,13 @@ class SetupWindow:
         mv = self._selected_model()
         eff = self._effective(mv)
         if models.is_ready(eff):
-            self.dl_status.config(text=f"✓ {mv} 已就绪（本地已有，直接用）", fg=GREEN)
+            self.dl_status.config(
+                text=t("✓ {m} 已就绪（本地已有，直接用）").format(m=mv), fg=GREEN)
             self.dl_btn.grid_remove()
         else:
             self.dl_status.config(
-                text=f"⚠ {mv} 未下载（{models.size_hint(eff)}）—— 点右边下载",
+                text=t("⚠ {m} 未下载（{size}）—— 点右边下载").format(
+                    m=mv, size=models.size_hint(eff)),
                 fg="#ffcf70")
             self.dl_btn.grid()
         self.dl_bar.grid_remove()
@@ -341,7 +346,7 @@ class SetupWindow:
         self.dl_btn.config(state="disabled")
         self.dl_bar.grid()
         self.dl_bar["value"] = 0
-        self.dl_status.config(text=f"正在下载 {mv} …", fg="#7Fd1ff")
+        self.dl_status.config(text=t("正在下载 {m} …").format(m=mv), fg="#7Fd1ff")
 
         def work():
             try:
@@ -357,27 +362,32 @@ class SetupWindow:
             while True:
                 kind, payload = self.dl_q.get_nowait()
                 if kind == "prog":
-                    d, t = payload
-                    if t:
-                        pct = min(100, d / t * 100)
+                    d, tot = payload
+                    if tot:
+                        pct = min(100, d / tot * 100)
                         self.dl_bar["value"] = pct
                         self.dl_status.config(
-                            text=f"下载中… {pct:.0f}%  "
-                                 f"({d/1048576:.0f} / {t/1048576:.0f} MB)", fg="#7Fd1ff")
+                            text=t("下载中… {pct}%  ({d} / {t} MB)").format(
+                                pct=f"{pct:.0f}", d=f"{d/1048576:.0f}",
+                                t=f"{tot/1048576:.0f}"), fg="#7Fd1ff")
                     else:
                         self.dl_bar["value"] = 0
                         self.dl_status.config(
-                            text=f"下载中… 已下 {d/1048576:.0f} MB", fg="#7Fd1ff")
+                            text=t("下载中… 已下 {d} MB").format(
+                                d=f"{d/1048576:.0f}"), fg="#7Fd1ff")
                 elif kind == "done":
                     self.downloading = False
                     self.dl_btn.config(state="normal")
                     self._on_model_change()
-                    self.status.config(text=f"✓ {payload} 下载完成，已就绪", fg=GREEN)
+                    self.status.config(
+                        text=t("✓ {m} 下载完成，已就绪").format(m=payload), fg=GREEN)
                 elif kind == "err":
                     self.downloading = False
                     self.dl_btn.config(state="normal")
                     self.dl_bar.grid_remove()
-                    self.dl_status.config(text=f"下载失败: {payload[:60]}", fg="#ff8a8a")
+                    self.dl_status.config(
+                        text=t("下载失败: {e}").format(e=str(payload)[:60]),
+                        fg="#ff8a8a")
         except queue.Empty:
             pass
         self.root.after(150, self._dl_poll)
@@ -414,7 +424,7 @@ class SetupWindow:
     def save(self):
         sel = self.selected.get()
         if not sel:
-            self.status.config(text="先选一个麦克风设备再保存", fg="#ff8a8a")
+            self.status.config(text=t("先选一个麦克风设备再保存"), fg="#ff8a8a")
             return
         name = None if sel == "__default__" else sel
         try:
@@ -426,12 +436,12 @@ class SetupWindow:
             if dv:
                 save_yaml_setting("stt", "device", dv)
         except Exception as e:
-            self.status.config(text=f"保存失败: {e}", fg="#ff8a8a")
+            self.status.config(text=t("保存失败: {e}").format(e=e), fg="#ff8a8a")
             return
-        shown = "系统默认" if name is None else name
+        shown = t("系统默认") if name is None else name
         self.status.config(
-            text=f"✓ 已保存 · 麦克风:{shown} · 模型:{mv} · 运行:{dv}   "
-                 f"(重启语音指挥后生效)", fg=GREEN)
+            text=t("✓ 已保存 · 麦克风:{mic} · 模型:{m} · 运行:{d}   "
+                   "(重启语音指挥后生效)").format(mic=shown, m=mv, d=dv), fg=GREEN)
 
     def close(self):
         for m in self.meters.values():

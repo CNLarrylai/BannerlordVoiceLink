@@ -20,6 +20,7 @@ for _s in (sys.stdout, sys.stderr):
 
 import yaml
 
+from i18n import t
 from matcher import CHAT_MARKERS, FILLERS, Matcher
 
 from paths import bundle_dir, config_path  # noqa: E402
@@ -129,8 +130,8 @@ class CommandGUI:
         self._build_matcher()
 
         self.root = tk.Tk()
-        lang_tag = "英文模式 English" if self.lang == "en" else "中文模式"
-        self.root.title(f"指令词典 [{lang_tag}] — 骑砍语音指挥")
+        lang_tag = t("英文模式 English") if self.lang == "en" else t("中文模式")
+        self.root.title(t("指令词典 [{mode}] — 骑砍语音指挥").format(mode=lang_tag))
         self.root.configure(bg=BG)
         self.root.geometry("1160x680")
 
@@ -155,8 +156,9 @@ class CommandGUI:
         left.rowconfigure(1, weight=1)
         left.bind("<Configure>", self._on_left_resize)
 
-        _mode = "🇬🇧 英文说法 English" if self.lang == "en" else "🇨🇳 中文说法"
-        tk.Label(left, text=f"📖 指令词典 · 当前显示 {_mode}", fg=GOLD, bg=BG,
+        _mode = t("🇬🇧 英文说法 English") if self.lang == "en" else t("🇨🇳 中文说法")
+        tk.Label(left, text=t("📖 指令词典 · 当前显示 {mode}").format(mode=_mode),
+                 fg=GOLD, bg=BG,
                  font=("Microsoft YaHei", 13, "bold")).grid(
             row=0, column=0, sticky="w", pady=(0, 6))
 
@@ -165,9 +167,9 @@ class CommandGUI:
         tree_wrap.rowconfigure(0, weight=1)
         tree_wrap.columnconfigure(0, weight=1)
         self.tree = ttk.Treeview(tree_wrap, columns=("keys", "aliases"))
-        self.tree.heading("#0", text="指令")
-        self.tree.heading("keys", text="按键")
-        self.tree.heading("aliases", text="可以说的话 (别名)")
+        self.tree.heading("#0", text=t("指令"))
+        self.tree.heading("keys", text=t("按键"))
+        self.tree.heading("aliases", text=t("可以说的话 (别名)"))
         self.tree.column("#0", width=150, minwidth=110, stretch=False)
         self.tree.column("keys", width=92, minwidth=70, stretch=False)
         self.tree.column("aliases", width=360, minwidth=180, stretch=True)
@@ -187,16 +189,16 @@ class CommandGUI:
             font=("Microsoft YaHei", 10), padx=12, pady=8,
             highlightthickness=0, state="disabled", cursor="arrow")
         self.detail.grid(row=2, column=0, sticky="ew", pady=(8, 0))
-        self._set_detail("👆 选中一条, 这里显示它的全部说法", DIM)
+        self._set_detail(t("👆 选中一条, 这里显示它的全部说法"), DIM)
 
         # ---------- 键位编辑 ----------
         keyedit = tk.Frame(left, bg=BG)
         keyedit.grid(row=3, column=0, sticky="ew", pady=(8, 0))
         keyedit.columnconfigure(1, weight=1)
-        tk.Label(keyedit, text="✏ 改键位 (先在上面选一条):", fg=GOLD, bg=BG,
+        tk.Label(keyedit, text=t("✏ 改键位 (先在上面选一条):"), fg=GOLD, bg=BG,
                  font=("Microsoft YaHei", 11, "bold")).grid(
             row=0, column=0, columnspan=3, sticky="w", pady=(0, 4))
-        self.keyedit_label = tk.Label(keyedit, text="未选中", fg=DIM, bg=BG,
+        self.keyedit_label = tk.Label(keyedit, text=t("未选中"), fg=DIM, bg=BG,
                                       font=("Microsoft YaHei", 10), width=12,
                                       anchor="w")
         self.keyedit_label.grid(row=1, column=0, padx=(0, 8))
@@ -204,17 +206,17 @@ class CommandGUI:
                                    fg=FG, insertbackground=FG, relief="flat")
         self.keys_entry.grid(row=1, column=1, sticky="ew", ipady=5, padx=(0, 8))
         self.keys_entry.bind("<Return>", lambda e: self.save_keys())
-        tk.Button(keyedit, text="保存键位", command=self.save_keys,
+        tk.Button(keyedit, text=t("保存键位"), command=self.save_keys,
                   font=("Microsoft YaHei", 11, "bold"), bg=GOLD, fg="#101418",
                   relief="flat", padx=14).grid(row=1, column=2)
         self.keyedit_hint = tk.Label(
             keyedit,
-            text="格式: 空格分隔按键序列, 如「f1 f3」; 兵种填一个键如「2」。"
-                 "必须与游戏指令菜单一致。",
+            text=t("格式: 空格分隔按键序列, 如「f1 f3」; 兵种填一个键如「2」。"
+                   "必须与游戏指令菜单一致。"),
             fg=DIM, bg=BG, font=("Microsoft YaHei", 9), anchor="w",
             justify="left", wraplength=460)
         self.keyedit_hint.grid(row=2, column=0, columnspan=3, sticky="w", pady=(4, 0))
-        tk.Button(keyedit, text="📄 打开指令树文档 (键位事实来源)",
+        tk.Button(keyedit, text=t("📄 打开指令树文档 (键位事实来源)"),
                   command=self.open_doc, font=("Microsoft YaHei", 9),
                   bg="#2a323a", fg=FG, relief="flat", padx=10).grid(
             row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
@@ -225,7 +227,7 @@ class CommandGUI:
         right.columnconfigure(0, weight=1)
         right.rowconfigure(2, weight=1)
 
-        tk.Label(right, text="🧪 试一句 (看这句话会不会被执行、为什么)",
+        tk.Label(right, text=t("🧪 试一句 (看这句话会不会被执行、为什么)"),
                  fg=GOLD, bg=BG, font=("Microsoft YaHei", 13, "bold")).grid(
             row=0, column=0, sticky="w", pady=(0, 6))
 
@@ -237,7 +239,7 @@ class CommandGUI:
                                    relief="flat")
         self.test_entry.grid(row=0, column=0, sticky="ew", ipady=6, padx=(0, 8))
         self.test_entry.bind("<Return>", lambda e: self.run_test())
-        tk.Button(entry_row, text="测试", command=self.run_test,
+        tk.Button(entry_row, text=t("测试"), command=self.run_test,
                   font=("Microsoft YaHei", 11, "bold"), bg=GOLD, fg="#101418",
                   relief="flat", padx=16).grid(row=0, column=1)
 
@@ -250,7 +252,7 @@ class CommandGUI:
             self.out.tag_configure(tag, foreground=color)
 
         # ---------- 右下: 加别名 ----------
-        tk.Label(right, text="➕ 给指令加一种新说法 (立即写入词典)",
+        tk.Label(right, text=t("➕ 给指令加一种新说法 (立即写入词典)"),
                  fg=GOLD, bg=BG, font=("Microsoft YaHei", 12, "bold")).grid(
             row=3, column=0, sticky="w", pady=(12, 4))
         add_row = tk.Frame(right, bg=BG)
@@ -260,11 +262,11 @@ class CommandGUI:
         self.target_map = {}
         values = []
         for k, d in self.commands.get("groups", {}).items():
-            label = f"兵种: {self._name(d)}"
+            label = t("兵种: {name}").format(name=self._name(d))
             self.target_map[label] = ("groups", k)
             values.append(label)
         for k, d in self.commands.get("orders", {}).items():
-            label = f"指令: {self._name(d)}"
+            label = t("指令: {name}").format(name=self._name(d))
             self.target_map[label] = ("orders", k)
             values.append(label)
         self.target_box = ttk.Combobox(add_row, values=values, state="readonly",
@@ -275,11 +277,11 @@ class CommandGUI:
                                     relief="flat")
         self.alias_entry.grid(row=0, column=1, sticky="ew", ipady=5, padx=(0, 8))
         self.alias_entry.bind("<Return>", lambda e: self.add_alias())
-        tk.Button(add_row, text="添加", command=self.add_alias,
+        tk.Button(add_row, text=t("添加"), command=self.add_alias,
                   font=("Microsoft YaHei", 11, "bold"), bg=GOLD, fg="#101418",
                   relief="flat", padx=16).grid(row=0, column=2)
 
-        self.status = tk.Label(right, text="提示: 聊天过滤词和填充词见控制台输出",
+        self.status = tk.Label(right, text=t("提示: 聊天过滤词和填充词见控制台输出"),
                                fg=DIM, bg=BG, font=("Microsoft YaHei", 9))
         self.status.grid(row=5, column=0, sticky="w", pady=(6, 0))
 
@@ -310,12 +312,13 @@ class CommandGUI:
         self.tree.delete(*self.tree.get_children())
         self.item_map = {}
         sep = ", " if self.lang == "en" else "、"
-        gp = self.tree.insert("", "end", text="🛡 兵种 (编队)", open=True)
+        gp = self.tree.insert("", "end", text=t("🛡 兵种 (编队)"), open=True)
         for k, d in self.commands.get("groups", {}).items():
             iid = self.tree.insert(gp, "end", text=self._name(d),
-                                   values=(f"按 {d['key']}", sep.join(self._disp(d))))
+                                   values=(t("按 {k}").format(k=d["key"]),
+                                           sep.join(self._disp(d))))
             self.item_map[iid] = ("groups", k)
-        op = self.tree.insert("", "end", text="⚔ 指令 (动作)", open=True)
+        op = self.tree.insert("", "end", text=t("⚔ 指令 (动作)"), open=True)
         for k, d in self.commands.get("orders", {}).items():
             iid = self.tree.insert(op, "end", text=self._name(d),
                                    values=("+".join(d["keys"]), sep.join(self._disp(d))))
@@ -345,8 +348,8 @@ class CommandGUI:
         sel = self.tree.selection()
         self.keys_entry.delete(0, "end")
         if not sel or sel[0] not in self.item_map:
-            self.keyedit_label.config(text="未选中", fg=DIM)
-            self._set_detail("👆 选中一条, 这里显示它的全部说法", DIM)
+            self.keyedit_label.config(text=t("未选中"), fg=DIM)
+            self._set_detail(t("👆 选中一条, 这里显示它的全部说法"), DIM)
             self._selected = None
             return
         section, k = self.item_map[sel[0]]
@@ -355,40 +358,43 @@ class CommandGUI:
         self.keyedit_label.config(text=self._name(d), fg=FG)
         cur = [d["key"]] if section == "groups" else d["keys"]
         self.keys_entry.insert(0, " ".join(cur))
-        kind = "兵种" if section == "groups" else "指令"
-        keydesc = f"按 {d['key']}" if section == "groups" else "+".join(d["keys"])
+        kind = t("兵种") if section == "groups" else t("指令")
+        keydesc = (t("按 {k}").format(k=d["key"]) if section == "groups"
+                   else "+".join(d["keys"]))
         sep = ", " if self.lang == "en" else "、"
-        say = "Can say" if self.lang == "en" else "能说的话"
         self._set_detail(
-            f"【{kind} · {self._name(d)}】 键位 {keydesc}\n"
-            f"{say}：{sep.join(self._disp(d))}", FG)
+            t("【{kind} · {name}】 键位 {keys}\n{say}：{phrases}").format(
+                kind=kind, name=self._name(d), keys=keydesc,
+                say=t("能说的话"), phrases=sep.join(self._disp(d))), FG)
 
     def save_keys(self):
         if not getattr(self, "_selected", None):
-            self.status.config(text="先在左侧选中一条指令再改键位", fg=RED)
+            self.status.config(text=t("先在左侧选中一条指令再改键位"), fg=RED)
             return
         section, k = self._selected
-        tokens = [t.lower() for t in self.keys_entry.get().split()]
+        tokens = [x.lower() for x in self.keys_entry.get().split()]
         if not tokens:
-            self.status.config(text="键位不能为空", fg=RED)
+            self.status.config(text=t("键位不能为空"), fg=RED)
             return
-        bad = [t for t in tokens if not KEY_TOKEN_RE.match(t)]
+        bad = [x for x in tokens if not KEY_TOKEN_RE.match(x)]
         if bad:
-            self.status.config(text=f"无效按键: {' '.join(bad)} (如 f1 f3 或 0~9)",
-                               fg=RED)
+            self.status.config(
+                text=t("无效按键: {bad} (如 f1 f3 或 0~9)").format(bad=" ".join(bad)),
+                fg=RED)
             return
         if section == "groups" and len(tokens) != 1:
-            self.status.config(text="兵种只填一个选中键 (如 2)", fg=RED)
+            self.status.config(text=t("兵种只填一个选中键 (如 2)"), fg=RED)
             return
         if not set_keys_in_yaml(section, k, tokens):
-            self.status.config(text="写入失败: commands.yaml 里没找到该条目", fg=RED)
+            self.status.config(text=t("写入失败: commands.yaml 里没找到该条目"), fg=RED)
             return
-        name = self.commands[section][k]["aliases"][0]
+        name = self._name(self.commands[section][k])
         self.settings, self.commands = load_all()
         self._build_matcher()
         self._fill_tree()
         self.status.config(
-            text=f"✓ 「{name}」键位已改为 {' '.join(tokens)} (切回语音程序按 F10 热重载生效)",
+            text=t("✓ 「{name}」键位已改为 {keys} (切回语音程序按 F10 热重载生效)")
+            .format(name=name, keys=" ".join(tokens)),
             fg=GREEN)
         if self.test_entry.get().strip():
             self.run_test()
@@ -398,7 +404,7 @@ class CommandGUI:
         if os.path.exists(p):
             os.startfile(p)
         else:
-            self.status.config(text="指令树文档仅源码版附带", fg=DIM)
+            self.status.config(text=t("指令树文档仅源码版附带"), fg=DIM)
 
     def _print(self, text, tag=None):
         self.out.insert("end", text + "\n", tag or ())
@@ -411,31 +417,36 @@ class CommandGUI:
             self.out.config(state="disabled")
             return
         tr = self.matcher.explain(text)
-        self._print(f"输入: 「{text}」", "gold")
+        self._print(t("输入: 「{t}」").format(t=text), "gold")
         if tr["chat_marker"]:
-            self._print(f"✗ 忽略 — {tr['reason']}", "bad")
-            self._print("  (想让它当指令? 这句话含聊天特征词, 换个说法或去掉该词)", "dim")
+            self._print(t("✗ 忽略 — {r}").format(r=tr["reason"]), "bad")
+            self._print(t("  (想让它当指令? 这句话含聊天特征词, 换个说法或去掉该词)"),
+                        "dim")
             self.out.config(state="disabled")
             return
         g, o = tr["group"], tr["order"]
         if g:
             mark, tag = ("✓", "ok") if g["pass"] else ("✗", "bad")
-            self._print(f"{mark} 兵种: {g['name']}  命中「{g['alias']}」 {g['score']}分", tag)
+            self._print(t("{mark} 兵种: {name}  命中「{alias}」 {score}分").format(
+                mark=mark, name=g["name"], alias=g["alias"], score=g["score"]), tag)
         else:
-            self._print("— 没匹配到兵种 (会作用于当前选中编队)", "dim")
+            self._print(t("— 没匹配到兵种 (会作用于当前选中编队)"), "dim")
         if o:
             mark, tag = ("✓", "ok") if o["pass"] else ("✗", "bad")
-            self._print(f"{mark} 指令: {o['name']}  命中「{o['alias']}」 {o['score']}分", tag)
+            self._print(t("{mark} 指令: {name}  命中「{alias}」 {score}分").format(
+                mark=mark, name=o["name"], alias=o["alias"], score=o["score"]), tag)
         else:
-            self._print("✗ 没匹配到任何指令动作", "bad")
+            self._print(t("✗ 没匹配到任何指令动作"), "bad")
         if tr.get("target"):
-            t = tr["target"]
-            self._print(f"◎ 打击目标: {t['name']}  命中「{t['alias']}」 {t['score']}分"
-                        f"  (敌方编队, 游戏内需准星锁定它)", "purple")
+            tg = tr["target"]
+            self._print(
+                t("◎ 打击目标: {name}  命中「{alias}」 {score}分"
+                  "  (敌方编队, 游戏内需准星锁定它)").format(
+                    name=tg["name"], alias=tg["alias"], score=tg["score"]), "purple")
         if tr["coverage"]:
             cov = tr["coverage"]
             tag = "bad" if cov["is_chat"] else "dim"
-            self._print(f"聊天过滤: {cov['why']}", tag)
+            self._print(t("聊天过滤: {why}").format(why=cov["why"]), tag)
         if tr["result"]:
             r = tr["result"]
             keys = []
@@ -443,10 +454,12 @@ class CommandGUI:
                 keys.append("1 2 3 4" if r["group"]["select"] == "all"
                             else r["group"]["select"])
             keys += r["order"]["keys"]
-            self._print(f"\n▶ 会执行!  发送按键: {'  '.join(keys)}", "ok")
+            self._print("\n" + t("▶ 会执行!  发送按键: {keys}").format(
+                keys="  ".join(keys)), "ok")
         else:
-            self._print(f"\n✗ 不会执行 — {tr['reason']}", "bad")
-            self._print("  (应该被执行? 用下面「加说法」把关键词加进对应指令)", "dim")
+            self._print("\n" + t("✗ 不会执行 — {r}").format(r=tr["reason"]), "bad")
+            self._print(t("  (应该被执行? 用下面「加说法」把关键词加进对应指令)"),
+                        "dim")
         self.out.config(state="disabled")
 
     def add_alias(self):
@@ -455,25 +468,27 @@ class CommandGUI:
         if self.lang == "en":
             alias = alias.lower()
         if not label or not alias:
-            self.status.config(text="先选目标指令、再填新说法", fg=RED)
+            self.status.config(text=t("先选目标指令、再填新说法"), fg=RED)
             return
         # 查重 (只在当前语言的说法里查)
         for sec in ("groups", "orders"):
             for k, d in self.commands.get(sec, {}).items():
                 if alias in self._disp(d):
                     self.status.config(
-                        text=f"「{alias}」已存在于 {self._name(d)}", fg=RED)
+                        text=t("「{alias}」已存在于 {name}").format(
+                            alias=alias, name=self._name(d)), fg=RED)
                     return
         section, key = self.target_map[label]
         if not add_alias_to_yaml(section, key, alias, field=self._field()):
-            self.status.config(text="写入失败: commands.yaml 里没找到该条目", fg=RED)
+            self.status.config(text=t("写入失败: commands.yaml 里没找到该条目"), fg=RED)
             return
         # 重新加载, 让词典/匹配器立即生效
         self.settings, self.commands = load_all()
         self._build_matcher()
         self._fill_tree()
         self.status.config(
-            text=f"✓ 已把「{alias}」加进 {label} (切回语音程序按 F10 热重载生效)",
+            text=t("✓ 已把「{alias}」加进 {label} (切回语音程序按 F10 热重载生效)")
+            .format(alias=alias, label=label),
             fg=GREEN)
         self.alias_entry.delete(0, "end")
         if self.test_entry.get().strip():

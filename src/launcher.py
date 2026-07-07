@@ -14,6 +14,11 @@ import sys
 import tkinter as tk
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+
+import i18n  # noqa: E402
+from i18n import t  # noqa: E402
 ROOT = os.path.dirname(_HERE)
 FROZEN = getattr(sys, "frozen", False)
 SCRIPTS = os.path.dirname(sys.executable)
@@ -80,18 +85,26 @@ def _spawn(mode, console):
 class Launcher:
     def __init__(self):
         self.voice_proc = None
+        self.lang = _read_language()
+        i18n.set_lang(self.lang)
         self.root = tk.Tk()
-        self.root.title("骑砍语音指挥")
         self.root.configure(bg=BG)
         self.root.resizable(False, False)
+        self._build_ui()
+        self.root.after(1000, self._poll_voice)
 
-        tk.Label(self.root, text="⚔ 骑砍语音指挥", fg=GOLD, bg=BG,
+    def _build_ui(self):
+        """整体构建界面 (切语言时清空重建, 所有文案立即换语言)。"""
+        for w in self.root.winfo_children():
+            w.destroy()
+        self.root.title(t("骑砍语音指挥"))
+
+        tk.Label(self.root, text=t("⚔ 骑砍语音指挥"), fg=GOLD, bg=BG,
                  font=("Microsoft YaHei", 20, "bold")).pack(padx=40, pady=(22, 2))
-        tk.Label(self.root, text="中文语音指挥你的军队", fg=DIM, bg=BG,
+        tk.Label(self.root, text=t("中文语音指挥你的军队"), fg=DIM, bg=BG,
                  font=("Microsoft YaHei", 11)).pack(pady=(0, 10))
 
         # 语言切换 (中文 / English)
-        self.lang = _read_language()
         langrow = tk.Frame(self.root, bg=BG)
         langrow.pack(pady=(0, 14))
         tk.Label(langrow, text="语言 / Language:", fg=DIM, bg=BG,
@@ -108,39 +121,39 @@ class Launcher:
 
         # 主按钮: 开始语音指挥
         self.start_btn = tk.Button(
-            self.root, text="▶  开始语音指挥", command=self.start_voice,
+            self.root, text=t("▶  开始语音指挥"), command=self.start_voice,
             font=("Microsoft YaHei", 16, "bold"), bg=GOLD, fg="#101418",
             activebackground="#e8c95a", relief="flat", padx=20, pady=12, width=20,
         )
         self.start_btn.pack(padx=40, pady=(0, 4))
-        tk.Label(self.root, text="进游戏用这个：识别到指令就发按键 (需管理员)",
+        tk.Label(self.root, text=t("进游戏用这个：识别到指令就发按键 (需管理员)"),
                  fg=DIM, bg=BG, font=("Microsoft YaHei", 9)).pack(pady=(0, 16))
 
         # 次要按钮
         row = tk.Frame(self.root, bg=BG)
         row.pack(padx=30, pady=(0, 6))
-        self._mini(row, "🎧\n测试模式", "只听不发键\n安全调试", self.start_listen)
-        self._mini(row, "🎙\n音频设置", "选麦克风\n看音量条", self.open_audio)
-        self._mini(row, "📖\n指令词典", "看/加说法\n改键位", self.open_dict)
-        self._mini(row, "🧪\n跑测试", "命中率+延迟\n改完就验证", self.run_tests)
+        self._mini(row, t("🎧\n测试模式"), t("只听不发键\n安全调试"), self.start_listen)
+        self._mini(row, t("🎙\n音频设置"), t("选麦克风\n看音量条"), self.open_audio)
+        self._mini(row, t("📖\n指令词典"), t("看/加说法\n改键位"), self.open_dict)
+        self._mini(row, t("🧪\n跑测试"), t("命中率+延迟\n改完就验证"), self.run_tests)
 
         # 底部: 查看日志 (自己排错 / 发给作者)
         foot = tk.Frame(self.root, bg=BG)
         foot.pack(pady=(14, 4))
-        tk.Button(foot, text="📋 查看日志", command=self.open_log,
+        tk.Button(foot, text=t("📋 查看日志"), command=self.open_log,
                   font=("Microsoft YaHei", 10), bg="#2a323a", fg=FG,
                   activebackground="#3a444e", relief="flat", padx=12, pady=3).pack(
             side="left", padx=5)
-        tk.Button(foot, text="📁 打开日志文件夹", command=self.open_log_folder,
+        tk.Button(foot, text=t("📁 打开日志文件夹"), command=self.open_log_folder,
                   font=("Microsoft YaHei", 10), bg="#2a323a", fg=FG,
                   activebackground="#3a444e", relief="flat", padx=12, pady=3).pack(
             side="left", padx=5)
 
-        self.status = tk.Label(self.root, text="出问题？点「查看日志」，或发日志给作者排查",
+        self.status = tk.Label(self.root,
+                               text=t("出问题？点「查看日志」，或发日志给作者排查"),
                                fg=DIM, bg=BG, font=("Microsoft YaHei", 9))
         self.status.pack(pady=(6, 16))
-
-        self.root.after(1000, self._poll_voice)
+        self._refresh_start_btn()
 
     def _mini(self, parent, title, sub, cmd):
         f = tk.Frame(parent, bg=BG)
@@ -167,63 +180,65 @@ class Launcher:
         try:
             _write_language(lang)
         except Exception as e:
-            self._set(f"切换失败: {e}", "#ff8a8a")
+            self._set(t("切换失败: {e}").format(e=e), "#ff8a8a")
             return
         self.lang = lang
-        self._refresh_lang_btns()
+        i18n.set_lang(lang)
+        self._build_ui()   # 整个界面立即换语言
         name = "中文" if lang == "zh" else "English"
-        self._set(f"✓ 已切到 {name} · 重启语音指挥生效 (Restart to apply)", GOLD)
+        self._set(t("✓ 已切到 {name} · 重启语音指挥生效 (Restart to apply)")
+                  .format(name=name), GOLD)
 
     def start_voice(self):
         if self.voice_proc and self.voice_proc.poll() is None:
-            self._set("语音指挥已在运行 (看那个黑窗口)", GOLD)
+            self._set(t("语音指挥已在运行 (看那个黑窗口)"), GOLD)
             return
         self.voice_proc = _spawn("voice", console=True)
-        self._set("✓ 语音指挥已启动 (黑窗口在加载模型…)")
+        self._set(t("✓ 语音指挥已启动 (黑窗口在加载模型…)"))
         self._refresh_start_btn()
 
     def start_listen(self):
         _spawn("listen", console=False)
-        self._set("✓ 测试模式已启动 (只听不发键)")
+        self._set(t("✓ 测试模式已启动 (只听不发键)"))
 
     def open_audio(self):
         _spawn("audio", console=False)
-        self._set("✓ 已打开音频设置")
+        self._set(t("✓ 已打开音频设置"))
 
     def open_dict(self):
         _spawn("dict", console=False)
-        self._set("✓ 已打开指令词典")
+        self._set(t("✓ 已打开指令词典"))
 
     def open_log(self):
         from paths import log_file
         p = log_file()
         if os.path.exists(p) and os.path.getsize(p) > 0:
             os.startfile(p)
-            self._set("✓ 已打开日志 (出问题可把它发给作者)")
+            self._set(t("✓ 已打开日志 (出问题可把它发给作者)"))
         else:
-            self._set("日志还是空的 —— 先运行一次语音指挥再看", GOLD)
+            self._set(t("日志还是空的 —— 先运行一次语音指挥再看"), GOLD)
 
     def open_log_folder(self):
         from paths import log_dir
         os.startfile(log_dir())
-        self._set("✓ 已打开日志文件夹 (把 app.log 发给作者即可)")
+        self._set(t("✓ 已打开日志文件夹 (把 app.log 发给作者即可)"))
 
     def run_tests(self):
         # 测试是开发向工具, 打包版里不带; 源码下才拉起
         if FROZEN:
-            self._set("测试仅在源码环境可用", GOLD)
+            self._set(t("测试仅在源码环境可用"), GOLD)
             return
         exe = PY
         argv = [exe, os.path.join(ROOT, "tests", "run_all.py")]
         subprocess.Popen(argv, cwd=ROOT)
-        self._set("✓ 测试已启动 (黑窗里看命中率+延迟)")
+        self._set(t("✓ 测试已启动 (黑窗里看命中率+延迟)"))
 
     def _refresh_start_btn(self):
         running = self.voice_proc and self.voice_proc.poll() is None
         if running:
-            self.start_btn.config(text="■  语音指挥运行中", bg=GREEN)
+            self.start_btn.config(text=t("■  语音指挥运行中"), bg=GREEN)
         else:
-            self.start_btn.config(text="▶  开始语音指挥", bg=GOLD)
+            self.start_btn.config(text=t("▶  开始语音指挥"), bg=GOLD)
 
     def _poll_voice(self):
         self._refresh_start_btn()

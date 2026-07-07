@@ -8,6 +8,8 @@
 import queue
 import tkinter as tk
 
+from i18n import t
+
 
 class Overlay:
     def __init__(self, cfg: dict):
@@ -42,7 +44,7 @@ class Overlay:
     def run(self):
         """阻塞运行 (主线程)。"""
         self.root = tk.Tk()
-        self.root.title("骑砍语音指挥")
+        self.root.title(t("骑砍语音指挥"))
         self.root.attributes("-topmost", True)
         self.root.configure(bg="#101418")
         self.root.geometry("+40+40")
@@ -50,13 +52,13 @@ class Overlay:
         self.root.attributes("-alpha", 0.92)
 
         self.status_lbl = tk.Label(
-            self.root, text="待命中…", fg="#7Fd1ff", bg="#101418",
+            self.root, text=t("待命中…"), fg="#7Fd1ff", bg="#101418",
             font=("Microsoft YaHei", self.font_size, "bold"),
         )
         self.status_lbl.pack(padx=20, pady=(14, 4))
 
         self.detail_lbl = tk.Label(
-            self.root, text="按住热键说话", fg="#9aa4ad", bg="#101418",
+            self.root, text=t("按住热键说话"), fg="#9aa4ad", bg="#101418",
             font=("Microsoft YaHei", int(self.font_size * 0.7)),
         )
         self.detail_lbl.pack(padx=20, pady=(0, 10))
@@ -65,7 +67,7 @@ class Overlay:
         if self.show_debug:
             tk.Frame(self.root, bg="#2a323a", height=1).pack(fill="x", padx=14)
             self.debug_lbl = tk.Label(
-                self.root, text="上一条: (还没有)", fg="#7a8494", bg="#101418",
+                self.root, text=t("上一条: (还没有)"), fg="#7a8494", bg="#101418",
                 font=("Microsoft YaHei", max(9, int(self.font_size * 0.42))),
                 wraplength=max(280, self.font_size * 16), justify="left", anchor="w",
             )

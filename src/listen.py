@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import yaml  # noqa: E402
 
 from audio import ContinuousListener  # noqa: E402
+from i18n import t as _t  # noqa: E402
 from matcher import Matcher  # noqa: E402
 from paths import config_path  # noqa: E402
 
@@ -49,19 +50,19 @@ class ListenGUI:
         self.listener = None
 
         self.root = tk.Tk()
-        self.root.title("测试模式 · 只听不发键 — 骑砍语音指挥")
+        self.root.title(_t("测试模式 · 只听不发键 — 骑砍语音指挥"))
         self.root.configure(bg=BG)
         self.root.geometry("560x480")
         self.root.minsize(420, 320)
 
-        tk.Label(self.root, text="🎧 测试模式（只听不发键）", fg=GOLD, bg=BG,
+        tk.Label(self.root, text=_t("🎧 测试模式（只听不发键）"), fg=GOLD, bg=BG,
                  font=("Microsoft YaHei", 14, "bold")).pack(padx=18, pady=(14, 2))
         tk.Label(self.root,
-                 text="对着麦克风说指令，下面实时显示识别结果。不会往游戏发按键，随便练。",
+                 text=_t("对着麦克风说指令，下面实时显示识别结果。不会往游戏发按键，随便练。"),
                  fg=DIM, bg=BG, font=("Microsoft YaHei", 9),
                  wraplength=520, justify="left").pack(padx=18, pady=(0, 8))
 
-        self.status = tk.Label(self.root, text="启动中…", fg=BLUE, bg=BG,
+        self.status = tk.Label(self.root, text=_t("启动中…"), fg=BLUE, bg=BG,
                                font=("Microsoft YaHei", 12, "bold"))
         self.status.pack(padx=18, pady=(0, 8))
 
@@ -90,22 +91,24 @@ class ListenGUI:
         mdl = self.cfg["stt"].get("model", "base")
         eff = "base" if mdl in (None, "", "auto") else mdl
         if not models.is_ready(eff):
-            self._push("status", f"首次下载模型 {eff}（{models.size_hint(eff)}）…", GOLD)
+            self._push("status", _t("首次下载模型 {m}（{size}）…").format(
+                m=eff, size=models.size_hint(eff)), GOLD)
             try:
                 models.download(eff, lambda d, t: self._push("dl", (d, t)))
             except Exception as e:
-                self._push("status", f"模型下载失败: {e}", RED)
+                self._push("status", _t("模型下载失败: {e}").format(e=e), RED)
                 return
-        self._push("status", "加载识别模型中…", GOLD)
+        self._push("status", _t("加载识别模型中…"), GOLD)
         try:
             from stt import Transcriber
             tr = Transcriber(self.cfg)
         except Exception as e:
-            self._push("status", f"模型加载失败: {e}", RED)
+            self._push("status", _t("模型加载失败: {e}").format(e=e), RED)
             return
-        self._push("status", "👂 监听中…（说指令试试）", BLUE)
+        self._push("status", _t("👂 监听中…（说指令试试）"), BLUE)
         if self.prefixes:
-            self._push("line", f"已开口令前缀 {self.prefixes}，要先说前缀。", "dim")
+            self._push("line", _t("已开口令前缀 {p}，要先说前缀。").format(
+                p=self.prefixes), "dim")
         self.listener = ContinuousListener(self.cfg)
         try:
             for audio in self.listener.segments():
@@ -120,12 +123,12 @@ class ListenGUI:
                 if self.prefixes:
                     hit = next((p for p in self.prefixes if p in text), None)
                     if not hit:
-                        self._push("item", "chat", text, "（无口令前缀，忽略）", dt)
+                        self._push("item", "chat", text, _t("（无口令前缀，忽略）"), dt)
                         continue
                     cleaned = text.replace(hit, "", 1).strip()
                 parsed = self.matcher.parse(cleaned)
                 if not parsed:
-                    self._push("item", "no", text, "未匹配 / 聊天，忽略", dt)
+                    self._push("item", "no", text, _t("未匹配 / 聊天，忽略"), dt)
                     continue
                 g, o = parsed.get("group"), parsed.get("order")
                 ak = "en" if self.lang == "en" else "aliases"
@@ -136,9 +139,10 @@ class ListenGUI:
                     desc.append(self.commands["orders"][o["name"]][ak][0])
                 keys = ([g["select"]] if g else []) + (o["keys"] if o else [])
                 self._push("item", "ok", text,
-                           f"{' · '.join(desc)}   → 按键 {' '.join(keys)}", dt)
+                           f"{' · '.join(desc)}   "
+                           + _t("→ 按键 {keys}").format(keys=" ".join(keys)), dt)
         except Exception as e:
-            self._push("status", f"麦克风/识别出错: {e}", RED)
+            self._push("status", _t("麦克风/识别出错: {e}").format(e=e), RED)
 
     def _poll(self):
         try:
@@ -147,14 +151,17 @@ class ListenGUI:
                 if kind == "status":
                     self.status.config(text=args[0], fg=args[1])
                 elif kind == "dl":
-                    d, t = args[0]
-                    if t:
+                    d, tot = args[0]
+                    if tot:
                         self.status.config(
-                            text=f"⬇ 下载模型中… {min(100, d/t*100):.0f}%  "
-                                 f"({d/1048576:.0f}/{t/1048576:.0f} MB)", fg=GOLD)
+                            text=_t("⬇ 下载模型中… {pct}%  ({d}/{t} MB)").format(
+                                pct=f"{min(100, d/tot*100):.0f}",
+                                d=f"{d/1048576:.0f}", t=f"{tot/1048576:.0f}"),
+                            fg=GOLD)
                     else:
-                        self.status.config(text=f"⬇ 下载模型中… 已下 {d/1048576:.0f} MB",
-                                           fg=GOLD)
+                        self.status.config(
+                            text=_t("⬇ 下载模型中… 已下 {d} MB").format(
+                                d=f"{d/1048576:.0f}"), fg=GOLD)
                 elif kind == "line":
                     self._append(args[0] + "\n", args[1])
                 elif kind == "item":
@@ -163,7 +170,8 @@ class ListenGUI:
                     tag = {"ok": "ok", "no": "bad", "chat": "dim"}[verdict]
                     mark = {"ok": "✓", "no": "✗", "chat": "·"}[verdict]
                     self._append(f"[{ts}] {mark} {result}\n", tag)
-                    self._append(f"        听到:「{heard}」  识别{dt:.2f}s\n", "dim")
+                    self._append("        " + _t("听到:「{t}」  识别{s}s").format(
+                        t=heard, s=f"{dt:.2f}") + "\n", "dim")
         except queue.Empty:
             pass
         if self.running:
