@@ -85,8 +85,18 @@ class ListenGUI:
         self.q.put((kind, args))
 
     def _worker(self):
-        # 模型加载慢, 放线程里, 窗口先显示出来
-        self._push("status", "加载识别模型中…（首次稍久）", GOLD)
+        # 模型没下过就先下载(带进度), 再加载。都在线程里, 窗口先显示。
+        import models
+        mdl = self.cfg["stt"].get("model", "base")
+        eff = "base" if mdl in (None, "", "auto") else mdl
+        if not models.is_ready(eff):
+            self._push("status", f"首次下载模型 {eff}（{models.size_hint(eff)}）…", GOLD)
+            try:
+                models.download(eff, lambda d, t: self._push("dl", (d, t)))
+            except Exception as e:
+                self._push("status", f"模型下载失败: {e}", RED)
+                return
+        self._push("status", "加载识别模型中…", GOLD)
         try:
             from stt import Transcriber
             tr = Transcriber(self.cfg)
@@ -136,6 +146,15 @@ class ListenGUI:
                 kind, args = self.q.get_nowait()
                 if kind == "status":
                     self.status.config(text=args[0], fg=args[1])
+                elif kind == "dl":
+                    d, t = args[0]
+                    if t:
+                        self.status.config(
+                            text=f"⬇ 下载模型中… {min(100, d/t*100):.0f}%  "
+                                 f"({d/1048576:.0f}/{t/1048576:.0f} MB)", fg=GOLD)
+                    else:
+                        self.status.config(text=f"⬇ 下载模型中… 已下 {d/1048576:.0f} MB",
+                                           fg=GOLD)
                 elif kind == "line":
                     self._append(args[0] + "\n", args[1])
                 elif kind == "item":

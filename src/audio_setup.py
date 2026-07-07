@@ -6,8 +6,10 @@
 只列 WASAPI 设备 (名字完整、每个物理/虚拟设备只出现一次)。
 """
 import os
+import queue
 import re
 import sys
+import threading
 import tkinter as tk
 from tkinter import ttk
 
@@ -276,13 +278,109 @@ class SetupWindow:
         self.device_box.grid(row=2, column=3, sticky="w", padx=(0, 12), pady=(0, 10))
         self.device_box.set(next((d for d, v in self.device_map.items()
                                   if v == cur_device), DEVICE_OPTS[0][1]))
+        self.model_box.bind("<<ComboboxSelected>>", self._on_model_change)
+
+        # 下载状态 + 按钮
+        self.dl_q = queue.Queue()
+        self.downloading = False
+        dl = tk.Frame(eng, bg="#161c22")
+        dl.grid(row=3, column=0, columnspan=4, sticky="ew", padx=12, pady=(0, 4))
+        dl.columnconfigure(0, weight=1)
+        self.dl_status = tk.Label(dl, text="", bg="#161c22", fg=DIM,
+                                  font=("Microsoft YaHei", 9), anchor="w")
+        self.dl_status.grid(row=0, column=0, sticky="w")
+        self.dl_btn = tk.Button(dl, text="⬇ 下载所选模型", command=self._download_model,
+                                font=("Microsoft YaHei", 9), bg=GOLD, fg="#101418",
+                                relief="flat", padx=12)
+        self.dl_btn.grid(row=0, column=1, sticky="e")
+        self.dl_bar = ttk.Progressbar(dl, style="level.Horizontal.TProgressbar",
+                                      length=380, maximum=100)
+        # 进度条按需显示 (grid_remove 先藏起来)
+        self.dl_bar.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(6, 0))
+        self.dl_bar.grid_remove()
 
         tk.Label(eng,
-                 text="改了模型 / 运行方式后，重启语音指挥生效。"
-                      "「需联网下载」的模型第一次用要能连上网。",
+                 text="改了模型 / 运行方式后，重启语音指挥生效。",
                  fg=DIM, bg="#161c22", font=("Microsoft YaHei", 9),
-                 wraplength=600, justify="left", anchor="w").grid(
-            row=3, column=0, columnspan=4, sticky="w", padx=12, pady=(0, 10))
+                 anchor="w").grid(row=4, column=0, columnspan=4, sticky="w",
+                                  padx=12, pady=(2, 10))
+        self._on_model_change()
+        self.root.after(120, self._dl_poll)
+
+    def _selected_model(self):
+        return self.model_map.get(self.model_box.get())
+
+    @staticmethod
+    def _effective(mv):
+        return "base" if mv in (None, "", "auto") else mv
+
+    def _on_model_change(self, event=None):
+        import models
+        mv = self._selected_model()
+        eff = self._effective(mv)
+        if models.is_ready(eff):
+            self.dl_status.config(text=f"✓ {mv} 已就绪（本地已有，直接用）", fg=GREEN)
+            self.dl_btn.grid_remove()
+        else:
+            self.dl_status.config(
+                text=f"⚠ {mv} 未下载（{models.size_hint(eff)}）—— 点右边下载",
+                fg="#ffcf70")
+            self.dl_btn.grid()
+        self.dl_bar.grid_remove()
+
+    def _download_model(self):
+        import models
+        if self.downloading:
+            return
+        mv = self._selected_model()
+        eff = self._effective(mv)
+        if models.is_ready(eff):
+            self._on_model_change()
+            return
+        self.downloading = True
+        self.dl_btn.config(state="disabled")
+        self.dl_bar.grid()
+        self.dl_bar["value"] = 0
+        self.dl_status.config(text=f"正在下载 {mv} …", fg="#7Fd1ff")
+
+        def work():
+            try:
+                models.download(eff, lambda d, t: self.dl_q.put(("prog", (d, t))))
+                self.dl_q.put(("done", mv))
+            except Exception as e:
+                self.dl_q.put(("err", str(e)))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _dl_poll(self):
+        try:
+            while True:
+                kind, payload = self.dl_q.get_nowait()
+                if kind == "prog":
+                    d, t = payload
+                    if t:
+                        pct = min(100, d / t * 100)
+                        self.dl_bar["value"] = pct
+                        self.dl_status.config(
+                            text=f"下载中… {pct:.0f}%  "
+                                 f"({d/1048576:.0f} / {t/1048576:.0f} MB)", fg="#7Fd1ff")
+                    else:
+                        self.dl_bar["value"] = 0
+                        self.dl_status.config(
+                            text=f"下载中… 已下 {d/1048576:.0f} MB", fg="#7Fd1ff")
+                elif kind == "done":
+                    self.downloading = False
+                    self.dl_btn.config(state="normal")
+                    self._on_model_change()
+                    self.status.config(text=f"✓ {payload} 下载完成，已就绪", fg=GREEN)
+                elif kind == "err":
+                    self.downloading = False
+                    self.dl_btn.config(state="normal")
+                    self.dl_bar.grid_remove()
+                    self.dl_status.config(text=f"下载失败: {payload[:60]}", fg="#ff8a8a")
+        except queue.Empty:
+            pass
+        self.root.after(150, self._dl_poll)
 
     def _add_row(self, parent, row, idx, name, selected):
         val = name if idx is not None else "__default__"
