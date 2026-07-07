@@ -53,11 +53,14 @@ orders:
               来救我, 到我这里来, 到我这儿来]
     en: [follow me, on me, with me, rally to me, stay with me]
   charge:
+    # 指向性攻击(游戏1.2+原生): 鼠标/准星指着敌方编队图标(出现绿色四角准星)
+    # 时下这条指令, 就会攻击那支特定敌军 —— "看着谁就打谁", 键序完全相同。
     keys: [f1, f3]
     aliases: [冲锋, 冲, 进攻, 突击, 杀, 给我冲, 冲上去, 冲啊, 冲呀, 冲鸭,
               给我上, 上啊, 冲过去, 杀过去, 干他们, 打过去, 给我杀, 杀啊,
-              往上冲, 压上去打]
-    en: [charge, attack, engage, charge them, attack them, go get them]
+              往上冲, 压上去打, 打他们, 冲他们, 攻击他们, 灭了他们]
+    en: [charge, attack, engage, charge them, attack them, go get them,
+         take them out, focus them, kill them]
   advance:
     keys: [f1, f4]
     aliases: [开战, 交战, 前进, 进军, 推进, 上前, 向前, 往前走, 压上去, 顶上去,
