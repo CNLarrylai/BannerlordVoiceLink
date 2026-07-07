@@ -119,6 +119,12 @@ KEY_CASES = [
     ("第四队冲锋", ["4", "f1", "f3"]),
     ("骑射兵散开", ["4", "f2", "f3"]),
     ("空骑兵上马", ["4", "f5"]),
+    # 词序: 攻击动词后的兵种是"打击目标"(敌方), 不是选中对象 —— 选的是动词前那个
+    ("骑兵进攻弓箭手", ["3", "f1", "f3"]),
+    ("骑兵打他们的弓箭手", ["3", "f1", "f3"]),
+    ("步兵进攻骑兵", ["1", "f1", "f3"]),
+    # 目标句式不影响正常句 (进攻是charge的别名; 主语在动词前照常选中)
+    ("弓箭手进攻", ["2", "f1", "f3"]),
 ]
 for text, want in KEY_CASES:
     r = m.parse(text)
@@ -129,6 +135,25 @@ for text, want in KEY_CASES:
     fails += keys != want
     print(f"  {mark} 「{text}」 -> {keys} (期望 {want})")
 
-total = len(SAMPLES) + len(GROUP_CASES) + len(KEY_CASES)
+# 目标解析专项: 动词后的兵种应记为 target(敌方), 且不被选中
+print("\n=== 指向性目标专项 ===")
+TARGET_CASES = [
+    ("骑兵进攻弓箭手", "cavalry", "archers"),
+    ("骑兵打他们的弓箭手", "cavalry", "archers"),
+    ("进攻弓箭手", None, "archers"),          # 无主语: 作用于当前选中编队
+    ("骑兵冲锋", "cavalry", None),            # 无目标: 普通冲锋
+    ("弓箭手进攻", "archers", None),          # 主语在动词前, 不是目标
+]
+for text, want_g, want_t in TARGET_CASES:
+    tr = m.explain(text)
+    r = tr["result"]
+    got_g = r["group"]["name"] if r and r["group"] else None
+    got_t = r["target"]["name"] if r and r.get("target") else None
+    ok = r is not None and got_g == want_g and got_t == want_t
+    fails += not ok
+    print(f"  {'✓' if ok else '✗✗✗'} 「{text}」 -> 选中={got_g} 目标={got_t} "
+          f"(期望 选中={want_g} 目标={want_t})")
+
+total = len(SAMPLES) + len(GROUP_CASES) + len(KEY_CASES) + len(TARGET_CASES)
 print(f"\n{total - fails}/{total} 通过")
 sys.exit(1 if fails else 0)

@@ -225,7 +225,7 @@ class Matcher:
         """
         trace = {
             "text": text, "clean": "", "chat_marker": None,
-            "group": None, "order": None, "coverage": None,
+            "group": None, "order": None, "target": None, "coverage": None,
             "result": None, "reason": "",
         }
         if not text:
@@ -280,8 +280,55 @@ class Matcher:
 
         spans = [o_span]
         group_ok = g_key and g_score >= self.group_threshold
+        target = None
+
+        # 攻击类指令(takes_target)支持"骑兵进攻弓箭手"句式: 中英文里主语都在
+        # 动词前、宾语在动词后。动词前的兵种=选中的自家编队, 动词后的兵种=
+        # 打击目标(敌方, 显示用; 实际锁定靠准星悬停游戏原生机制)。
+        # 若不区分, "骑兵进攻弓箭手"会因"弓箭手"别名更长而选中自家弓箭手 —— 反了。
+        if o_data.get("takes_target") and group_ok and g_span[0] >= o_span[1]:
+            # 最佳兵种出现在动词后 => 它是目标; 到动词前的文本里重找主语
+            target = {"name": g_key, "alias": g_alias, "score": round(g_score),
+                      "select": g_data["key"]}
+            spans.append(g_span)
+            prefix = clean[:o_span[0]]
+            if prefix:
+                if self.pinyin_match:
+                    p_py, p_pos = text_pinyin(prefix)
+                else:
+                    p_py, p_pos = "", None
+                g_key, g_data, g_score, g_alias, g_span = self._best(
+                    prefix, self.groups, p_py, p_pos,
+                    self.pinyin_group_threshold,
+                    (boost or {}).get("groups"))
+            else:
+                g_key = None
+            group_ok = g_key and g_score >= self.group_threshold
+            trace["group"] = ({
+                "name": g_key, "alias": g_alias, "score": round(g_score),
+                "pass": bool(group_ok), "select": g_data["key"],
+            } if g_key else None)
+            trace["target"] = target
         if group_ok:
             spans.append(g_span)
+        # 对称情况: 主语赢了"更长别名"的评比(如 infantry vs cavalry), 动词后的
+        # 目标还没被发现 —— 再扫一次动词后的文本, 把目标补出来(显示+算入占比)。
+        if (o_data.get("takes_target") and target is None and group_ok
+                and g_span[1] <= o_span[0]):
+            suffix = clean[o_span[1]:]
+            if suffix:
+                if self.pinyin_match:
+                    s_py, s_pos = text_pinyin(suffix)
+                else:
+                    s_py, s_pos = "", None
+                t_key, t_data, t_score, t_alias, t_span = self._best(
+                    suffix, self.groups, s_py, s_pos, self.pinyin_group_threshold)
+                if t_key and t_score >= self.group_threshold:
+                    off = o_span[1]
+                    target = {"name": t_key, "alias": t_alias,
+                              "score": round(t_score), "select": t_data["key"]}
+                    spans.append((t_span[0] + off, t_span[1] + off))
+                    trace["target"] = target
 
         # 第2+3层: 指令占比 + 句长
         if self.chat_filter:
@@ -302,7 +349,8 @@ class Matcher:
             {"name": g_key, "select": g_data["key"], "score": g_score}
             if group_ok else None
         )
-        trace["result"] = {"text": text, "group": group, "order": order}
+        trace["result"] = {"text": text, "group": group, "order": order,
+                           "target": ({"name": target["name"]} if target else None)}
         trace["reason"] = "执行"
         return trace
 

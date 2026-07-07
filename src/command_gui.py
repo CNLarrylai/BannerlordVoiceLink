@@ -428,6 +428,10 @@ class CommandGUI:
             self._print(f"{mark} 指令: {o['name']}  命中「{o['alias']}」 {o['score']}分", tag)
         else:
             self._print("✗ 没匹配到任何指令动作", "bad")
+        if tr.get("target"):
+            t = tr["target"]
+            self._print(f"◎ 打击目标: {t['name']}  命中「{t['alias']}」 {t['score']}分"
+                        f"  (敌方编队, 游戏内需准星锁定它)", "purple")
         if tr["coverage"]:
             cov = tr["coverage"]
             tag = "bad" if cov["is_chat"] else "dim"

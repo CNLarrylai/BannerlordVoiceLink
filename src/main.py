@@ -122,7 +122,12 @@ def describe(parsed, commands, lang="zh"):
         parts.append(_disp(commands["groups"][parsed["group"]["name"]], lang))
     if parsed.get("order"):
         parts.append(_disp(commands["orders"][parsed["order"]["name"]], lang))
-    return " · ".join(parts) if parts else "?"
+    desc = " · ".join(parts) if parts else "?"
+    if parsed.get("target"):
+        tgt = _disp(commands["groups"][parsed["target"]["name"]], lang)
+        aim = "target (aim at them!)" if lang == "en" else "目标(需准星锁定)"
+        desc += f" → {tgt} [{aim}]"
+    return desc
 
 
 class App:

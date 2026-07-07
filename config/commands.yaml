@@ -55,6 +55,9 @@ orders:
   charge:
     # 指向性攻击(游戏1.2+原生): 鼠标/准星指着敌方编队图标(出现绿色四角准星)
     # 时下这条指令, 就会攻击那支特定敌军 —— "看着谁就打谁", 键序完全相同。
+    # takes_target: 允许"骑兵进攻弓箭手"句式 —— 动词前=选自家谁, 动词后=打谁
+    # (目标显示在浮层, 实际锁定靠准星悬停; 未来模组接管后变成真锁定)。
+    takes_target: true
     keys: [f1, f3]
     aliases: [冲锋, 冲, 进攻, 突击, 杀, 给我冲, 冲上去, 冲啊, 冲呀, 冲鸭,
               给我上, 上啊, 冲过去, 杀过去, 干他们, 打过去, 给我杀, 杀啊,
@@ -62,6 +65,7 @@ orders:
     en: [charge, attack, engage, charge them, attack them, go get them,
          take them out, focus them, kill them]
   advance:
+    takes_target: true   # 交战(F1F4)同样支持指向性目标, 见 charge 注释
     keys: [f1, f4]
     aliases: [开战, 交战, 前进, 进军, 推进, 上前, 向前, 往前走, 压上去, 顶上去,
               向前推, 推上去, 往前压, 往前顶, 上前压]
