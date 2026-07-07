@@ -108,15 +108,19 @@ def load_cfg():
     return settings, commands
 
 
-def describe(parsed, commands):
-    """生成给浮层/控制台看的中文描述。"""
+def _disp(data, lang):
+    """该指令/兵种在当前语言下的显示名 (第一个别名)。"""
+    al = data.get("en", []) if lang == "en" else data.get("aliases", [])
+    return al[0] if al else "?"
+
+
+def describe(parsed, commands, lang="zh"):
+    """生成给浮层/控制台看的描述。"""
     parts = []
     if parsed.get("group"):
-        g = parsed["group"]["name"]
-        parts.append(commands["groups"][g]["aliases"][0])
+        parts.append(_disp(commands["groups"][parsed["group"]["name"]], lang))
     if parsed.get("order"):
-        o = parsed["order"]["name"]
-        parts.append(commands["orders"][o]["aliases"][0])
+        parts.append(_disp(commands["orders"][parsed["order"]["name"]], lang))
     return " · ".join(parts) if parts else "?"
 
 
@@ -126,6 +130,7 @@ class App:
         self.settings = settings
         self.commands = commands
         self.overlay = overlay
+        self.lang = settings["stt"].get("language", "zh")
         self.mode = c.get("mode", "continuous")
         self.ptt = c.get("push_to_talk_key", "caps lock")
         self.reload_key = c.get("reload_key") or ""
@@ -134,7 +139,7 @@ class App:
         self.samplerate = settings["audio"]["samplerate"]
         self.silence_rms = settings["audio"].get("silence_rms", 0.006)
         self.slow_warn_sec = settings["stt"].get("slow_warn_sec", 3.0)
-        self.matcher = Matcher.from_config(commands, c)
+        self.matcher = Matcher.from_config(commands, c, lang=self.lang)
         if self.dry_run:
             print("[模式] dry-run: 只打印按键, 不真的发送。")
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
@@ -167,7 +172,7 @@ class App:
             return
         c = settings["control"]
         self.commands = commands
-        self.matcher = Matcher.from_config(commands, c)
+        self.matcher = Matcher.from_config(commands, c, lang=self.lang)
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
         self.prefixes = c.get("command_prefix") or []
         self.silence_rms = settings["audio"].get("silence_rms", self.silence_rms)
@@ -245,7 +250,7 @@ class App:
             self._idle()
             return
 
-        desc = describe(parsed, self.commands)
+        desc = describe(parsed, self.commands, self.lang)
         keys = ([parsed["group"]["select"]] if parsed["group"] else []) + \
                (parsed["order"]["keys"] if parsed["order"] else [])
         t0 = time.perf_counter()

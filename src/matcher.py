@@ -71,31 +71,58 @@ MAX_FREE_LEFTOVER = 2
 # 剔除填充词后的句长上限, 再长就当聊天
 MAX_EFFECTIVE_LEN = 16
 
+# 英文模式: 填充词(比对时都是去空格小写形式) + 更长的句长上限(英文字符多)
+EN_FILLERS = ["please", "now", "just", "lets", "okay", "alright", "come", "on",
+              "go", "right", "hey", "guys", "and", "the", "your"]
+EN_CHAT_MARKERS = []          # 英文暂不做讨论词黑名单, 靠占比过滤
+EN_MAX_EFFECTIVE_LEN = 42
+
 
 class Matcher:
     def __init__(self, commands: dict, threshold: int = 70, chat_filter: bool = True,
                  pinyin_match: bool = True, pinyin_threshold: int = 85,
-                 group_threshold=None, order_threshold=None):
+                 group_threshold=None, order_threshold=None, lang: str = "zh"):
+        self.lang = lang
         self.groups = commands.get("groups", {})
         self.orders = commands.get("orders", {})
         # 兵种(就5个,叫法少)可松一点; 指令(20+,密,多同音)要严, 防乱路由。
         self.group_threshold = 60 if group_threshold is None else group_threshold
         self.order_threshold = threshold if order_threshold is None else order_threshold
+        if lang == "en":
+            # 英文单词字母重合多(archer/charge)、且 Whisper 英文很准 -> 靠高阈值近精确匹配
+            self.group_threshold = 78
+            self.order_threshold = 80
         self.chat_filter = chat_filter
-        self.pinyin_match = pinyin_match and _HAS_PINYIN
-        self.pinyin_threshold = pinyin_threshold           # 指令谐音: 严 (只认同音)
-        self.pinyin_group_threshold = max(55, pinyin_threshold - 8)  # 兵种谐音: 松
-        # 预算每个别名的拼音, 匹配时不重复计算
+        # 谐音只对中文有意义
+        self.pinyin_match = (lang == "zh") and pinyin_match and _HAS_PINYIN
+        self.pinyin_threshold = pinyin_threshold
+        self.pinyin_group_threshold = max(55, pinyin_threshold - 8)
+        # 语言相关: 填充词 / 讨论词 / 句长上限
+        self.fillers = EN_FILLERS if lang == "en" else FILLERS
+        self.chat_markers = EN_CHAT_MARKERS if lang == "en" else CHAT_MARKERS
+        self.max_eff_len = EN_MAX_EFFECTIVE_LEN if lang == "en" else MAX_EFFECTIVE_LEN
+        # 预算别名的"清洗形"和拼音, 匹配时不重复算
+        self._clean_map = {}
         self._alias_py = {}
-        if self.pinyin_match:
-            for table in (self.groups, self.orders):
-                for data in table.values():
-                    for al in data.get("aliases", []):
-                        if al not in self._alias_py:
-                            self._alias_py[al] = alias_pinyin(al)
+        for table in (self.groups, self.orders):
+            for data in table.values():
+                for al in self._aliases(data):
+                    if al not in self._clean_map:
+                        self._clean_map[al] = self._clean(al)
+                    if self.pinyin_match and al not in self._alias_py:
+                        self._alias_py[al] = alias_pinyin(al)
+
+    def _aliases(self, data):
+        return data.get("en", []) if self.lang == "en" else data.get("aliases", [])
+
+    def _clean(self, text):
+        """去噪。中文: 去标点/空白; 英文: 小写并只留字母数字(去空格标点)。"""
+        if self.lang == "en":
+            return re.sub(r"[^a-z0-9]", "", text.lower())
+        return PUNCT_RE.sub("", text)
 
     @classmethod
-    def from_config(cls, commands, control):
+    def from_config(cls, commands, control, lang="zh"):
         """按 settings 的 control 段建 Matcher (统一读阈值/开关)。"""
         base = control.get("match_threshold", 72)
         return cls(commands, base,
@@ -103,7 +130,8 @@ class Matcher:
                    control.get("pinyin_match", True),
                    control.get("pinyin_threshold", 85),
                    group_threshold=control.get("group_threshold", 60),
-                   order_threshold=control.get("order_threshold", base))
+                   order_threshold=control.get("order_threshold", base),
+                   lang=lang)
 
     def _best(self, text, table, text_py="", pos2char=None, pinyin_threshold=None):
         """在 table 里找最匹配的一项 (汉字匹配 + 谐音/拼音兜底)。
@@ -115,17 +143,18 @@ class Matcher:
         pt = self.pinyin_threshold if pinyin_threshold is None else pinyin_threshold
         best = (None, None, 0, "", (0, 0))
         for key, data in table.items():
-            for alias in data.get("aliases", []):
-                pos = text.find(alias)
+            for alias in self._aliases(data):
+                ca = self._clean_map.get(alias) or self._clean(alias)
+                if not ca:
+                    continue
+                pos = text.find(ca)
                 if pos >= 0:
-                    score, span = 100, (pos, pos + len(alias))
+                    score, span = 100, (pos, pos + len(ca))
                 else:
-                    a = fuzz.partial_ratio_alignment(alias, text)
+                    a = fuzz.partial_ratio_alignment(ca, text)
                     score, span = a.score, (a.dest_start, a.dest_end)
-                # 谐音兜底: 只在汉字明显对不上(<70)时才用, 且只对 >=2 字的别名
-                # (单字拼音太短、到处都能贴, 会乱路由), 拼音串也要够长才可信。
-                if (self.pinyin_match and score < 70 and len(alias) >= 2
-                        and text_py):
+                # 谐音兜底(仅中文): 汉字明显对不上(<70)且别名>=2字时比拼音。
+                if (self.pinyin_match and score < 70 and len(ca) >= 2 and text_py):
                     apy = self._alias_py.get(alias) or alias_pinyin(alias)
                     if apy and len(apy) >= 4:
                         pa = fuzz.partial_ratio_alignment(apy, text_py)
@@ -133,7 +162,7 @@ class Matcher:
                             span = self._map_span(pa.dest_start, pa.dest_end,
                                                   pos2char, len(text))
                             score = pa.score
-                if (score, len(alias)) > (best[2], len(best[3])):
+                if (score, len(ca)) > (best[2], len(best[3])):
                     best = (key, data, score, alias, span)
         return best
 
@@ -147,7 +176,7 @@ class Matcher:
         return (s, e)
 
     def _strip_fillers(self, text: str) -> str:
-        for f in sorted(FILLERS, key=len, reverse=True):
+        for f in sorted(self.fillers, key=len, reverse=True):
             text = text.replace(f, "")
         return text
 
@@ -168,9 +197,9 @@ class Matcher:
             "is_chat": False,
             "why": "",
         }
-        if matched_len + len(leftover) > MAX_EFFECTIVE_LEN:
+        if matched_len + len(leftover) > self.max_eff_len:
             info["is_chat"] = True
-            info["why"] = f"剔除填充词后仍有 {matched_len + len(leftover)} 字 (> {MAX_EFFECTIVE_LEN}), 按聊天处理"
+            info["why"] = f"剔除填充词后仍有 {matched_len + len(leftover)} 字 (> {self.max_eff_len}), 按聊天处理"
         elif len(leftover) <= MAX_FREE_LEFTOVER:
             info["why"] = f"剩余杂字仅 {len(leftover)} 个, 放行"
         elif info["coverage"] < MIN_COVERAGE:
@@ -193,7 +222,7 @@ class Matcher:
         if not text:
             trace["reason"] = "空文本"
             return trace
-        clean = PUNCT_RE.sub("", text)
+        clean = self._clean(text)
         trace["clean"] = clean
         if not clean:
             trace["reason"] = "只有标点/空白"
@@ -201,7 +230,7 @@ class Matcher:
 
         # 第1层: 聊天特征词
         if self.chat_filter:
-            hit = next((m for m in CHAT_MARKERS if m in clean), None)
+            hit = next((m for m in self.chat_markers if m in clean), None)
             if hit:
                 trace["chat_marker"] = hit
                 trace["reason"] = f"含聊天特征词「{hit}」, 判为聊天"

@@ -32,6 +32,33 @@ GREEN = "#7dff9b"
 GRAY = "#2a323a"
 
 
+def _read_language():
+    try:
+        import yaml
+        from paths import config_path
+        with open(config_path("settings.yaml"), encoding="utf-8") as f:
+            return (yaml.safe_load(f).get("stt") or {}).get("language", "zh")
+    except Exception:
+        return "zh"
+
+
+def _write_language(lang):
+    import re
+    from paths import config_path
+    p = config_path("settings.yaml")
+    with open(p, encoding="utf-8") as f:
+        lines = f.readlines()
+    in_stt = False
+    for i, line in enumerate(lines):
+        if re.match(r"^\S", line):
+            in_stt = line.startswith("stt:")
+        if in_stt and re.match(r"^\s+language\s*:", line):
+            lines[i] = f"  language: {lang}\n"
+            break
+    with open(p, "w", encoding="utf-8") as f:
+        f.writelines(lines)
+
+
 def _spawn(mode, console):
     """按 mode 拉起一个功能子进程。源码/打包两种形态都成立。
 
@@ -61,7 +88,23 @@ class Launcher:
         tk.Label(self.root, text="⚔ 骑砍语音指挥", fg=GOLD, bg=BG,
                  font=("Microsoft YaHei", 20, "bold")).pack(padx=40, pady=(22, 2))
         tk.Label(self.root, text="中文语音指挥你的军队", fg=DIM, bg=BG,
-                 font=("Microsoft YaHei", 11)).pack(pady=(0, 16))
+                 font=("Microsoft YaHei", 11)).pack(pady=(0, 10))
+
+        # 语言切换 (中文 / English)
+        self.lang = _read_language()
+        langrow = tk.Frame(self.root, bg=BG)
+        langrow.pack(pady=(0, 14))
+        tk.Label(langrow, text="语言 / Language:", fg=DIM, bg=BG,
+                 font=("Microsoft YaHei", 10)).pack(side="left", padx=(0, 8))
+        self.zh_btn = tk.Button(langrow, text="中文", relief="flat", padx=16, pady=3,
+                                font=("Microsoft YaHei", 10, "bold"),
+                                command=lambda: self._set_lang("zh"))
+        self.zh_btn.pack(side="left", padx=3)
+        self.en_btn = tk.Button(langrow, text="English", relief="flat", padx=16, pady=3,
+                                font=("Microsoft YaHei", 10, "bold"),
+                                command=lambda: self._set_lang("en"))
+        self.en_btn.pack(side="left", padx=3)
+        self._refresh_lang_btns()
 
         # 主按钮: 开始语音指挥
         self.start_btn = tk.Button(
@@ -110,6 +153,26 @@ class Launcher:
 
     def _set(self, text, color=GREEN):
         self.status.config(text=text, fg=color)
+
+    def _refresh_lang_btns(self):
+        for btn, code in ((self.zh_btn, "zh"), (self.en_btn, "en")):
+            if code == self.lang:
+                btn.config(bg=GOLD, fg="#101418", activebackground="#e8c95a")
+            else:
+                btn.config(bg=GRAY, fg=FG, activebackground="#3a444e")
+
+    def _set_lang(self, lang):
+        if lang == self.lang:
+            return
+        try:
+            _write_language(lang)
+        except Exception as e:
+            self._set(f"切换失败: {e}", "#ff8a8a")
+            return
+        self.lang = lang
+        self._refresh_lang_btns()
+        name = "中文" if lang == "zh" else "English"
+        self._set(f"✓ 已切到 {name} · 重启语音指挥生效 (Restart to apply)", GOLD)
 
     def start_voice(self):
         if self.voice_proc and self.voice_proc.poll() is None:

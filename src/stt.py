@@ -108,7 +108,14 @@ class Transcriber:
         s = cfg["stt"]
         self.language = s.get("language", "zh")
         self.beam_size = s.get("beam_size", 1)
-        self.initial_prompt = s.get("initial_prompt") or None
+        if self.language == "en":
+            # 英文用英文提示词偏置 (中文提示词会干扰英文识别)
+            self.initial_prompt = s.get("initial_prompt_en") or (
+                "Commanding an army in battle. Troops: infantry, archers, "
+                "cavalry, horse archers. Orders: charge, advance, retreat, halt, "
+                "follow me, shield wall, form a line, fire at will, hold fire.")
+        else:
+            self.initial_prompt = s.get("initial_prompt") or None
         self.temperature = s.get("temperature", 0)
         self.vad_filter = s.get("vad_filter", True)
         model, device, compute, hw = resolve_stt_config(s)

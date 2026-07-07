@@ -39,7 +39,9 @@ class ListenGUI:
             self.cfg = yaml.safe_load(f)
         with open(config_path("commands.yaml"), encoding="utf-8") as f:
             self.commands = yaml.safe_load(f)
-        self.matcher = Matcher.from_config(self.commands, self.cfg["control"])
+        self.lang = self.cfg["stt"].get("language", "zh")
+        self.matcher = Matcher.from_config(self.commands, self.cfg["control"],
+                                           lang=self.lang)
         self.prefixes = self.cfg["control"].get("command_prefix") or []
         self.sr = self.cfg["audio"]["samplerate"]
         self.q = queue.Queue()
@@ -116,11 +118,12 @@ class ListenGUI:
                     self._push("item", "no", text, "未匹配 / 聊天，忽略", dt)
                     continue
                 g, o = parsed.get("group"), parsed.get("order")
+                ak = "en" if self.lang == "en" else "aliases"
                 desc = []
                 if g:
-                    desc.append(self.commands["groups"][g["name"]]["aliases"][0])
+                    desc.append(self.commands["groups"][g["name"]][ak][0])
                 if o:
-                    desc.append(self.commands["orders"][o["name"]]["aliases"][0])
+                    desc.append(self.commands["orders"][o["name"]][ak][0])
                 keys = ([g["select"]] if g else []) + (o["keys"] if o else [])
                 self._push("item", "ok", text,
                            f"{' · '.join(desc)}   → 按键 {' '.join(keys)}", dt)

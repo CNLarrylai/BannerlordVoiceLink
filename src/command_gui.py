@@ -262,7 +262,9 @@ class CommandGUI:
         print("填充词 (下令时可夹带, 不影响判定):", "、".join(FILLERS))
 
     def _build_matcher(self):
-        self.matcher = Matcher.from_config(self.commands, self.settings["control"])
+        self.matcher = Matcher.from_config(
+            self.commands, self.settings["control"],
+            lang=self.settings["stt"].get("language", "zh"))
 
     def _fill_tree(self):
         self.tree.delete(*self.tree.get_children())

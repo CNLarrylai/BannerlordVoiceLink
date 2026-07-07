@@ -5,15 +5,10 @@
 #  结构说明:
 #   groups : 兵种/编队 -> 选中它要按的数字键 (0 = 全军听令)
 #   orders : 指令      -> 选中编队后要按的按键序列
-#   一句话可以 "兵种 + 指令" 一起说 ("弓箭手散开"),
-#   也可以只说指令, 作用于当前选中的编队 ("冲锋")。
+#   aliases: 中文说法; en: 英文说法 (启动器选语言, 两套分开用, 键位共用)
 #
-#  每一项的 aliases 是"多种说法", 模糊匹配会把它们都认成同一条。
-#  加新说法推荐用「语音指挥·指令词典」GUI (能先测试再添加);
 #  改完在语音程序里按 [F10] 热重载, 不用重启。
-#
-#  ⚠️ 按键序列必须与 docs/bannerlord-orders.md (指令树事实文档) 一致,
-#     那份文档有证据来源; 禁止凭感觉改键位。
+#  ⚠️ 按键序列必须与 docs/bannerlord-orders.md 一致; 禁止凭感觉改键位。
 # ============================================================
 
 groups:
@@ -21,28 +16,27 @@ groups:
     key: "1"
     aliases: [步兵, 步兵们, 步卒, 盾兵, 刀盾兵, 长矛兵, 近战, 近战兵, 大头兵,
               一队, 第一队, 步兵队]
+    en: [infantry, foot, footmen, foot soldiers, spearmen, group one, first group]
   archers:
     key: "2"
     aliases: [弓箭手, 弓箭手们, 弓兵, 射手, 神射手, 弓弩手, 远程, 弓手, 射箭的,
               放箭的, 二队, 第二队]
+    en: [archers, bowmen, ranged, bows, archer, group two, second group]
   cavalry:
     key: "3"
     aliases: [骑兵, 骑兵们, 重骑, 重骑兵, 骑士, 冲锋骑, 突骑, 马队, 骑马的,
               三队, 第三队]
-  # 弓骑兵在中文里没有"日常好念"的词, 且很多说法(弓骑兵/马弓手/轻骑)连标准
-  # 发音都被识别错。这里只留实测认得准的, 外加稳定错听(空骑兵)保底; 最稳的是
-  # 数字定位「第四队/四队」—— 记不住就直接喊队号。
+    en: [cavalry, horsemen, knights, horse, riders, group three, third group]
   horse_archers:
     key: "4"
     aliases: [骑射, 骑射手, 骑射兵, 骑射们, 第四队, 四队, 四号队, 游骑,
               弓骑, 弓骑兵, 空骑兵, 空骑手]
-  # 游戏原生"全军听令"键 = 0 (来自你的键位配置文件)
-  # "大家/所有人"这类口语也收进来(用户常用); 靠聊天过滤的占比/句长兜底防误触,
-  # 真要零误触就在 settings 开 command_prefix 口令前缀。
+    en: [horse archers, mounted archers, horse archer, group four, fourth group]
   all:
     key: "0"
     aliases: [全军, 全体, 所有人, 所有队伍, 大家, 大伙, 大伙儿, 士兵, 士兵们,
               全部队伍, 全部人, 全员, 儿郎们, 众将士, 全军将士, 各队, 各位]
+    en: [everyone, all troops, all units, everybody, whole army, all of you, all]
 
 orders:
   # ---------- 移动类 (F1 子菜单) ----------
@@ -51,91 +45,103 @@ orders:
     aliases: [到这里, 去那里, 守住这里, 到指定位置, 就位, 到位, 去那儿, 到这儿,
               来这儿, 守这儿, 站这儿, 待在这儿, 去那边儿, 到那边儿, 守住这儿,
               去那边, 到那边, 守这里, 站这里]
+    en: [move here, go there, hold this position, take position, move to position]
   follow_me:
     keys: [f1, f2]
     aliases: [随我来, 跟随我, 跟着我, 跟我走, 跟我上, 跟我冲, 跟上, 跟着我走,
               都跟上, 跟紧我, 跟紧点儿, 跟我来, 都跟着我, 护驾, 救驾, 保护我,
               来救我, 到我这里来, 到我这儿来]
+    en: [follow me, on me, with me, rally to me, stay with me]
   charge:
     keys: [f1, f3]
     aliases: [冲锋, 冲, 进攻, 突击, 杀, 给我冲, 冲上去, 冲啊, 冲呀, 冲鸭,
               给我上, 上啊, 冲过去, 杀过去, 干他们, 打过去, 给我杀, 杀啊,
               往上冲, 压上去打]
+    en: [charge, attack, engage, charge them, attack them, go get them]
   advance:
     keys: [f1, f4]
     aliases: [开战, 交战, 前进, 进军, 推进, 上前, 向前, 往前走, 压上去, 顶上去,
               向前推, 推上去, 往前压, 往前顶, 上前压]
+    en: [advance, move up, push forward, forward, push up, engage the enemy]
   fall_back:
     keys: [f1, f5]
     aliases: [退后, 后退, 撤一点, 往后, 后撤, 往后退, 退一退, 撤一撤, 往后撤,
               退回来, 后撤点儿, 往后点儿, 往后退点儿, 退一点儿]
+    en: [fall back, pull back, back up, move back, give ground]
   halt:
     keys: [f1, f6]
     aliases: [立定, 停止, 停下, 站住, 原地待命, 别动, 停, 停一停, 都别动,
               原地不动, 稳住, 别走, 停在那儿, 站那儿别动, 都停下, 都停一停]
-  # 不要单字"撤/逃"当别名: 任何带"撤"的错听(如冲锋->撤锋)都会误判成撤退。
+    en: [halt, stop, hold, stand ground, hold position, hold there]
   retreat:
     keys: [f1, f7]
     aliases: [撤退, 快跑, 撤离, 快撤, 撤了, 跑路, 快跑啊, 撤退了,
               撤下来, 都撤, 快撤啊, 撤退吧]
+    en: [retreat, run away, flee, sound the retreat, pull out]
 
-  # ---------- 队形类 (F2 子菜单, 用户游戏截图确认) ----------
-  # 线阵/盾墙 最常用, 且有顶层快捷键(F9/F8), 比 F2 子菜单少按一次 -> 用快捷键
+  # ---------- 队形类 (F2 子菜单) ----------
   line:
     keys: [f9]
     aliases: [线阵, 横队, 一字排开, 排成线, 线列, 排横队, 一字排, 拉横排, 横排,
               排成一排, 排成横排, 拉成一条线]
+    en: [line, form a line, line up, line formation]
   shield_wall:
     keys: [f8]
     aliases: [盾墙, 盾阵, 举盾, 结盾, 结盾阵, 龟甲阵, 盾牌墙, 举起盾牌, 结盾防御,
               铁壁, 结个盾墙, 摆盾墙, 举盾牌, 盾墙顶住, 龟壳阵, 都举盾]
+    en: [shield wall, shields up, form a wall, wall up, raise shields]
   loose:
     keys: [f2, f3]
     aliases: [散阵, 散开, 疏散, 散开队形, 分散, 疏散队形, 散一散, 散开点儿,
               都散开, 散开点, 拉开距离, 拉开点儿, 都散一散]
+    en: [loose, spread out, loose formation, disperse, open up]
   circle:
     keys: [f2, f4]
     aliases: [圆阵, 圆形, 结圆阵, 围成圈, 围圈, 结个圆阵, 摆圆阵, 围成圆圈,
               抱团, 结成圆阵]
+    en: [circle, form a circle, circle formation, ring]
   square:
     keys: [f2, f5]
     aliases: [方阵, 方形阵, 结方阵, 结个方阵, 摆方阵, 方形, 排方阵, 结成方阵]
-  # "楔形/锥形"生僻难念, 易误识别 -> 主说法用好念的"三角阵"(实测识别稳)
+    en: [square, form a square, square formation]
   skein:
     keys: [f2, f6]
     aliases: [三角阵, 尖阵, 尖头阵, 楔阵, 楔形, 楔形阵, 锥形阵, 锥子阵, 结楔阵]
-  # "纵列/纵队"难念识别率低; "竖排"易被听成"射排" -> 主说法用最稳的"排成一列"
+    en: [wedge, triangle, form a wedge, wedge formation, spearhead]
   column:
     keys: [f2, f7]
     aliases: [排成一列, 竖排, 竖着排, 排成竖排, 排成一竖排, 纵队, 纵列, 排纵队,
               一列纵队, 列队前进, 行军纵队]
+    en: [column, single file, form a column, march column]
   scatter:
     keys: [f2, f8]
     aliases: [乱阵, 散兵, 四散, 散兵线, 各自为战, 打散, 散兵游勇, 各自散开,
               自由散开]
+    en: [scatter, break formation, scatter formation, every man for himself]
 
   # ---------- 顶层直接生效键 (F4~F9 无子菜单, 单键) ----------
-  # F4 = 自由射击⇄停止射击 切换; 两条都按 F4, 游戏内状态轮换
   fire_at_will:
     keys: [f4]
     aliases: [自由射击, 放箭, 射击, 开火, 给我射, 放, 放箭啊, 射他们, 开射,
               攒射, 射啊, 给我放箭, 放箭射击, 自由开火, 尽情射击]
+    en: [fire, fire at will, open fire, shoot them, let them fly]
   hold_fire:
     keys: [f4]
     aliases: [停止射击, 别射, 收弓, 停火, 别放箭, 别射了, 停手, 别开火, 住手,
               收着点儿, 别放了, 都别射, 停止放箭]
-  # F5 = 上马⇄下马 切换
+    en: [hold fire, cease fire, stop shooting, hold your fire]
   mount_toggle:
     keys: [f5]
     aliases: [上马, 骑马, 下马, 步战, 上下马, 都上马, 骑上马, 都下马, 下来步战,
               下马作战, 上马冲锋, 翻身上马]
-  # F6 = 委派指挥 (交给 AI)
+    en: [mount, dismount, mount up, get on your horses, get off your horses]
   ai_control:
     keys: [f6]
     aliases: [交给AI, 自动, 托管, 你来指挥, 自动作战, 委派指挥, 你来指挥吧,
               自动打, AI接管, 自己打, 交给电脑, 自动指挥]
-  # F7 = 朝向方向 (之后需鼠标指方向, 语音只能触发菜单)
+    en: [ai control, give ai control, take over, auto command, you command them]
   face_direction:
     keys: [f7]
     aliases: [朝向方向, 转向, 面向这边, 朝这边, 改朝向, 看这边, 朝着敌人, 看那儿,
               转过来, 转个向, 面朝那边儿, 朝那边儿, 面向那儿]
+    en: [face direction, face this way, turn to face, face the enemy]
