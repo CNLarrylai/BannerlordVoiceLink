@@ -3,18 +3,29 @@
   <Name value="Bannerlord Voice Link" />
   <Id value="BannerlordVoiceLink" />
   <Version value="v0.1.0" />
-  <ModuleCategory value="Singleplayer" />
+  <!-- This game version's launcher (v1.4.6) requires SingleplayerModule
+       (not the newer ModuleCategory) or the checkbox is disabled.
+       Schema mirrored from FastMode, which enables fine on this install. -->
+  <SingleplayerModule value="true" />
   <DependedModules>
-    <DependedModule Id="Native" />
-    <DependedModule Id="SandBoxCore" />
-    <DependedModule Id="SandBox" />
+    <DependedModule Id="Native" DependentVersion="v1.4.6" Optional="false" />
+    <DependedModule Id="SandBoxCore" DependentVersion="v1.4.6" Optional="false" />
+    <DependedModule Id="SandBox" DependentVersion="v1.4.6" Optional="false" />
   </DependedModules>
+  <ModulesToLoadAfterThis>
+  </ModulesToLoadAfterThis>
+  <IncompatibleModules>
+  </IncompatibleModules>
+  <Xmls>
+  </Xmls>
   <SubModules>
     <SubModule>
       <Name value="VoiceLink" />
       <DLLName value="BannerlordVoiceLink.dll" />
       <SubModuleClassType value="BannerlordVoiceLink.VoiceLinkSubModule" />
-      <Tags />
+      <Tags>
+        <Tag key="DedicatedServerType" value="none" />
+      </Tags>
     </SubModule>
   </SubModules>
 </Module>
