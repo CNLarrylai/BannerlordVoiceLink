@@ -133,12 +133,15 @@ class Matcher:
                    order_threshold=control.get("order_threshold", base),
                    lang=lang)
 
-    def _best(self, text, table, text_py="", pos2char=None, pinyin_threshold=None):
+    def _best(self, text, table, text_py="", pos2char=None, pinyin_threshold=None,
+              bonus_map=None):
         """在 table 里找最匹配的一项 (汉字匹配 + 谐音/拼音兜底)。
 
         返回 (key, 数据, 分数, 命中的别名, 命中区间(start,end))。
         谐音: 汉字对不上时, 比拼音 ("骑射"vs"起社"同为 qishe) 也能命中,
         专治口音/同音字听岔。谐音分要更高 (pinyin_threshold) 才采纳, 防误触。
+        bonus_map: {key: 加分} —— 重试助推用, 只给指定候选定向加分
+        (用户重说一遍时放大上次差点命中的那几条, 见 retry.py)。
         """
         pt = self.pinyin_threshold if pinyin_threshold is None else pinyin_threshold
         best = (None, None, 0, "", (0, 0))
@@ -162,6 +165,8 @@ class Matcher:
                             span = self._map_span(pa.dest_start, pa.dest_end,
                                                   pos2char, len(text))
                             score = pa.score
+                if bonus_map:
+                    score += bonus_map.get(key, 0)
                 if (score, len(ca)) > (best[2], len(best[3])):
                     best = (key, data, score, alias, span)
         return best
@@ -212,8 +217,12 @@ class Matcher:
             info["why"] = f"指令占比 {info['coverage']:.0%} ≥ {MIN_COVERAGE:.0%}, 放行"
         return info
 
-    def explain(self, text: str) -> dict:
-        """完整判定过程 (测试台/调试用)。result 字段为 None 表示不执行。"""
+    def explain(self, text: str, boost=None) -> dict:
+        """完整判定过程 (测试台/调试用)。result 字段为 None 表示不执行。
+
+        boost: {"groups": {key: 加分}, "orders": {key: 加分}} 或 None ——
+        重试助推的定向加分, 只影响指定候选。
+        """
         trace = {
             "text": text, "clean": "", "chat_marker": None,
             "group": None, "order": None, "coverage": None,
@@ -241,10 +250,13 @@ class Matcher:
         else:
             text_py, pos2char = "", None
         # 兵种松(叫法少,安全); 指令严(密,多同音,防乱路由)
+        boost = boost or {}
         g_key, g_data, g_score, g_alias, g_span = self._best(
-            clean, self.groups, text_py, pos2char, self.pinyin_group_threshold)
+            clean, self.groups, text_py, pos2char, self.pinyin_group_threshold,
+            boost.get("groups"))
         o_key, o_data, o_score, o_alias, o_span = self._best(
-            clean, self.orders, text_py, pos2char, self.pinyin_threshold)
+            clean, self.orders, text_py, pos2char, self.pinyin_threshold,
+            boost.get("orders"))
         if g_key:
             trace["group"] = {
                 "name": g_key, "alias": g_alias, "score": round(g_score),
@@ -294,6 +306,6 @@ class Matcher:
         trace["reason"] = "执行"
         return trace
 
-    def parse(self, text: str):
+    def parse(self, text: str, boost=None):
         """返回 {text, group, order} 或 None (无指令/判为聊天)。"""
-        return self.explain(text)["result"]
+        return self.explain(text, boost=boost)["result"]

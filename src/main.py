@@ -28,6 +28,7 @@ from audio import (ContinuousListener, Recorder, input_device_label,
 from executor import Executor
 from matcher import Matcher
 from overlay import Overlay
+from retry import RetryMemory
 from stt import Transcriber
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -140,6 +141,7 @@ class App:
         self.silence_rms = settings["audio"].get("silence_rms", 0.006)
         self.slow_warn_sec = settings["stt"].get("slow_warn_sec", 3.0)
         self.matcher = Matcher.from_config(commands, c, lang=self.lang)
+        self.retry = self._make_retry(c)
         if self.dry_run:
             print("[模式] dry-run: 只打印按键, 不真的发送。")
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
@@ -151,6 +153,21 @@ class App:
             print(f"[音频] ⚠ {e}")
         self.transcriber = Transcriber(settings)  # 加载模型 (慢)
         self.running = True
+
+    @staticmethod
+    def _make_retry(c):
+        return RetryMemory(window_sec=c.get("retry_window_sec", 8.0),
+                           cooldown_sec=c.get("repeat_cooldown_sec", 2.5),
+                           bonus=c.get("retry_bonus", 12),
+                           enabled=c.get("retry_boost", True))
+
+    def _near(self, cand, threshold):
+        """explain 的候选 -> {key: 别名}, 仅"差点命中"(没过线但加分够得着)。"""
+        if not cand or cand["pass"]:
+            return {}
+        if cand["score"] < threshold - 2 * self.retry.bonus:
+            return {}
+        return {cand["name"]: cand["alias"]}
 
     def _set(self, status, detail="", color="#FFFFFF"):
         print(f"  {status}  {detail}")
@@ -173,6 +190,7 @@ class App:
         c = settings["control"]
         self.commands = commands
         self.matcher = Matcher.from_config(commands, c, lang=self.lang)
+        self.retry = self._make_retry(c)
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
         self.prefixes = c.get("command_prefix") or []
         self.silence_rms = settings["audio"].get("silence_rms", self.silence_rms)
@@ -222,8 +240,10 @@ class App:
             return
 
         self._set("识别中…", "", "#c9a0ff")
+        # 重试窗口内: 把上次差点命中的说法喂给识别器, 偏置这一遍听准
+        hotwords = self.retry.hotwords()
         t0 = time.perf_counter()
-        text = self.transcriber.transcribe(audio)
+        text = self.transcriber.transcribe(audio, hotwords=hotwords)
         t_stt = time.perf_counter() - t0
         if t_stt > self.slow_warn_sec:
             print(f"    [⚠ 识别偏慢] {t_stt:.1f}s (音频 {secs:.1f}s) "
@@ -241,8 +261,15 @@ class App:
             self._idle(f"听到: {text}")
             return
 
-        parsed = self.matcher.parse(cleaned)
+        boost, boost_why = self.retry.boost_for(cleaned)
+        tr = self.matcher.explain(cleaned, boost=boost)
+        parsed = tr["result"]
         if not parsed:
+            # 记住差点命中的候选: 用户若马上重说一遍, 就定向放大它们
+            self.retry.note_miss(
+                cleaned,
+                self._near(tr["group"], self.matcher.group_threshold),
+                self._near(tr["order"], self.matcher.order_threshold))
             print(f"    ✗ 听到「{text}」→ 未匹配/聊天, 未执行（识别 {t_stt:.2f}s）")
             self._debug(f"上一条 ✗ 听到「{text}」→ 未匹配/聊天, 未执行")
             self._set("未匹配", f"听到: {text}", "#ff8a8a")
@@ -253,8 +280,25 @@ class App:
         desc = describe(parsed, self.commands, self.lang)
         keys = ([parsed["group"]["select"]] if parsed["group"] else []) + \
                (parsed["order"]["keys"] if parsed["order"] else [])
+        g_key = parsed["group"]["name"] if parsed["group"] else None
+        o_key = parsed["order"]["name"]
+        # 回声抑制: 冷却期内解析出同一条指令, 多半是回音/黏连, 不再发键
+        if self.retry.is_echo(g_key, o_key):
+            print(f"    ⏸ 听到「{text}」→ {desc}: 冷却期内与刚执行的相同, "
+                  f"判为回声/黏连, 忽略")
+            self._debug(f"上一条 ⏸ 回声抑制「{text}」")
+            self._idle()
+            return
+        if boost_why:
+            print(f"    🔁 {boost_why}")
         t0 = time.perf_counter()
         self.executor.execute(parsed)
+        self.retry.note_exec(g_key, o_key)
+        # 执行了但兵种没过线(只作用于当前选中编队): 记为差点命中 —— 用户若马上
+        # 重说, 说明发错了对象, 下一遍放大该兵种 (专治 "all units"→"or units")
+        if tr["group"] and not tr["group"]["pass"]:
+            self.retry.note_miss(
+                cleaned, self._near(tr["group"], self.matcher.group_threshold), {})
         t_keys = time.perf_counter() - t0
         total = time.perf_counter() - t_seg
         print(f"    ✓ 听到「{text}」→ {desc} · 发键 {' '.join(keys)}"

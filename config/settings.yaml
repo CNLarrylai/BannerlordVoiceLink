@@ -62,6 +62,16 @@ control:
   key_delay: 0.06
   # 选中兵种后到下指令之间的间隔(秒)
   select_delay: 0.12
+  # —— 重试助推: 指令没识别对时人会本能再说一遍。窗口秒数内出现相似的一句,
+  #    只给上次"差点命中"的那几条候选加 retry_bonus 分(其它指令阈值一分不降),
+  #    并把它们的说法喂给识别器(hotwords)提高这一遍听准的概率。
+  #    专治 "all units"→"or units" 这类差一点点过线的听岔。
+  retry_boost: true
+  retry_window_sec: 8.0
+  retry_bonus: 12
+  # —— 回声抑制: 刚执行过的指令在冷却秒数内又解析出同一条(同兵种+同指令),
+  #    判为回音/黏连, 忽略, 防止一句话触发多次。
+  repeat_cooldown_sec: 2.5
 
 # 持续监听的语音活动检测 (VAD) 参数, 一般不用改
 vad:

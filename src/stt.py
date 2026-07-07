@@ -127,10 +127,23 @@ class Transcriber:
             print(f"[STT] {device}/{compute} 加载失败 ({e}); 回退到 CPU/int8。",
                   file=sys.stderr)
             self.model = WhisperModel(model, device="cpu", compute_type="int8")
-        print("[STT] 模型就绪。")
+        # hotwords: 重试助推时把差点命中的说法喂给解码器偏置 (旧版 faster-whisper 没有)
+        try:
+            import inspect
+            self._hotwords_ok = "hotwords" in inspect.signature(
+                self.model.transcribe).parameters
+        except Exception:
+            self._hotwords_ok = False
+        print(f"[STT] 模型就绪。{'(支持热词偏置)' if self._hotwords_ok else ''}")
 
-    def transcribe(self, audio) -> str:
-        """audio: float32 单声道 numpy 数组, 16kHz。返回识别文本。"""
+    def transcribe(self, audio, hotwords=None) -> str:
+        """audio: float32 单声道 numpy 数组, 16kHz。返回识别文本。
+
+        hotwords: 可选说法串, 偏置解码器往这些词上听 (重试助推用)。
+        """
+        kw = {}
+        if hotwords and self._hotwords_ok:
+            kw["hotwords"] = hotwords
         segments, _ = self.model.transcribe(
             audio,
             language=self.language,
@@ -139,6 +152,7 @@ class Transcriber:
             temperature=self.temperature,   # 0 = 不做多温度重解码, 锁住延迟
             vad_filter=self.vad_filter,      # 解码前切掉静音/噪音
             condition_on_previous_text=False,
+            **kw,
         )
         text = "".join(seg.text for seg in segments).strip()
         # 整句就是已知幻觉话术 => 当作没说话

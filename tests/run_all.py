@@ -25,6 +25,10 @@ def main():
     if rc != 0:
         print("\n❌ 匹配回归有失败! 先修这个。")
         sys.exit(1)
+    rc = run("重试助推/回声抑制 (纯逻辑, 正确性门槛)", "test_retry.py")
+    if rc != 0:
+        print("\n❌ 重试助推测试有失败! 先修这个。")
+        sys.exit(1)
     if skip_bench:
         print("\n✓ 匹配回归通过 (已跳过识别基准)。")
         return
