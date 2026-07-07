@@ -151,6 +151,9 @@ class App:
         ml = settings.get("modlink") or {}
         self.modlink = (ModLink(port=ml.get("port", 35127))
                         if ml.get("enabled", True) else None)
+        if self.modlink:
+            print(f"[模组桥] 端口 {self.modlink.port}: 点名目标/打最近的 会先走"
+                  f"游戏内模组(真锁定), 连不上自动退回按键+准星。")
         if self.dry_run:
             print("[模式] dry-run: 只打印按键, 不真的发送。")
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
@@ -200,6 +203,10 @@ class App:
             return True
         if r:
             print(f"    ⚙ 模组不可执行({r}), 退回按键方案")
+        else:
+            # 静默降级是排错噩梦: 连不上也要大声说出来
+            print("    ⚙ 模组未连接(游戏没开/模组没启用/不在战斗中), "
+                  "退回按键+准星方案")
         return False
 
     def _set(self, status, detail="", color="#FFFFFF"):

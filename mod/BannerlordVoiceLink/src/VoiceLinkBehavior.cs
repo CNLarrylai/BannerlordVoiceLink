@@ -241,8 +241,19 @@ namespace BannerlordVoiceLink
             if (enemies.Count == 0)
                 return "err no_enemies";
 
-            // 3. each commanded formation charges its own best-matching target
-            //    (same call chain the game/RTSCamera use for click-targeted charge)
+            // 3. each commanded formation charges its own best-matching target.
+            //    IMPORTANT: use the exact native PLAYER order path
+            //    (OrderController.SetOrderWithFormation(Charge, target) =
+            //     MovementOrderCharge + SetTargetFormation) — decompiled from
+            //    OrderController.cs. MovementOrderChargeToTarget is the AI-behavior
+            //    path and does NOT reproduce the hover-targeted charge players get.
+            //    Going through PlayerOrderController also fires order events, syncs
+            //    the order UI and plays the charge voice line.
+            var oc = player.PlayerOrderController;
+            var backup = new List<Formation>();
+            foreach (Formation f in oc.SelectedFormations)
+                backup.Add(f);
+
             var done = 0;
             var lastDesc = "";
             foreach (var g in groups)
@@ -258,11 +269,18 @@ namespace BannerlordVoiceLink
                 }
                 if (best == null)
                     continue;
-                g.SetMovementOrder(MovementOrder.MovementOrderChargeToTarget(best));
-                g.SetTargetFormation(best);
+                oc.ClearSelectedFormations();
+                oc.SelectFormation(g);
+                oc.SetOrderWithFormation(OrderType.Charge, best);
                 done++;
                 lastDesc = best.FormationIndex + ":" + best.CountOfUnits + ":" + (int)bestD;
             }
+
+            // put the player's own UI selection back the way it was
+            oc.ClearSelectedFormations();
+            foreach (var f in backup)
+                oc.SelectFormation(f);
+
             return done == 0
                 ? "err target_not_found"
                 : "ok attacked=" + done + " target=" + lastDesc;
