@@ -138,6 +138,14 @@ def audit(lang):
     w.close()
     fails += _report("audio_setup", lang, bad)
 
+    # --- 游戏指令树 ---
+    from order_tree import OrderTreeWindow
+    ot = OrderTreeWindow(lang=lang)
+    bad = find_clipped(ot.root)
+    shot(ot.root, f"order_tree_{lang}")
+    ot.root.destroy()
+    fails += _report("order_tree", lang, bad)
+
     # --- 测试模式 (stub 掉模型加载) ---
     import stt
 

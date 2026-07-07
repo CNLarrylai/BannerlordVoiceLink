@@ -33,6 +33,10 @@ def main():
     if rc != 0:
         print("\n❌ modlink 测试有失败! 先修这个。")
         sys.exit(1)
+    rc = run("指令树校验 (词典键位对照物, 正确性门槛)", "test_order_tree.py")
+    if rc != 0:
+        print("\n❌ 指令树校验有失败! 先修这个。")
+        sys.exit(1)
     if skip_bench:
         print("\n✓ 匹配回归通过 (已跳过识别基准)。")
         return

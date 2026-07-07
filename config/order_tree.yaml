@@ -1,0 +1,56 @@
+# ============================================================
+#  游戏指令树 —— 记录"游戏里每个键意味着什么" (词典键位的对照物)
+# ============================================================
+#  来源: 用户游戏内截图实测 (2026-07, 原版默认键位 config 5.1)。
+#  在「指令词典 → 🌲 游戏指令树」窗口里查看/更正/校验;
+#  游戏改版或你改了游戏键位后, 在那里改这份表, 再点"校验词典"。
+#  (此文件被窗口保存时重写, 注释只保留本头部)
+# ============================================================
+groups:
+  "1": {name: 一队 (默认步兵), en: Group 1 (infantry)}
+  "2": {name: 二队 (默认远程), en: Group 2 (ranged)}
+  "3": {name: 三队 (默认骑兵), en: Group 3 (cavalry)}
+  "4": {name: 四队 (默认骑射), en: Group 4 (horse archers)}
+  "0": {name: 全军听令, en: Everyone}
+menus:
+  f1:
+    name: 移动
+    en: Movement
+    items:
+      f1: {name: 就位 (到光标位置), en: Move to position}
+      f2: {name: 随我来, en: Follow me}
+      f3: {name: 冲锋, en: Charge}
+      f4: {name: 开战 (前进交战), en: Advance}
+      f5: {name: 退后, en: Fall back}
+      f6: {name: 立定, en: Halt}
+      f7: {name: 撤退, en: Retreat}
+      f9: {name: 返回, en: Back}
+  f2:
+    name: 队形
+    en: Formations
+    items:
+      f1: {name: 线阵 (=顶层F9), en: Line (=F9)}
+      f2: {name: 盾墙 (=顶层F8), en: Shield wall (=F8)}
+      f3: {name: 散阵, en: Loose}
+      f4: {name: 圆阵, en: Circle}
+      f5: {name: 方阵, en: Square}
+      f6: {name: 楔阵 (念"三角阵"), en: Wedge}
+      f7: {name: 纵列 (念"排成一列"), en: Column}
+      f8: {name: 乱阵, en: Scatter}
+      f9: {name: 返回, en: Back}
+  f3:
+    name: 行为
+    en: Behavior
+    items:
+      f1: {name: 朝向方向 (=顶层F7), en: Face direction (=F7)}
+      f2: {name: 自由射击 (=顶层F4), en: Fire at will (=F4)}
+      f3: {name: 上马 (=顶层F5), en: Mount (=F5)}
+      f4: {name: 委派指挥 (=顶层F6), en: Delegate (=F6)}
+      f5: {name: 转移, en: Transfer}
+direct:
+  f4: {name: 自由射击 ⇄ 停止射击, en: Fire at will / hold fire}
+  f5: {name: 上马 ⇄ 下马, en: Mount / dismount}
+  f6: {name: 委派指挥 (交给AI), en: Delegate to AI}
+  f7: {name: 朝向方向, en: Face direction}
+  f8: {name: 盾墙 (快捷), en: Shield wall (shortcut)}
+  f9: {name: 线阵 (快捷), en: Line (shortcut)}

@@ -19,7 +19,7 @@ stt:
   device: auto
   # auto = cuda 用 float16, cpu 用 int8 (实测 GPU 上 int8 反而更慢, 故不默认量化)
   compute_type: auto
-  language: en
+  language: zh
   beam_size: 1            # 1 = 最快; 越大越准但越慢。短指令 1 足够。
   # temperature=0 => 只解码一次, 不做质量回退。默认 whisper 会在质量不达标时
   # 用最多 6 档温度反复重解码, 战场嘈杂音下会滚成几十秒的延迟尖峰。定死 0

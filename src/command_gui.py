@@ -216,8 +216,8 @@ class CommandGUI:
             fg=DIM, bg=BG, font=("Microsoft YaHei", 9), anchor="w",
             justify="left", wraplength=460)
         self.keyedit_hint.grid(row=2, column=0, columnspan=3, sticky="w", pady=(4, 0))
-        tk.Button(keyedit, text=t("📄 打开指令树文档 (键位事实来源)"),
-                  command=self.open_doc, font=("Microsoft YaHei", 9),
+        tk.Button(keyedit, text=t("🌲 游戏指令树 (查验/更正键位含义)"),
+                  command=self.open_tree, font=("Microsoft YaHei", 9),
                   bg="#2a323a", fg=FG, relief="flat", padx=10).grid(
             row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
 
@@ -399,12 +399,9 @@ class CommandGUI:
         if self.test_entry.get().strip():
             self.run_test()
 
-    def open_doc(self):
-        p = os.path.join(ROOT, "docs", "bannerlord-orders.md")
-        if os.path.exists(p):
-            os.startfile(p)
-        else:
-            self.status.config(text=t("指令树文档仅源码版附带"), fg=DIM)
+    def open_tree(self):
+        from order_tree import OrderTreeWindow
+        OrderTreeWindow(master=self.root, lang=self.lang)
 
     def _print(self, text, tag=None):
         self.out.insert("end", text + "\n", tag or ())

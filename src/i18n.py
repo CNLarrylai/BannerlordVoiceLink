@@ -259,6 +259,49 @@ _EN = {
     "✓ 已把「{alias}」加进 {label} (切回语音程序按 F10 热重载生效)":
         "✓ Added \"{alias}\" to {label} (press F10 in the voice app to hot-reload)",
     "先在左侧选中一条指令再改键位": "Select an entry on the left first",
+    "🌲 游戏指令树 (查验/更正键位含义)": "🌲 Game order tree (verify / correct keys)",
+
+    # ---------- 游戏指令树 order_tree ----------
+    "🌲 游戏指令树 — 查验与更正": "🌲 Game Order Tree — verify & correct",
+    "🌲 游戏指令树：游戏里每个键的含义（词典键位以此校验）":
+        "🌲 Game order tree: what each key does in game",
+    "游戏改版/改过游戏键位时: 对照游戏内指令面板在这里更正, 再点「校验词典」。":
+        "If a game patch or your keybinds change things: correct entries here "
+        "against the in-game order panel, then click Validate.",
+    "按键": "Key",
+    "游戏内含义": "In-game meaning",
+    "编队选择键": "Formation select keys",
+    "顶层直接键 (无子菜单)": "Top-level direct keys (no submenu)",
+    "菜单": "menu",
+    "键:": "Key:",
+    "含义(中/英):": "Meaning (zh / en):",
+    "💾 保存修改": "💾 Save change",
+    "➕ 添加子项": "➕ Add entry",
+    "🗑 删除所选": "🗑 Delete selected",
+    "🔍 校验词典": "🔍 Validate dictionary",
+    "👆 选中一行可编辑; 改完即写入配置": "👆 Select a row to edit; saves to config",
+    "先在上面选中一行": "Select a row above first",
+    "这一行是分组标题, 不能编辑": "That row is a section header, not editable",
+    "键必须是 f1~f9 或数字 0~9": "Key must be f1~f9 or a digit 0~9",
+    "键 {k} 已存在": "Key {k} already exists",
+    "✓ 已保存到 order_tree.yaml": "✓ Saved to order_tree.yaml",
+    "先在「键」里填新按键 (f1~f9 或 0~9)": "Type the new key first (f1~f9 or 0~9)",
+    "✓ 已添加并保存": "✓ Added and saved",
+    "✓ 已删除并保存": "✓ Deleted and saved",
+    "整个菜单/分组不允许删 (删它下面的具体键)":
+        "Menus / sections can't be deleted (delete their child keys)",
+    "校验结果 — 词典键位 vs 指令树": "Validation — dictionary keys vs order tree",
+    "❌ {n} 条键位走不通指令树, 请修正:":
+        "❌ {n} key sequences don't resolve in the order tree, please fix:",
+    "✓ 词典全部 {n} 条键位都能在指令树里走通":
+        "✓ All {n} dictionary key sequences resolve in the order tree",
+    "空键序": "empty key sequence",
+    "{k} 只是打开菜单, 后面缺选项键": "{k} only opens a menu, missing the item key",
+    "{k} 不在指令树里 (既非直接键也非菜单)":
+        "{k} is not in the order tree (neither direct key nor menu)",
+    "{k} 不是菜单键, 不能接子选项": "{k} is not a menu key, can't take sub-items",
+    "{menu} 菜单里没有 {k}": "menu {menu} has no {k}",
+    "{k} 不在编队选择键里": "{k} is not a formation select key",
     "键位不能为空": "Keys cannot be empty",
     "无效按键: {bad} (如 f1 f3 或 0~9)": "Invalid keys: {bad} (e.g. f1 f3 or 0~9)",
     "兵种只填一个选中键 (如 2)": "Troops take exactly one select key (e.g. 2)",
