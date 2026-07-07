@@ -113,7 +113,9 @@ class Transcriber:
             self.initial_prompt = s.get("initial_prompt_en") or (
                 "Commanding an army in battle. Troops: infantry, archers, "
                 "cavalry, horse archers. Orders: charge, advance, retreat, halt, "
-                "follow me, shield wall, form a line, fire at will, hold fire.")
+                "follow me, shield wall, form a line, fire at will, hold fire, "
+                "attack the nearest enemy, attack the archers, "
+                "charge their cavalry, stay here.")
         else:
             self.initial_prompt = s.get("initial_prompt") or None
         self.temperature = s.get("temperature", 0)

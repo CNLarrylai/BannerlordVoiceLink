@@ -72,7 +72,8 @@ orders:
     aliases: [打最近的, 攻击最近的, 进攻最近的敌人, 打最近的敌人, 冲最近的,
               攻击最近目标]
     en: [attack nearest, attack the nearest, charge the nearest, attack closest,
-         attack the closest enemy]
+         attack the closest, attack the nearest enemy, attack the nearest unit,
+         charge the closest, go for the nearest, take out the nearest]
   advance:
     takes_target: true   # 交战(F1F4)同样支持指向性目标, 见 charge 注释
     keys: [f1, f4]
