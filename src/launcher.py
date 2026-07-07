@@ -129,13 +129,18 @@ class Launcher:
         tk.Label(self.root, text=t("进游戏用这个：识别到指令就发按键 (需管理员)"),
                  fg=DIM, bg=BG, font=("Microsoft YaHei", 9)).pack(pady=(0, 16))
 
-        # 次要按钮
+        # 次要按钮 (宽度按当前语言的最长文案计算, 防止英文被截断)
         row = tk.Frame(self.root, bg=BG)
         row.pack(padx=30, pady=(0, 6))
-        self._mini(row, t("🎧\n测试模式"), t("只听不发键\n安全调试"), self.start_listen)
-        self._mini(row, t("🎙\n音频设置"), t("选麦克风\n看音量条"), self.open_audio)
-        self._mini(row, t("📖\n指令词典"), t("看/加说法\n改键位"), self.open_dict)
-        self._mini(row, t("🧪\n跑测试"), t("命中率+延迟\n改完就验证"), self.run_tests)
+        minis = [
+            (t("🎧\n测试模式"), t("只听不发键\n安全调试"), self.start_listen),
+            (t("🎙\n音频设置"), t("选麦克风\n看音量条"), self.open_audio),
+            (t("📖\n指令词典"), t("看/加说法\n改键位"), self.open_dict),
+            (t("🧪\n跑测试"), t("命中率+延迟\n改完就验证"), self.run_tests),
+        ]
+        btn_w = max(i18n.text_units(title) for title, _, _ in minis) + 2
+        for title, sub, cmd in minis:
+            self._mini(row, title, sub, cmd, btn_w)
 
         # 底部: 查看日志 (自己排错 / 发给作者)
         foot = tk.Frame(self.root, bg=BG)
@@ -155,12 +160,12 @@ class Launcher:
         self.status.pack(pady=(6, 16))
         self._refresh_start_btn()
 
-    def _mini(self, parent, title, sub, cmd):
+    def _mini(self, parent, title, sub, cmd, width):
         f = tk.Frame(parent, bg=BG)
         f.pack(side="left", padx=5)
         tk.Button(f, text=title, command=cmd, font=("Microsoft YaHei", 12, "bold"),
                   bg=GRAY, fg=FG, activebackground="#3a444e", relief="flat",
-                  width=7, height=2).pack()
+                  width=width, height=2).pack()
         tk.Label(f, text=sub, fg=DIM, bg=BG, font=("Microsoft YaHei", 8),
                  justify="center").pack(pady=(4, 0))
 

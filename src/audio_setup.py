@@ -23,7 +23,7 @@ import numpy as np
 import sounddevice as sd
 import yaml
 
-from i18n import t  # noqa: E402
+from i18n import t, text_units  # noqa: E402
 from paths import config_path  # noqa: E402
 
 SETTINGS = config_path("settings.yaml")
@@ -115,13 +115,16 @@ def detect_gpu():
 
 
 def model_status(size):
-    """base/small… 这个模型: 内置 / 已下载 / 需联网下载。"""
+    """base/small… 这个模型: 内置 / 已下载 / 需联网下载。
+
+    就绪判断交给 models.is_ready (按真实仓库名查缓存 —— turbo 在
+    mobiuslabsgmbh 而非 Systran, 硬拼路径会误报"需下载")。
+    """
     from paths import bundle_dir
     if os.path.isdir(os.path.join(bundle_dir(), "models", f"faster-whisper-{size}")):
         return t("内置")
-    cache = os.path.expanduser(
-        f"~/.cache/huggingface/hub/models--Systran--faster-whisper-{size}")
-    return t("已下载") if os.path.isdir(cache) else t("需联网下载")
+    import models
+    return t("已下载") if models.is_ready(size) else t("需联网下载")
 
 
 # 模型选项: (值, 显示名, 提示)
@@ -264,8 +267,10 @@ class SetupWindow:
             label = f"{tag}   — {t(hint)}"
             self.model_map[label] = val
             mvals.append(label)
+        # 宽度按当前语言最长条目算 (i18n: 不写死字符宽), 上限防止窗口过宽
+        mbox_w = min(58, max(text_units(v) for v in mvals) + 2)
         self.model_box = ttk.Combobox(eng, state="readonly", values=mvals,
-                                      font=("Microsoft YaHei", 10), width=34)
+                                      font=("Microsoft YaHei", 10), width=mbox_w)
         self.model_box.grid(row=2, column=1, sticky="w", pady=(0, 10))
         self.model_box.set(next((lb for lb, v in self.model_map.items()
                                  if v == cur_model), mvals[0]))
@@ -274,9 +279,10 @@ class SetupWindow:
                  font=("Microsoft YaHei", 10)).grid(
             row=2, column=2, sticky="e", padx=(16, 4), pady=(0, 10))
         self.device_map = {t(disp): val for val, disp in DEVICE_OPTS}
+        dbox_w = max(text_units(v) for v in self.device_map) + 2
         self.device_box = ttk.Combobox(
             eng, state="readonly", values=list(self.device_map.keys()),
-            font=("Microsoft YaHei", 10), width=16)
+            font=("Microsoft YaHei", 10), width=dbox_w)
         self.device_box.grid(row=2, column=3, sticky="w", padx=(0, 12), pady=(0, 10))
         self.device_box.set(next((d for d, v in self.device_map.items()
                                   if v == cur_device), t(DEVICE_OPTS[0][1])))

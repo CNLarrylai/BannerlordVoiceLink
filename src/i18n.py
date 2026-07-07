@@ -37,6 +37,16 @@ def t(s):
     return s
 
 
+def text_units(s):
+    """估算 Tk 字符宽度单位: 拉丁字符≈1, CJK≈2。多行取最宽一行。
+
+    Tk 的 width= 以"平均字符宽"计, 中英文混排时用这个算出的单位数
+    设置宽度, 两种语言都不会截断 (i18n 原则: 不写死字符宽)。
+    """
+    return max((sum(2 if ord(c) > 0x2E80 else 1 for c in line)
+                for line in s.split("\n")), default=0)
+
+
 _EN = {
     # ---------- 通用 ----------
     "骑砍语音指挥": "Bannerlord Voice Command",
@@ -154,7 +164,7 @@ _EN = {
     "快 · 够用 (推荐)": "fast · good enough (recommended)",
     "更准 · 稍慢": "more accurate · a bit slower",
     "很准 · 明显慢": "very accurate · noticeably slower",
-    "≈最准 · 较快 (推荐给N卡)": "≈best · fast (recommended for NVIDIA)",
+    "≈最准 · 较快 (推荐给N卡)": "≈best · fast (NVIDIA)",
     "最准 · 最慢": "most accurate · slowest",
     "自动 (推荐)": "Auto (recommended)",
     "强制 GPU": "Force GPU",
@@ -212,7 +222,7 @@ _EN = {
         "🧪 Try a phrase (see if it would execute, and why)",
     "测试": "Test",
     "➕ 给指令加一种新说法 (立即写入词典)":
-        "➕ Add a new phrase for a command (written to the dictionary)",
+        "➕ Add a new phrase for a command",
     "添加": "Add",
     "提示: 聊天过滤词和填充词见控制台输出":
         "Tip: chat-filter and filler word lists are printed to the console",

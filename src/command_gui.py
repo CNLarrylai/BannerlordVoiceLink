@@ -199,7 +199,7 @@ class CommandGUI:
                  font=("Microsoft YaHei", 11, "bold")).grid(
             row=0, column=0, columnspan=3, sticky="w", pady=(0, 4))
         self.keyedit_label = tk.Label(keyedit, text=t("未选中"), fg=DIM, bg=BG,
-                                      font=("Microsoft YaHei", 10), width=12,
+                                      font=("Microsoft YaHei", 10), width=15,
                                       anchor="w")
         self.keyedit_label.grid(row=1, column=0, padx=(0, 8))
         self.keys_entry = tk.Entry(keyedit, font=("Consolas", 12), bg="#1c2228",
