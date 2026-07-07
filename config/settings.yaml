@@ -82,6 +82,13 @@ vad:
   max_speech_sec: 8.0     # 单句最长
   preroll_sec: 0.25       # 句首预收音, 防吃字
 
+# 伴侣模组桥 (mod/BannerlordVoiceLink): 装上后语音可点名攻击特定敌方编队
+# ("骑兵进攻弓箭手"=真锁定, "打最近的"=按距离找)。没装/没开游戏完全不影响
+# 其他功能 —— 连不上就自动退回按键+准星方案。
+modlink:
+  enabled: true
+  port: 35127             # 与模组 VoiceLinkBehavior.Port 一致
+
 overlay:
   enabled: true           # 显示浮层(给观众看识别到的指令)
   font_size: 22

@@ -29,6 +29,10 @@ def main():
     if rc != 0:
         print("\n❌ 重试助推测试有失败! 先修这个。")
         sys.exit(1)
+    rc = run("伴侣模组桥 (假服务器, 正确性门槛)", "test_modlink.py")
+    if rc != 0:
+        print("\n❌ modlink 测试有失败! 先修这个。")
+        sys.exit(1)
     if skip_bench:
         print("\n✓ 匹配回归通过 (已跳过识别基准)。")
         return

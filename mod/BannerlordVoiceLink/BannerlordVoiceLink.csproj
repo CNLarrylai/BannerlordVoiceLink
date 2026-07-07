@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 骑砍语音指挥的游戏内伴侣模组: 本机 TCP 接收语音程序指令,
+       用游戏内部 API 枚举敌方编队并下达指向性攻击。
+       游戏 Bannerlord.exe 是 .NET Framework 4.7.2 -> 模组编 net472。
+       引用的就是本机游戏安装目录的 DLL: 编译通过 = API 与当前游戏版本(v1.4.6)兼容。 -->
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>8</LangVersion>
+    <AssemblyName>BannerlordVoiceLink</AssemblyName>
+    <RootNamespace>BannerlordVoiceLink</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>none</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- 可用 -p:BannerlordDir=... 覆盖 -->
+    <BannerlordDir Condition="'$(BannerlordDir)' == ''">C:\SteamLibraryforstream\steamapps\common\Mount &amp; Blade II Bannerlord</BannerlordDir>
+    <GameBin>$(BannerlordDir)\bin\Win64_Shipping_Client</GameBin>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 无 VS 环境下编 net472 所需的引用程序集 -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="TaleWorlds.Core">
+      <HintPath>$(GameBin)\TaleWorlds.Core.dll</HintPath><Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Library">
+      <HintPath>$(GameBin)\TaleWorlds.Library.dll</HintPath><Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Engine">
+      <HintPath>$(GameBin)\TaleWorlds.Engine.dll</HintPath><Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade">
+      <HintPath>$(GameBin)\TaleWorlds.MountAndBlade.dll</HintPath><Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.DotNet">
+      <HintPath>$(GameBin)\TaleWorlds.DotNet.dll</HintPath><Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

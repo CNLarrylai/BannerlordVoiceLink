@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Module>
+  <Name value="Bannerlord Voice Link" />
+  <Id value="BannerlordVoiceLink" />
+  <Version value="v0.1.0" />
+  <ModuleCategory value="Singleplayer" />
+  <DependedModules>
+    <DependedModule Id="Native" />
+    <DependedModule Id="SandBoxCore" />
+    <DependedModule Id="SandBox" />
+  </DependedModules>
+  <SubModules>
+    <SubModule>
+      <Name value="VoiceLink" />
+      <DLLName value="BannerlordVoiceLink.dll" />
+      <SubModuleClassType value="BannerlordVoiceLink.VoiceLinkSubModule" />
+      <Tags />
+    </SubModule>
+  </SubModules>
+</Module>

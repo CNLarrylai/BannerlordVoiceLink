@@ -27,6 +27,7 @@ from audio import (ContinuousListener, Recorder, input_device_label,
                    resolve_input_device)
 from executor import Executor
 from matcher import Matcher
+from modlink import ModLink
 from overlay import Overlay
 from retry import RetryMemory
 from stt import Transcriber
@@ -147,6 +148,9 @@ class App:
         self.slow_warn_sec = settings["stt"].get("slow_warn_sec", 3.0)
         self.matcher = Matcher.from_config(commands, c, lang=self.lang)
         self.retry = self._make_retry(c)
+        ml = settings.get("modlink") or {}
+        self.modlink = (ModLink(port=ml.get("port", 35127))
+                        if ml.get("enabled", True) else None)
         if self.dry_run:
             print("[模式] dry-run: 只打印按键, 不真的发送。")
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
@@ -174,6 +178,30 @@ class App:
             return {}
         return {cand["name"]: cand["alias"]}
 
+    def _try_modlink(self, parsed, g_key, o_key):
+        """点名目标("骑兵进攻弓箭手")或打最近的 -> 走伴侣模组真锁定。
+
+        成功返回 True(不再发按键); 模组没装/没开战斗/回 err 则返回 False,
+        退回按键+准星方案 —— 模组是增强, 不是依赖。
+        """
+        if not self.modlink:
+            return False
+        odata = self.commands["orders"].get(o_key) or {}
+        target = odata.get("modlink_target") or (
+            parsed["target"]["name"] if parsed.get("target") else None)
+        if not target:
+            return False
+        if self.dry_run:
+            print(f"    ⚙ [dry-run] 若模组在线将执行: attack {g_key or 'all'} {target}")
+            return False
+        r = self.modlink.attack(g_key, target)
+        if r and r.startswith("ok"):
+            print(f"    ⚙ 模组锁定: {r}")
+            return True
+        if r:
+            print(f"    ⚙ 模组不可执行({r}), 退回按键方案")
+        return False
+
     def _set(self, status, detail="", color="#FFFFFF"):
         print(f"  {status}  {detail}")
         if self.overlay:
@@ -196,6 +224,9 @@ class App:
         self.commands = commands
         self.matcher = Matcher.from_config(commands, c, lang=self.lang)
         self.retry = self._make_retry(c)
+        ml = settings.get("modlink") or {}
+        self.modlink = (ModLink(port=ml.get("port", 35127))
+                        if ml.get("enabled", True) else None)
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
         self.prefixes = c.get("command_prefix") or []
         self.silence_rms = settings["audio"].get("silence_rms", self.silence_rms)
@@ -297,7 +328,12 @@ class App:
         if boost_why:
             print(f"    🔁 {boost_why}")
         t0 = time.perf_counter()
-        self.executor.execute(parsed)
+        via_mod = self._try_modlink(parsed, g_key, o_key)
+        if via_mod:
+            desc = (desc.replace("[目标(需准星锁定)]", "[模组已锁定✓]")
+                        .replace("[target (aim at them!)]", "[locked by mod]"))
+        else:
+            self.executor.execute(parsed)
         self.retry.note_exec(g_key, o_key)
         # 执行了但兵种没过线(只作用于当前选中编队): 记为差点命中 —— 用户若马上
         # 重说, 说明发错了对象, 下一遍放大该兵种 (专治 "all units"→"or units")
@@ -306,10 +342,10 @@ class App:
                 cleaned, self._near(tr["group"], self.matcher.group_threshold), {})
         t_keys = time.perf_counter() - t0
         total = time.perf_counter() - t_seg
-        print(f"    ✓ 听到「{text}」→ {desc} · 发键 {' '.join(keys)}"
-              f"（识别 {t_stt:.2f}s + 按键 {t_keys:.2f}s = 共 {total:.2f}s）")
-        self._debug(f"上一条 ✓ 听到「{text}」→ {desc} · 发键 {' '.join(keys)}"
-                    f"（{t_stt:.1f}s）")
+        how = "模组直达" if via_mod else f"发键 {' '.join(keys)}"
+        print(f"    ✓ 听到「{text}」→ {desc} · {how}"
+              f"（识别 {t_stt:.2f}s + 执行 {t_keys:.2f}s = 共 {total:.2f}s）")
+        self._debug(f"上一条 ✓ 听到「{text}」→ {desc} · {how}（{t_stt:.1f}s）")
         self._set(f"✓ {desc}", f"听到: {text}", "#7dff9b")
 
     # ---------- 持续监听模式 ----------

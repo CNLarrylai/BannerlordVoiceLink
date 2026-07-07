@@ -64,6 +64,15 @@ orders:
               往上冲, 压上去打, 打他们, 冲他们, 攻击他们, 灭了他们]
     en: [charge, attack, engage, charge them, attack them, go get them,
          take them out, focus them, kill them]
+  attack_nearest:
+    # 需要伴侣模组(mod/BannerlordVoiceLink): 语音直接命令编队攻击"最近的"敌军,
+    # 不用准星。模组不可用时退化为普通冲锋(F1F3, 游戏冲锋本就先打就近之敌)。
+    modlink_target: nearest
+    keys: [f1, f3]
+    aliases: [打最近的, 攻击最近的, 进攻最近的敌人, 打最近的敌人, 冲最近的,
+              攻击最近目标]
+    en: [attack nearest, attack the nearest, charge the nearest, attack closest,
+         attack the closest enemy]
   advance:
     takes_target: true   # 交战(F1F4)同样支持指向性目标, 见 charge 注释
     keys: [f1, f4]
