@@ -30,6 +30,25 @@ namespace BannerlordVoiceLink
         private const int Port = 35127;   // 语音程序 settings.yaml modlink.port 需一致
         private const int ReplyTimeoutMs = 1000;
 
+        /// <summary>Liveness beacon: append to the voice app's log dir so we can
+        /// tell "mod not loaded" from "not in battle" without guessing.</summary>
+        internal static void Beacon(string msg)
+        {
+            try
+            {
+                var dir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "BannerlordVoice", "logs");
+                Directory.CreateDirectory(dir);
+                File.AppendAllText(Path.Combine(dir, "mod.log"),
+                    DateTime.Now.ToString("HH:mm:ss") + " " + msg + "\r\n");
+            }
+            catch
+            {
+                // 心跳失败不能影响游戏
+            }
+        }
+
         private TcpListener _listener;
         private Thread _thread;
         private volatile bool _running;
@@ -48,6 +67,7 @@ namespace BannerlordVoiceLink
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();
+            Beacon("战斗开始, 启动监听线程");
             _running = true;
             _thread = new Thread(ServerLoop) { IsBackground = true, Name = "VoiceLink" };
             _thread.Start();
@@ -55,6 +75,7 @@ namespace BannerlordVoiceLink
 
         public override void OnRemoveBehavior()
         {
+            Beacon("战斗结束, 关闭监听");
             _running = false;
             try { _listener?.Stop(); } catch { }
             base.OnRemoveBehavior();
@@ -68,10 +89,12 @@ namespace BannerlordVoiceLink
             {
                 _listener = new TcpListener(IPAddress.Loopback, Port);
                 _listener.Start();
+                Beacon("端口 " + Port + " 监听中");
             }
-            catch
+            catch (Exception e)
             {
                 // Port taken (stale battle scene still shutting down) - stay silent.
+                Beacon("端口 " + Port + " 打开失败: " + e.Message);
                 return;
             }
             while (_running)

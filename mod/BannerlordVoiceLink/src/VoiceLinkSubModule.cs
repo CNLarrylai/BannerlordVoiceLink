@@ -8,6 +8,12 @@ namespace BannerlordVoiceLink
     /// </summary>
     public class VoiceLinkSubModule : MBSubModuleBase
     {
+        protected override void OnSubModuleLoad()
+        {
+            base.OnSubModuleLoad();
+            VoiceLinkBehavior.Beacon("模组已被游戏加载 (OnSubModuleLoad)");
+        }
+
         public override void OnMissionBehaviorInitialize(Mission mission)
         {
             base.OnMissionBehaviorInitialize(mission);
