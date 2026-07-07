@@ -72,7 +72,9 @@ orders:
     keys: [f1, f6]
     aliases: [立定, 停止, 停下, 站住, 原地待命, 别动, 停, 停一停, 都别动,
               原地不动, 稳住, 别走, 停在那儿, 站那儿别动, 都停下, 都停一停]
-    en: [halt, stop, hold, stand ground, hold position, hold there]
+    en: [halt, stop, hold, stand ground, hold position, hold there, stay here,
+         stay put, stay there, hold your ground, stand your ground,
+         hold your position, remain here, dont move, freeze]
   retreat:
     keys: [f1, f7]
     aliases: [撤退, 快跑, 撤离, 快撤, 撤了, 跑路, 快跑啊, 撤退了,

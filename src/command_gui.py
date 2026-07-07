@@ -72,12 +72,35 @@ def _edit_entry_line(section: str, key: str, line_re: str, replace_fn):
     return False
 
 
-def add_alias_to_yaml(section: str, key: str, alias: str):
-    """把新别名追加到 commands.yaml 对应条目的 aliases 行 (保留注释)。"""
-    return _edit_entry_line(
-        section, key, r"^(\s+aliases:\s*\[)(.*?)(\]\s*)$",
-        lambda m: f"{m.group(1)}{m.group(2)}, {alias}{m.group(3)}",
-    )
+def add_alias_to_yaml(section: str, key: str, alias: str, field: str = "aliases"):
+    """把新别名追加到 commands.yaml 对应条目的 aliases/en 数组 (保留注释)。
+
+    field: "aliases"(中文) 或 "en"(英文)。支持跨多行的数组: 定位到数组起始行
+    后一直找到闭合的 ']' , 在其前插入 ', alias'。
+    """
+    with open(COMMANDS, encoding="utf-8") as f:
+        lines = f.readlines()
+    cur_top, cur_key, in_field = None, None, False
+    field_re = re.compile(rf"^\s+{field}:\s*\[")
+    for i, line in enumerate(lines):
+        if re.match(r"^(\w+):", line):
+            cur_top, cur_key, in_field = re.match(r"^(\w+):", line).group(1), None, False
+            continue
+        m = re.match(r"^  (\w+):", line)
+        if m:
+            cur_key, in_field = m.group(1), False
+            continue
+        if cur_top != section or cur_key != key:
+            continue
+        if not in_field and field_re.match(line):
+            in_field = True
+        if in_field and "]" in line:
+            idx = line.rfind("]")
+            lines[i] = line[:idx] + f", {alias}" + line[idx:]
+            with open(COMMANDS, "w", encoding="utf-8") as f:
+                f.writelines(lines)
+            return True
+    return False
 
 
 # 允许的按键 (pydirectinput 键名): f1~f24 / 数字 / 字母 / 少量功能键
@@ -102,10 +125,12 @@ def set_keys_in_yaml(section: str, key: str, keys: list):
 class CommandGUI:
     def __init__(self):
         self.settings, self.commands = load_all()
+        self.lang = self.settings["stt"].get("language", "zh")
         self._build_matcher()
 
         self.root = tk.Tk()
-        self.root.title("指令词典 — 骑砍语音指挥")
+        lang_tag = "英文模式 English" if self.lang == "en" else "中文模式"
+        self.root.title(f"指令词典 [{lang_tag}] — 骑砍语音指挥")
         self.root.configure(bg=BG)
         self.root.geometry("1160x680")
 
@@ -130,7 +155,8 @@ class CommandGUI:
         left.rowconfigure(1, weight=1)
         left.bind("<Configure>", self._on_left_resize)
 
-        tk.Label(left, text="📖 指令词典 (说哪些话有效)", fg=GOLD, bg=BG,
+        _mode = "🇬🇧 英文说法 English" if self.lang == "en" else "🇨🇳 中文说法"
+        tk.Label(left, text=f"📖 指令词典 · 当前显示 {_mode}", fg=GOLD, bg=BG,
                  font=("Microsoft YaHei", 13, "bold")).grid(
             row=0, column=0, sticky="w", pady=(0, 6))
 
@@ -234,11 +260,11 @@ class CommandGUI:
         self.target_map = {}
         values = []
         for k, d in self.commands.get("groups", {}).items():
-            label = f"兵种: {d['aliases'][0]}"
+            label = f"兵种: {self._name(d)}"
             self.target_map[label] = ("groups", k)
             values.append(label)
         for k, d in self.commands.get("orders", {}).items():
-            label = f"指令: {d['aliases'][0]}"
+            label = f"指令: {self._name(d)}"
             self.target_map[label] = ("orders", k)
             values.append(label)
         self.target_box = ttk.Combobox(add_row, values=values, state="readonly",
@@ -266,18 +292,33 @@ class CommandGUI:
             self.commands, self.settings["control"],
             lang=self.settings["stt"].get("language", "zh"))
 
+    def _field(self):
+        """当前语言对应的说法字段名 (英文模式=en, 否则=aliases)。"""
+        return "en" if self.lang == "en" else "aliases"
+
+    def _disp(self, d):
+        """当前语言下这条指令的全部说法 (英文模式取 en, 空则回退中文)。"""
+        if self.lang == "en":
+            return d.get("en") or d.get("aliases", [])
+        return d.get("aliases", [])
+
+    def _name(self, d):
+        al = self._disp(d)
+        return al[0] if al else "(无说法)"
+
     def _fill_tree(self):
         self.tree.delete(*self.tree.get_children())
         self.item_map = {}
+        sep = ", " if self.lang == "en" else "、"
         gp = self.tree.insert("", "end", text="🛡 兵种 (编队)", open=True)
         for k, d in self.commands.get("groups", {}).items():
-            iid = self.tree.insert(gp, "end", text=d["aliases"][0],
-                                   values=(f"按 {d['key']}", "、".join(d["aliases"])))
+            iid = self.tree.insert(gp, "end", text=self._name(d),
+                                   values=(f"按 {d['key']}", sep.join(self._disp(d))))
             self.item_map[iid] = ("groups", k)
         op = self.tree.insert("", "end", text="⚔ 指令 (动作)", open=True)
         for k, d in self.commands.get("orders", {}).items():
-            iid = self.tree.insert(op, "end", text=d["aliases"][0],
-                                   values=("+".join(d["keys"]), "、".join(d["aliases"])))
+            iid = self.tree.insert(op, "end", text=self._name(d),
+                                   values=("+".join(d["keys"]), sep.join(self._disp(d))))
             self.item_map[iid] = ("orders", k)
 
     def _set_detail(self, text, color=FG):
@@ -311,14 +352,16 @@ class CommandGUI:
         section, k = self.item_map[sel[0]]
         self._selected = (section, k)
         d = self.commands[section][k]
-        self.keyedit_label.config(text=d["aliases"][0], fg=FG)
+        self.keyedit_label.config(text=self._name(d), fg=FG)
         cur = [d["key"]] if section == "groups" else d["keys"]
         self.keys_entry.insert(0, " ".join(cur))
         kind = "兵种" if section == "groups" else "指令"
         keydesc = f"按 {d['key']}" if section == "groups" else "+".join(d["keys"])
+        sep = ", " if self.lang == "en" else "、"
+        say = "Can say" if self.lang == "en" else "能说的话"
         self._set_detail(
-            f"【{kind} · {d['aliases'][0]}】 键位 {keydesc}\n"
-            f"能说的话：{'、'.join(d['aliases'])}", FG)
+            f"【{kind} · {self._name(d)}】 键位 {keydesc}\n"
+            f"{say}：{sep.join(self._disp(d))}", FG)
 
     def save_keys(self):
         if not getattr(self, "_selected", None):
@@ -404,19 +447,21 @@ class CommandGUI:
 
     def add_alias(self):
         label = self.target_box.get()
-        alias = self.alias_entry.get().strip().rstrip("!!。.?？")
+        alias = self.alias_entry.get().strip().rstrip("!！。.?？")
+        if self.lang == "en":
+            alias = alias.lower()
         if not label or not alias:
             self.status.config(text="先选目标指令、再填新说法", fg=RED)
             return
-        # 查重
+        # 查重 (只在当前语言的说法里查)
         for sec in ("groups", "orders"):
             for k, d in self.commands.get(sec, {}).items():
-                if alias in d.get("aliases", []):
+                if alias in self._disp(d):
                     self.status.config(
-                        text=f"「{alias}」已存在于 {d['aliases'][0]}", fg=RED)
+                        text=f"「{alias}」已存在于 {self._name(d)}", fg=RED)
                     return
         section, key = self.target_map[label]
-        if not add_alias_to_yaml(section, key, alias):
+        if not add_alias_to_yaml(section, key, alias, field=self._field()):
             self.status.config(text="写入失败: commands.yaml 里没找到该条目", fg=RED)
             return
         # 重新加载, 让词典/匹配器立即生效
