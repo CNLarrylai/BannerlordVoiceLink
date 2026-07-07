@@ -7,10 +7,14 @@
        (not the newer ModuleCategory) or the checkbox is disabled.
        Schema mirrored from FastMode, which enables fine on this install. -->
   <SingleplayerModule value="true" />
+  <!-- CAUTION: dependency lookup is by exact Id. The SandBox FOLDER is named
+       "SandBox" but its module Id is "Sandbox" (lowercase b) - using the wrong
+       casing makes the launcher think a dependency is missing and DISABLES the
+       checkbox (found by decompiling LauncherModuleVM.UpdateIsDisabled). -->
   <DependedModules>
     <DependedModule Id="Native" DependentVersion="v1.4.6" Optional="false" />
     <DependedModule Id="SandBoxCore" DependentVersion="v1.4.6" Optional="false" />
-    <DependedModule Id="SandBox" DependentVersion="v1.4.6" Optional="false" />
+    <DependedModule Id="Sandbox" DependentVersion="v1.4.6" Optional="false" />
   </DependedModules>
   <ModulesToLoadAfterThis>
   </ModulesToLoadAfterThis>

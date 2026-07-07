@@ -1,0 +1,8 @@
+C:\Users\Victoria\bannerlord-voice\mod\tools\ModCheck\bin\Release\ModCheck.exe.config
+C:\Users\Victoria\bannerlord-voice\mod\tools\ModCheck\bin\Release\ModCheck.exe
+C:\Users\Victoria\bannerlord-voice\mod\tools\ModCheck\obj\Release\ModCheck.csproj.AssemblyReference.cache
+C:\Users\Victoria\bannerlord-voice\mod\tools\ModCheck\obj\Release\ModCheck.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Victoria\bannerlord-voice\mod\tools\ModCheck\obj\Release\ModCheck.AssemblyInfoInputs.cache
+C:\Users\Victoria\bannerlord-voice\mod\tools\ModCheck\obj\Release\ModCheck.AssemblyInfo.cs
+C:\Users\Victoria\bannerlord-voice\mod\tools\ModCheck\obj\Release\ModCheck.csproj.CoreCompileInputs.cache
+C:\Users\Victoria\bannerlord-voice\mod\tools\ModCheck\obj\Release\ModCheck.exe
