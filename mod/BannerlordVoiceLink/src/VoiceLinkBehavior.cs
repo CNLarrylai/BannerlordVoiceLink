@@ -64,10 +64,30 @@ namespace BannerlordVoiceLink
 
         // ---------- lifecycle ----------
 
+        private bool _started;
+
+        // 初始化顺序陷阱(反编译 Mission.AfterStart 确认): 子模组的
+        // OnMissionBehaviorInitialize 在所有已有行为的 OnBehaviorInitialize 之后
+        // 才被调用 —— 在那里 AddMissionBehavior 加入的行为, OnBehaviorInitialize
+        // 永远不会被调用, 但 EarlyStart/AfterStart 会。两边都挂 + 一次性开关。
         public override void OnBehaviorInitialize()
         {
             base.OnBehaviorInitialize();
-            Beacon("战斗开始, 启动监听线程");
+            StartServer("OnBehaviorInitialize");
+        }
+
+        public override void AfterStart()
+        {
+            base.AfterStart();
+            StartServer("AfterStart");
+        }
+
+        private void StartServer(string via)
+        {
+            if (_started)
+                return;
+            _started = true;
+            Beacon("战斗开始(" + via + "), 启动监听线程");
             _running = true;
             _thread = new Thread(ServerLoop) { IsBackground = true, Name = "VoiceLink" };
             _thread.Start();
