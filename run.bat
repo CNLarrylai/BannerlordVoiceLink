@@ -1,10 +1,9 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0"
-if not exist ".venv\Scripts\python.exe" (
+if not exist ".venv\Scripts\pythonw.exe" (
     echo [!] Environment not ready. Please run setup.bat first.
     pause
     exit /b 1
 )
-".venv\Scripts\python.exe" src\main.py
-pause
+rem 打开启动器 Hub (含语言开关/各功能); GUI, 不留黑窗
+start "" ".venv\Scripts\pythonw.exe" src\app.py
