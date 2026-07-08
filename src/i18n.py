@@ -72,6 +72,9 @@ _EN = {
     "命中率+延迟\n改完就验证": "Accuracy + latency,\nverify changes",
     "📋 查看日志": "📋 View Log",
     "📁 打开日志文件夹": "📁 Open Log Folder",
+    "🛑 全部停止": "🛑 Stop All",
+    "🛑 已停止 {n} 个语音进程": "🛑 Stopped {n} voice process(es)",
+    "没有其它语音进程在跑 (已是干净状态)": "No other voice processes running (clean)",
     "出问题？点「查看日志」，或发日志给作者排查":
         "Problems? Click View Log, or send the log to the author",
     "语音指挥已在运行 (看那个黑窗口)":

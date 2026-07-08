@@ -64,10 +64,12 @@ def _write_language(lang):
         f.writelines(lines)
 
 
-def _spawn(mode, console):
+def _spawn(mode, console, job=None):
     """按 mode 拉起一个功能子进程。源码/打包两种形态都成立。
 
     console=True 的功能(语音/测试)要有黑窗看日志; GUI 无窗。
+    job: KillOnCloseJob —— 传了就把子进程加进作业, 启动器一退它就跟着死,
+    从根上杜绝"关了启动器、语音还在后台跑"。
     """
     if FROZEN:
         # 打包后: exe 用 --mode 再拉起自己。全部 windowed(无黑窗), 日志写文件,
@@ -79,7 +81,10 @@ def _spawn(mode, console):
         exe = PY if console else PYW
         argv = [exe, os.path.join(ROOT, "src", "app.py"), "--mode", mode]
         flags = 0
-    return subprocess.Popen(argv, cwd=ROOT, creationflags=flags)
+    proc = subprocess.Popen(argv, cwd=ROOT, creationflags=flags)
+    if job is not None:
+        job.assign(proc.pid)
+    return proc
 
 
 class Launcher:
@@ -87,6 +92,12 @@ class Launcher:
         self.voice_proc = None
         self.lang = _read_language()
         i18n.set_lang(self.lang)
+        # 作业对象: 本启动器拉起的所有子进程随本进程一起终结 (防后台残留)
+        try:
+            from procman import KillOnCloseJob
+            self.job = KillOnCloseJob()
+        except Exception:
+            self.job = None
         self.root = tk.Tk()
         self.root.configure(bg=BG)
         self.root.resizable(False, False)
@@ -154,6 +165,10 @@ class Launcher:
                   font=("Microsoft YaHei", 10), bg="#2a323a", fg=FG,
                   activebackground="#3a444e", relief="flat", padx=12, pady=3).pack(
             side="left", padx=5)
+        tk.Button(foot, text=t("🛑 全部停止"), command=self.stop_all,
+                  font=("Microsoft YaHei", 10), bg="#3a2a2a", fg=FG,
+                  activebackground="#4a3030", relief="flat", padx=12, pady=3).pack(
+            side="left", padx=5)
 
         self.status = tk.Label(self.root,
                                text=t("出问题？点「查看日志」，或发日志给作者排查"),
@@ -199,24 +214,35 @@ class Launcher:
         if self.voice_proc and self.voice_proc.poll() is None:
             self._set(t("语音指挥已在运行 (看那个黑窗口)"), GOLD)
             return
-        self.voice_proc = _spawn("voice", console=True)
+        self.voice_proc = _spawn("voice", console=True, job=self.job)
         self._set(t("✓ 语音指挥已启动 (黑窗口在加载模型…)"))
         self._refresh_start_btn()
 
+    def stop_all(self):
+        """一键强杀所有语音进程 (排除本启动器) —— 兜底清残留。"""
+        import procman
+        n = procman.stop_all(exclude_pid=os.getpid())
+        self.voice_proc = None
+        self._refresh_start_btn()
+        if n:
+            self._set(t("🛑 已停止 {n} 个语音进程").format(n=n), GOLD)
+        else:
+            self._set(t("没有其它语音进程在跑 (已是干净状态)"))
+
     def start_calibrate(self):
-        _spawn("calibrate", console=False)
+        _spawn("calibrate", console=False, job=self.job)
         self._set(t("✓ 上手校准已启动 (跟着屏幕念)"))
 
     def start_listen(self):
-        _spawn("listen", console=False)
+        _spawn("listen", console=False, job=self.job)
         self._set(t("✓ 测试模式已启动 (只听不发键)"))
 
     def open_audio(self):
-        _spawn("audio", console=False)
+        _spawn("audio", console=False, job=self.job)
         self._set(t("✓ 已打开音频设置"))
 
     def open_dict(self):
-        _spawn("dict", console=False)
+        _spawn("dict", console=False, job=self.job)
         self._set(t("✓ 已打开指令词典"))
 
     def open_log(self):
