@@ -24,6 +24,41 @@ ORDER_THRESH = 0.25
 SCORE = 1.5
 
 
+MIN_LEN = 2   # KWS 别名至少 2 字: 单字("放/杀/冲")音短易误触发, 只适合模糊匹配
+
+
+def _curate(cmds):
+    """挑出适合 KWS 的别名。
+
+    主别名(每条第一个=命令本名, 如"骑兵""自由射击")永远保留 —— 它们是核心
+    命令词, 哪怕是别的命令的子串(骑兵⊂弓骑兵)也不能丢。
+    次要别名: 去单字("放/杀") + 去"是别的命令别名子串"的(射击⊂停止射击, 会误触发)。
+    """
+    entries = []
+    primaries = set()          # (sec,key) 的主别名文本
+    all_alias = []             # (alias, sec, key, is_primary)
+    for sec in ("groups", "orders"):
+        for key, d in cmds[sec].items():
+            al = d.get("aliases", [])
+            if al:
+                primaries.add(al[0])
+            for i, a in enumerate(al):
+                all_alias.append((a, sec, key, i == 0))
+    for a, sec, key, is_primary in all_alias:
+        if is_primary:
+            entries.append((sec, key, a))
+            continue
+        if len(a) < MIN_LEN:
+            continue
+        # 次要别名: 是别的命令某别名的真子串 => 丢(念长词时会误触发短的)
+        conflict = any(a != b and a in b and (bsec, bkey) != (sec, key)
+                       for b, bsec, bkey, _ in all_alias)
+        if conflict:
+            continue
+        entries.append((sec, key, a))
+    return entries
+
+
 def main():
     import sherpa_onnx
     with open(os.path.join(ROOT, "config", "commands.yaml"), encoding="utf-8") as f:
@@ -31,19 +66,18 @@ def main():
 
     lines = []
     skipped = []
-    for sec, thresh in (("groups", GROUP_THRESH), ("orders", ORDER_THRESH)):
-        for key, d in cmds[sec].items():
-            for alias in d.get("aliases", []):
-                try:
-                    toks = sherpa_onnx.text2token(
-                        [alias], tokens=TOKENS, tokens_type="ppinyin")[0]
-                except Exception as e:
-                    skipped.append((alias, str(e)[:40]))
-                    continue
-                if not toks:
-                    skipped.append((alias, "空token"))
-                    continue
-                lines.append(f"{' '.join(toks)} :{SCORE} #{thresh} @{sec}:{key}")
+    thresh_of = {"groups": GROUP_THRESH, "orders": ORDER_THRESH}
+    for sec, key, alias in _curate(cmds):
+        try:
+            toks = sherpa_onnx.text2token(
+                [alias], tokens=TOKENS, tokens_type="ppinyin")[0]
+        except Exception as e:
+            skipped.append((alias, str(e)[:40]))
+            continue
+        if not toks:
+            skipped.append((alias, "空token"))
+            continue
+        lines.append(f"{' '.join(toks)} :{SCORE} #{thresh_of[sec]} @{sec}:{key}")
 
     out = os.path.join(HERE, "keywords.txt")
     with open(out, "w", encoding="utf-8") as f:

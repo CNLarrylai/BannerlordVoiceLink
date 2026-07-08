@@ -28,3 +28,4 @@ mod/BannerlordVoiceLink/bin/
 mod/BannerlordVoiceLink/obj/
 kws/models/
 kws/keywords.txt
+kws/results/
