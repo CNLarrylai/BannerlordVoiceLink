@@ -78,9 +78,9 @@ def main():
             print(f"[{i}/{len(prompts)}] 请念: 「{text}」  ...", end="", flush=True)
             audio = next(seg)
             sr = cfg["audio"]["samplerate"]
-            try:  # 录音落盘, 文件名带期望标签, 供离线调参
-                sf.write(os.path.join(
-                    rec_dir, f"{i:02d}_{wg or ''}_{wo or ''}.wav"), audio, sr)
+            try:  # 录音按序号存(题目顺序由 MD 固定, 序号可反查期望;
+                  # 命令 key 含下划线, 别塞进文件名解析)
+                sf.write(os.path.join(rec_dir, f"{i:02d}.wav"), audio, sr)
             except Exception:
                 pass
 
