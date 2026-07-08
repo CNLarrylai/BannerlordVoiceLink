@@ -18,7 +18,27 @@ namespace BannerlordVoiceLink
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
-            VoiceLinkBehavior.Beacon("模组已被游戏加载 (OnSubModuleLoad)");
+            VoiceLinkBehavior.Beacon("模组已被游戏加载, 版本 " + ModVersion());
+        }
+
+        /// <summary>从自己的 SubModule.xml 读构建版本号 (打进心跳日志,
+        /// 和 launcher Mods 页互相印证"跑的是哪一版")。</summary>
+        private static string ModVersion()
+        {
+            try
+            {
+                var dll = Assembly.GetExecutingAssembly().Location;
+                var xml = Path.Combine(Path.GetDirectoryName(dll), "..", "..",
+                                       "SubModule.xml");
+                var text = File.ReadAllText(xml);
+                var m = System.Text.RegularExpressions.Regex.Match(
+                    text, "<Version value=\"([^\"]+)\"");
+                return m.Success ? m.Groups[1].Value : "?";
+            }
+            catch
+            {
+                return "?";
+            }
         }
 
         protected override void OnBeforeInitialModuleScreenSetAsRoot()

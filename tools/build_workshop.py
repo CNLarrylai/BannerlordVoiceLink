@@ -53,15 +53,40 @@ def run(cmd, **kw):
     subprocess.run(cmd, check=True, cwd=ROOT, **kw)
 
 
+def mod_version():
+    """模组版本 = v<应用版本>.<git提交数> —— 每次有改动提交必然递增,
+    launcher 的 Mods 页直接可见, 用户一眼判断'即将打开的是不是新版'。"""
+    sys.path.insert(0, os.path.join(ROOT, "src"))
+    from version import APP_VERSION
+    try:
+        n = subprocess.run(["git", "rev-list", "--count", "HEAD"], cwd=ROOT,
+                           capture_output=True, text=True,
+                           check=True).stdout.strip()
+    except Exception:
+        n = "0"
+    return f"v{APP_VERSION}.{n}"
+
+
+def stamped_submodule_xml(ver):
+    """读仓库 SubModule.xml, 把 Version 换成构建版本号, 返回文本。"""
+    p = os.path.join(ROOT, "mod", "BannerlordVoiceLink", "SubModule.xml")
+    with open(p, encoding="utf-8") as f:
+        content = f.read()
+    return re.sub(r'<Version value="[^"]*"',
+                  f'<Version value="{ver}"', content, count=1)
+
+
 def main():
     skip_exe = "--skip-exe" in sys.argv
 
-    print("== 1/4 构建并部署模组 DLL ==")
+    ver = mod_version()
+    print(f"== 1/4 构建并部署模组 DLL (版本 {ver}) ==")
     run(["dotnet", "build", "-c", "Release",
          os.path.join(ROOT, "mod", "BannerlordVoiceLink")])
     os.makedirs(os.path.join(MOD_DST, "bin", "Win64_Shipping_Client"), exist_ok=True)
-    shutil.copy(os.path.join(ROOT, "mod", "BannerlordVoiceLink", "SubModule.xml"),
-                MOD_DST)
+    # 部署的 SubModule.xml 打上构建版本戳 —— launcher Mods 页可见, 方便核对新旧
+    with open(os.path.join(MOD_DST, "SubModule.xml"), "w", encoding="utf-8") as f:
+        f.write(stamped_submodule_xml(ver))
     try:
         shutil.copy(os.path.join(ROOT, "mod", "BannerlordVoiceLink", "bin",
                                  "Release", "BannerlordVoiceLink.dll"),
@@ -129,6 +154,7 @@ def main():
         if not ok:
             sys.exit(1)
     print(f"\n✓ 工坊整包就绪: {MOD_DST}")
+    print(f"  模组版本: {ver}  ← 开游戏前在 launcher Mods 页核对这个号")
     print("  上传方式见 mod/PUBLISH.md")
 
 
