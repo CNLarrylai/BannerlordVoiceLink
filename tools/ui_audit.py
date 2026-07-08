@@ -84,6 +84,40 @@ def find_clipped(root):
     return bad
 
 
+def squeezed_buttons(root):
+    """缩到窗口 minsize 后, 检查按钮是否被 pack 挤出可视区。
+
+    教训(校准窗口): pack 空间不够时牺牲后打包的控件, 高DPI矮窗口下
+    "开始"按钮直接消失。规则: 按钮必须 side=bottom 先打包。
+    """
+    try:
+        minw, minh = root.minsize()
+    except Exception:
+        return []
+    if minw <= 1 or minh <= 1:
+        return []          # 没设 minsize 的窗口不做此检查
+    old = root.geometry()
+    root.geometry(f"{minw}x{minh}")
+    root.update()
+    bad = []
+    ry2 = root.winfo_rooty() + root.winfo_height()
+    for w in _walk(root):
+        if not isinstance(w, tk.Button):
+            continue
+        label = str(w.cget("text"))[:20].replace("\n", "\\n")
+        if not w.winfo_ismapped():
+            bad.append(("Button", label, f"minsize {minw}x{minh}", "被挤出窗口"))
+        elif w.winfo_rooty() + w.winfo_height() > ry2 + 2:
+            bad.append(("Button", label, f"minsize {minw}x{minh}", "超出下边缘"))
+    root.geometry(old)
+    root.update()
+    return bad
+
+
+def _full_check(root):
+    return find_clipped(root) + squeezed_buttons(root)
+
+
 def shot(root, name):
     if not _HAS_PIL:
         return
@@ -115,7 +149,7 @@ def audit(lang):
     L._read_language = lambda: lang
     try:
         win = L.Launcher()
-        bad = find_clipped(win.root)
+        bad = _full_check(win.root)
         shot(win.root, f"launcher_{lang}")
         win.root.destroy()
     finally:
@@ -125,7 +159,7 @@ def audit(lang):
     # --- 指令词典 ---
     from command_gui import CommandGUI
     g = CommandGUI()
-    bad = find_clipped(g.root)
+    bad = _full_check(g.root)
     shot(g.root, f"command_gui_{lang}")
     g.root.destroy()
     fails += _report("command_gui", lang, bad)
@@ -133,7 +167,7 @@ def audit(lang):
     # --- 音频设置 (会开麦克风音量流, 构建后立即关) ---
     from audio_setup import SetupWindow
     w = SetupWindow()
-    bad = find_clipped(w.root)
+    bad = _full_check(w.root)
     shot(w.root, f"audio_setup_{lang}")
     w.close()
     fails += _report("audio_setup", lang, bad)
@@ -141,7 +175,7 @@ def audit(lang):
     # --- 上手校准 (worker 只在点开始后才启动, 构建无副作用) ---
     from calibrate import CalibrateGUI
     cg = CalibrateGUI()
-    bad = find_clipped(cg.root)
+    bad = _full_check(cg.root)
     shot(cg.root, f"calibrate_{lang}")
     cg.running = False
     cg.root.destroy()
@@ -150,7 +184,7 @@ def audit(lang):
     # --- 游戏指令树 ---
     from order_tree import OrderTreeWindow
     ot = OrderTreeWindow(lang=lang)
-    bad = find_clipped(ot.root)
+    bad = _full_check(ot.root)
     shot(ot.root, f"order_tree_{lang}")
     ot.root.destroy()
     fails += _report("order_tree", lang, bad)
@@ -167,7 +201,7 @@ def audit(lang):
     try:
         from listen import ListenGUI
         lg = ListenGUI()
-        bad = find_clipped(lg.root)
+        bad = _full_check(lg.root)
         shot(lg.root, f"listen_{lang}")
         lg.running = False
         lg.root.destroy()

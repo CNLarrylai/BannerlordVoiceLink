@@ -156,34 +156,12 @@ class CalibrateGUI:
                  fg=DIM, bg=BG, font=("Microsoft YaHei", 9),
                  wraplength=580, justify="left").pack(padx=18, pady=(0, 10))
 
-        # 大字出题区
-        self.prompt = tk.Label(self.root, text=t("点「开始」后跟着念"), fg=BLUE,
-                               bg="#161c22", font=("Microsoft YaHei", 26, "bold"),
-                               pady=24)
-        self.prompt.pack(fill="x", padx=18)
-        self.progress = tk.Label(self.root, text="", fg=DIM, bg=BG,
-                                 font=("Microsoft YaHei", 10))
-        self.progress.pack(pady=(6, 0))
-        self.verdict = tk.Label(self.root, text="", fg=DIM, bg=BG,
-                                font=("Microsoft YaHei", 12))
-        self.verdict.pack(pady=(4, 8))
-
-        wrap = tk.Frame(self.root, bg=BG)
-        wrap.pack(fill="both", expand=True, padx=18, pady=(0, 8))
-        self.log = tk.Text(wrap, bg="#161c22", fg=FG, relief="flat", wrap="word",
-                           font=("Microsoft YaHei", 10), state="disabled",
-                           height=8, highlightthickness=0)
-        vsb = tk.Scrollbar(wrap, command=self.log.yview)
-        self.log.configure(yscrollcommand=vsb.set)
-        self.log.pack(side="left", fill="both", expand=True)
-        vsb.pack(side="right", fill="y")
-        for tag, color in (("ok", GREEN), ("bad", RED), ("dim", DIM),
-                           ("gold", GOLD)):
-            self.log.tag_configure(tag, foreground=color)
-
+        # —— 布局规则: 按钮区先用 side="bottom" 打包 —— Tk 空间不够时牺牲的是
+        #    后打包的控件, 按钮绝不能被挤出窗口(踩过: 高DPI矮窗口按钮消失)。
         btns = tk.Frame(self.root, bg=BG)
-        btns.pack(pady=(0, 14))
-        self.start_btn = tk.Button(btns, text=t("▶ 开始"), command=self.start,
+        btns.pack(side="bottom", pady=(6, 14))
+        self.start_btn = tk.Button(btns, text=t("▶ 开始校准 (约3分钟)"),
+                                   command=self.start,
                                    font=("Microsoft YaHei", 12, "bold"), bg=GOLD,
                                    fg="#101418", relief="flat", padx=20, pady=6)
         self.start_btn.pack(side="left", padx=6)
@@ -192,6 +170,41 @@ class CalibrateGUI:
                                   fg=FG, relief="flat", padx=14, pady=6,
                                   state="disabled")
         self.skip_btn.pack(side="left", padx=6)
+
+        # 大字出题区
+        self.prompt = tk.Label(self.root, text=t("点「开始」后跟着念"), fg=BLUE,
+                               bg="#161c22", font=("Microsoft YaHei", 24, "bold"),
+                               pady=16)
+        self.prompt.pack(fill="x", padx=18)
+        self.progress = tk.Label(self.root, text="", fg=DIM, bg=BG,
+                                 font=("Microsoft YaHei", 10))
+        self.progress.pack(pady=(4, 0))
+        self.verdict = tk.Label(self.root, text="", fg=DIM, bg=BG,
+                                font=("Microsoft YaHei", 12))
+        self.verdict.pack(pady=(2, 6))
+
+        wrap = tk.Frame(self.root, bg=BG)
+        wrap.pack(fill="both", expand=True, padx=18, pady=(0, 4))
+        self.log = tk.Text(wrap, bg="#161c22", fg=FG, relief="flat", wrap="word",
+                           font=("Microsoft YaHei", 10), state="disabled",
+                           height=6, highlightthickness=0)
+        vsb = tk.Scrollbar(wrap, command=self.log.yview)
+        self.log.configure(yscrollcommand=vsb.set)
+        self.log.pack(side="left", fill="both", expand=True)
+        vsb.pack(side="right", fill="y")
+        for tag, color in (("ok", GREEN), ("bad", RED), ("dim", DIM),
+                           ("gold", GOLD)):
+            self.log.tag_configure(tag, foreground=color)
+
+        # 点开始前就把全流程讲清楚
+        self._append(t("流程一共 4 步:") + "\n", "gold")
+        self._append(t("  ① 点「开始校准」(首次会加载识别模型, 稍等)") + "\n", "dim")
+        self._append(t("  ② 屏幕大字出题, 共 {n} 条 —— 对着麦克风念出来即可; "
+                       "没念对自动给第二次机会, 也可点「跳过这条」")
+                     .format(n=len(self.items)) + "\n", "dim")
+        self._append(t("  ③ 全部念完自动出报告: 命中率 + 平均识别速度") + "\n", "dim")
+        self._append(t("  ④ 若发现「你的稳定错听」, 一键学进个人词典, "
+                       "以后就按你的念法识别") + "\n", "dim")
 
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.after(80, self._poll)

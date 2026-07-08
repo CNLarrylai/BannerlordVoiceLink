@@ -107,7 +107,19 @@ _EN = {
         "personal dictionary — it adapts to you.",
     "点「开始」后跟着念": "Press Start, then read aloud",
     "▶ 开始": "▶ Start",
+    "▶ 开始校准 (约3分钟)": "▶ Start calibration (~3 min)",
     "跳过这条": "Skip this one",
+    "流程一共 4 步:": "Four steps:",
+    "  ① 点「开始校准」(首次会加载识别模型, 稍等)":
+        "  1. Click Start (the speech model loads first, one moment)",
+    "  ② 屏幕大字出题, 共 {n} 条 —— 对着麦克风念出来即可; 没念对自动给第二次机会, 也可点「跳过这条」":
+        "  2. Read the {n} prompted commands aloud; misses get a second try, "
+        "or click Skip",
+    "  ③ 全部念完自动出报告: 命中率 + 平均识别速度":
+        "  3. A report appears: hit rate + average recognition speed",
+    "  ④ 若发现「你的稳定错听」, 一键学进个人词典, 以后就按你的念法识别":
+        "  4. Consistent mis-hearings can be learned into your personal "
+        "dictionary with one click",
     "加载识别模型中…": "Loading speech model…",
     "校准出错: {e}": "Calibration error: {e}",
     "请念：「{s}」": "Say: \"{s}\"",
