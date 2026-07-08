@@ -1,0 +1,15 @@
+<Tasks>
+    <GetItem>
+        <ItemId Value="FILL_IN_YOUR_ITEM_ID"/>
+    </GetItem>
+    <UpdateItem>
+        <ModuleFolder Value="C:\SteamLibraryforstream\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\BannerlordVoiceLink"/>
+        <ChangeNotes Value="Update: see change log."/>
+        <Tags>
+            <Tag Value="Utility"/>
+            <Tag Value="Native"/>
+            <Tag Value="Singleplayer"/>
+            <Tag Value="v1.4.6"/>
+        </Tags>
+    </UpdateItem>
+</Tasks>

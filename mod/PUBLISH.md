@@ -1,0 +1,70 @@
+# 创意工坊发布指南 (整包分发: 模组 + 语音程序)
+
+## 这个包是什么
+
+订阅者一次拿到全部, **零配置起步**:
+
+```
+Modules/BannerlordVoiceLink/            (~397 MB, 工坊对大模组很宽容)
+├─ SubModule.xml
+├─ bin/Win64_Shipping_Client/BannerlordVoiceLink.dll   ← 游戏内模组(锁定敌方编队)
+└─ VoiceApp/                                            ← 完整语音程序
+   ├─ BannerlordVoice.exe                               (启动器 Hub)
+   └─ _internal/  (含内置 base 模型, 免联网可用; 配置=发行默认)
+```
+
+**订阅者体验**: 订阅 → launcher 勾选模组 → 开游戏(点掉"未验证代码"和 UAC 两个
+弹窗) → 到主菜单时**语音面板自动弹出** → 选麦克风 → 进战斗开喊。
+配置写在用户自己的 %LOCALAPPDATA%\BannerlordVoice, 更新模组不会覆盖。
+
+- 自动启动逻辑在模组里: 已在运行/未随包/存在 `VoiceApp\autostart_off.txt` 则跳过。
+- 心跳日志: %LOCALAPPDATA%\BannerlordVoice\logs\mod.log (排错先看这里)。
+
+## 构建 (每次发版)
+
+```
+.venv\Scripts\python tools\build_workshop.py        # 全量: DLL + EXE + 组装 + 体检
+.venv\Scripts\python tools\build_workshop.py --skip-exe   # 只更新模组 DLL
+```
+
+体检会硬校验: 三件套齐全 + 随包配置必须是发行默认(麦克风 null / model auto /
+中文) —— 你的本机设备名和模型选择不会被打进包里。
+
+## 首次上传 (官方工具, 一条命令)
+
+1. 确认 Steam 客户端在线, 且游戏的 Steam Cloud 已开启 (Steam 库 → 游戏属性)。
+2. 准备一张宣传图, 放到 `assets\workshop_preview.png` (或改 WorkshopCreate.xml 里的路径)。
+3. 命令行进入游戏 bin 目录并执行:
+
+```
+cd "C:\SteamLibraryforstream\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client"
+TaleWorlds.MountAndBlade.SteamWorkshop.exe "C:\Users\Victoria\bannerlord-voice\mod\WorkshopCreate.xml"
+```
+
+成功后去自己的工坊页拿 **ItemId** (页面 URL 里的数字)。
+
+## 后续更新
+
+把 ItemId 填进 `mod\WorkshopUpdate.xml` (模板已备好), 以后每次:
+
+```
+python tools\build_workshop.py
+TaleWorlds.MountAndBlade.SteamWorkshop.exe "C:\Users\Victoria\bannerlord-voice\mod\WorkshopUpdate.xml"
+```
+
+## 诚实注意事项
+
+- **两个弹窗是常态**: 游戏启动时的"未验证代码"(模组用了网络socket, 必然被标) 和
+  语音程序的 UAC 提权(发按键需要) —— 工坊简介里提前说明, 减少差评。
+- 订阅者的杀软可能对 PyInstaller exe 误报 —— 简介里注明开源/可自行编译可减压;
+  以后上代码签名证书可根治。
+- 工坊订阅的模组在 steamapps\workshop\content\261550\<ItemId>\, 不在游戏 Modules;
+  模组按自身 DLL 位置找 VoiceApp, 两种位置都能工作(已按此设计)。
+- 你自己本机的 Modules\BannerlordVoiceLink 是"开发版"; 如果同时订阅了工坊版,
+  launcher 里只勾一个, 避免双份加载。
+- 游戏大版本更新后: 重编模组(体检会暴露 API 变化), 更新 WorkshopUpdate.xml 里的
+  Compatible Version 标签。
+
+## 参考
+
+- 官方上传文档: https://moddocs.bannerlord.com/steam-workshop/uploading_updating_mod/
