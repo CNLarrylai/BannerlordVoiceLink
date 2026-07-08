@@ -65,6 +65,10 @@ def main():
     m = Matcher.from_config(commands, cfg["control"], lang="zh")
 
     os.makedirs(os.path.join(HERE, "results"), exist_ok=True)
+    # 保存每条真人录音, 方便事后离线调 KWS 阈值(用真音频, 不靠 TTS 盲调)
+    rec_dir = os.path.join(HERE, "results", "recordings")
+    os.makedirs(rec_dir, exist_ok=True)
+    import soundfile as sf
     csv_path = os.path.join(HERE, "results", "live_compare.csv")
     new = not os.path.exists(csv_path)
     cf = open(csv_path, "a", newline="", encoding="utf-8-sig")
@@ -84,6 +88,11 @@ def main():
             print(f"[{i}/{len(prompts)}] 请念: 「{text}」  ...", end="", flush=True)
             audio = next(seg)
             sr = cfg["audio"]["samplerate"]
+            try:  # 录音落盘, 文件名带期望标签, 供离线调参
+                sf.write(os.path.join(
+                    rec_dir, f"{i:02d}_{wg or ''}_{wo or ''}.wav"), audio, sr)
+            except Exception:
+                pass
 
             t0 = time.perf_counter()
             kkeys = B.kws_spot(kws, audio, sr)

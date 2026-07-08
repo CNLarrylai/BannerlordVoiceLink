@@ -18,9 +18,10 @@ MODEL = os.path.join(HERE, "models",
                      "sherpa-onnx-kws-zipformer-zh-en-3M-2025-12-20")
 TOKENS = os.path.join(MODEL, "tokens.txt")
 
-# 非对称阈值(可调): 兵种松、指令严 —— 对应你早就定的策略
-GROUP_THRESH = 0.20
-ORDER_THRESH = 0.25
+# 非对称阈值(可调): 越低越易触发。真人实测边界词(自由射击/上马/散阵)常漏,
+# 调低门槛提灵敏度; 误触发交给"监听门"兜(战斗外/手动关时根本不收音)。
+GROUP_THRESH = 0.15
+ORDER_THRESH = 0.18
 SCORE = 1.5
 
 
