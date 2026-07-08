@@ -5,18 +5,12 @@ import sys
 
 
 def _add_cuda_dll_dirs():
-    """让 ctranslate2 能找到 pip 装的 cuBLAS / cuDNN DLL (Windows)。"""
+    """把所有可能的 CUDA DLL 目录加进搜索路径 (pip包 / 下载的 / 系统)。"""
     try:
-        import nvidia  # noqa: F401
-    except ImportError:
-        return
-    # nvidia 是命名空间包, 用 __path__ (可能有多个根) 而非 __file__
-    for base in list(getattr(nvidia, "__path__", [])):
-        for sub in ("cublas", "cudnn"):
-            bin_dir = os.path.join(base, sub, "bin")
-            if os.path.isdir(bin_dir):
-                os.add_dll_directory(bin_dir)
-                os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
+        import cuda_libs
+        cuda_libs.add_to_search_path()
+    except Exception:
+        pass
 
 
 _add_cuda_dll_dirs()
@@ -49,15 +43,15 @@ def looks_degenerate(text: str) -> bool:
 
 
 def _cuda_libs_available():
-    """CUDA 运行库(cuBLAS/cuDNN)在不在。
+    """CUDA 运行库(cuBLAS/cuDNN)这台机器上找得到吗。
 
-    源码: 装了 nvidia-*-cu12 就有。打包 CPU 版故意不带 -> 导入失败 -> False,
-    这样即便机器有 GPU 也会退回 CPU, 不会 cublas64_12.dll not found。
+    位置感知: pip 装的(源码/GPU包) / 下载到 %LOCALAPPDATA% 的 / 系统 CUDA,
+    任一来源有就算有。CPU 通用包默认三处都没有 -> False -> 退回 CPU;
+    用户在音频设置里点下载后 -> 下载目录里有 -> True -> 自动走 GPU。
     """
     try:
-        import nvidia.cublas  # noqa: F401
-        import nvidia.cudnn   # noqa: F401
-        return True
+        import cuda_libs
+        return cuda_libs.is_ready()
     except Exception:
         return False
 

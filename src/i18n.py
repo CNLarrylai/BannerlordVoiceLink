@@ -211,9 +211,18 @@ _EN = {
     "🧠 识别引擎": "🧠 Recognition Engine",
     "✓ 检测到 NVIDIA 显卡, CUDA 可用 (可用 GPU 加速)":
         "✓ NVIDIA GPU detected, CUDA available (GPU acceleration ready)",
-    "检测到显卡但缺 CUDA 运行库 → 本版本只能用 CPU":
-        "GPU found but CUDA runtime missing → CPU only in this build",
+    "检测到 N 卡但缺 CUDA 库 → 下载后即可 GPU 加速":
+        "NVIDIA GPU found, CUDA libs missing → download to enable GPU",
     "未检测到可用 GPU → 用 CPU 运行": "No usable GPU detected → running on CPU",
+    "⬇ 下载 GPU 加速库 ({size})": "⬇ Download GPU libs ({size})",
+    "约 1.2 GB": "~1.2 GB",
+    "正在下载 GPU 加速库…（约 1.2GB，一次性）":
+        "Downloading GPU libraries… (~1.2 GB, one time)",
+    "下载 GPU 加速库… {pct}%  ({d} / {t} MB)":
+        "Downloading GPU libs… {pct}%  ({d} / {t} MB)",
+    "✓ GPU 加速库已就绪！运行选「自动/GPU」并重启语音指挥即可":
+        "✓ GPU libs ready! Set Run to Auto/GPU and restart Voice Command",
+    "GPU 加速库下载失败: {e}": "GPU library download failed: {e}",
     "模型:": "Model:",
     "运行:": "Run on:",
     "自动": "Auto",

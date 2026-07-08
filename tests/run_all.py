@@ -41,6 +41,10 @@ def main():
     if rc != 0:
         print("\n❌ 指令树校验有失败! 先修这个。")
         sys.exit(1)
+    rc = run("CUDA库检测下载 (GPU按需, 正确性门槛)", "test_cuda_libs.py")
+    if rc != 0:
+        print("\n❌ CUDA库测试有失败! 先修这个。")
+        sys.exit(1)
     rc = run("识别退化过滤 (重复幻觉, 正确性门槛)", "test_stt_filter.py")
     if rc != 0:
         print("\n❌ 退化过滤测试有失败! 先修这个。")

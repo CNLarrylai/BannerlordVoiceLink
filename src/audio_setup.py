@@ -95,23 +95,34 @@ def current_stt():
 
 
 def detect_gpu():
-    """轻量探测能否真正用 GPU (不加载 faster-whisper)。返回 (可用, 说明)。"""
+    """探测 GPU 三态。返回 (状态, 说明)。
+
+    状态: "ready" 有N卡且CUDA可用 | "need_cuda" 有N卡但缺CUDA库(可下载)
+          | "no_gpu" 没有可用N卡。
+    """
     try:
         import ctranslate2
         n = ctranslate2.get_cuda_device_count()
     except Exception:
         n = 0
     try:
-        import nvidia.cublas  # noqa: F401
-        import nvidia.cudnn   # noqa: F401
-        libs = True
+        import cuda_libs
+        libs = cuda_libs.is_ready()
     except Exception:
         libs = False
     if n > 0 and libs:
-        return True, t("✓ 检测到 NVIDIA 显卡, CUDA 可用 (可用 GPU 加速)")
+        return "ready", t("✓ 检测到 NVIDIA 显卡, CUDA 可用 (可用 GPU 加速)")
     if n > 0:
-        return False, t("检测到显卡但缺 CUDA 运行库 → 本版本只能用 CPU")
-    return False, t("未检测到可用 GPU → 用 CPU 运行")
+        return "need_cuda", t("检测到 N 卡但缺 CUDA 库 → 下载后即可 GPU 加速")
+    return "no_gpu", t("未检测到可用 GPU → 用 CPU 运行")
+
+
+def _cuda_size():
+    try:
+        import cuda_libs
+        return cuda_libs.size_hint()
+    except Exception:
+        return "≈ 1.2 GB"
 
 
 def model_status(size):
@@ -252,10 +263,29 @@ class SetupWindow:
                  font=("Microsoft YaHei", 12, "bold")).grid(
             row=0, column=0, columnspan=4, sticky="w", padx=12, pady=(10, 2))
 
-        gpu_ok, hw = detect_gpu()
-        tk.Label(eng, text=hw, fg=(GREEN if gpu_ok else DIM), bg="#161c22",
-                 font=("Microsoft YaHei", 9)).grid(
-            row=1, column=0, columnspan=4, sticky="w", padx=12, pady=(0, 6))
+        gpu_state, hw = detect_gpu()
+        hwrow = tk.Frame(eng, bg="#161c22")
+        hwrow.grid(row=1, column=0, columnspan=4, sticky="ew", padx=12, pady=(0, 6))
+        hwrow.columnconfigure(0, weight=1)
+        gpu_col = GREEN if gpu_state == "ready" else (
+            "#ffcf70" if gpu_state == "need_cuda" else DIM)
+        tk.Label(hwrow, text=hw, fg=gpu_col, bg="#161c22",
+                 font=("Microsoft YaHei", 9), anchor="w").grid(
+            row=0, column=0, sticky="w")
+        # 有 N 卡但缺 CUDA -> 给一键下载 GPU 加速库
+        self.cuda_q = queue.Queue()
+        self.cuda_downloading = False
+        self.cuda_btn = tk.Button(
+            hwrow, text=t("⬇ 下载 GPU 加速库 ({size})").format(
+                size=_cuda_size()), command=self._download_cuda,
+            font=("Microsoft YaHei", 9), bg=GOLD, fg="#101418", relief="flat",
+            padx=10)
+        if gpu_state == "need_cuda":
+            self.cuda_btn.grid(row=0, column=1, sticky="e")
+        self.cuda_bar = ttk.Progressbar(hwrow, style="level.Horizontal.TProgressbar",
+                                        length=380, maximum=100)
+        self.cuda_bar.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(6, 0))
+        self.cuda_bar.grid_remove()
 
         cur_model, cur_device = current_stt()
 
@@ -318,6 +348,59 @@ class SetupWindow:
                                   padx=12, pady=(2, 10))
         self._on_model_change()
         self.root.after(120, self._dl_poll)
+        self.root.after(140, self._cuda_poll)
+
+    # ---------- CUDA 加速库下载 ----------
+
+    def _download_cuda(self):
+        import cuda_libs
+        if self.cuda_downloading:
+            return
+        self.cuda_downloading = True
+        self.cuda_btn.config(state="disabled")
+        self.cuda_bar.grid()
+        self.cuda_bar["value"] = 0
+        self.status.config(text=t("正在下载 GPU 加速库…（约 1.2GB，一次性）"),
+                           fg="#7Fd1ff")
+
+        def work():
+            try:
+                cuda_libs.download(lambda d, tot: self.cuda_q.put(("prog", (d, tot))))
+                self.cuda_q.put(("done", None))
+            except Exception as e:
+                self.cuda_q.put(("err", str(e)))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _cuda_poll(self):
+        try:
+            while True:
+                kind, payload = self.cuda_q.get_nowait()
+                if kind == "prog":
+                    d, tot = payload
+                    pct = min(100, d / tot * 100) if tot else 0
+                    self.cuda_bar["value"] = pct
+                    self.status.config(
+                        text=t("下载 GPU 加速库… {pct}%  ({d} / {t} MB)").format(
+                            pct=f"{pct:.0f}", d=f"{d/1048576:.0f}",
+                            t=f"{tot/1048576:.0f}" if tot else "?"), fg="#7Fd1ff")
+                elif kind == "done":
+                    self.cuda_downloading = False
+                    self.cuda_bar.grid_remove()
+                    self.cuda_btn.grid_remove()
+                    self.status.config(
+                        text=t("✓ GPU 加速库已就绪！运行选「自动/GPU」并重启语音指挥即可"),
+                        fg=GREEN)
+                elif kind == "err":
+                    self.cuda_downloading = False
+                    self.cuda_btn.config(state="normal")
+                    self.cuda_bar.grid_remove()
+                    self.status.config(
+                        text=t("GPU 加速库下载失败: {e}").format(e=str(payload)[:60]),
+                        fg="#ff8a8a")
+        except queue.Empty:
+            pass
+        self.root.after(150, self._cuda_poll)
 
     def _selected_model(self):
         return self.model_map.get(self.model_box.get())
