@@ -81,6 +81,35 @@ def test_download_extracts_and_verifies(monkey=None):
         cuda_libs.cuda_dir = real_dir
 
 
+def test_add_user_dir_recursive():
+    """选中父目录时应递归找出含 DLL 的子目录并登记(cublas/cudnn 常分处)。"""
+    root = tempfile.mkdtemp()
+    cub = os.path.join(root, "nvidia", "cublas", "bin")
+    cud = os.path.join(root, "nvidia", "cudnn", "bin")
+    os.makedirs(cub)
+    os.makedirs(cud)
+    open(os.path.join(cub, "cublas64_12.dll"), "wb").write(b"x")
+    open(os.path.join(cud, "cudnn64_9.dll"), "wb").write(b"x")
+    tf = os.path.join(tempfile.mkdtemp(), "extra.txt")
+    real_f, real_b, real_s = (cuda_libs._user_dirs_file,
+                              cuda_libs._bundled_dirs, cuda_libs._system_cuda_dirs)
+    cuda_libs._user_dirs_file = lambda: tf
+    cuda_libs._bundled_dirs = lambda: []
+    cuda_libs._system_cuda_dirs = lambda: []
+    try:
+        ok, hits = cuda_libs.add_user_dir(os.path.join(root, "nvidia"))
+        assert ok and len(hits) == 2, (ok, hits)
+        assert cuda_libs.is_ready()
+        assert len(cuda_libs.user_extra_dirs()) == 2
+        # 空目录: 未找到
+        ok2, hits2 = cuda_libs.add_user_dir(tempfile.mkdtemp())
+        assert not ok2 and not hits2
+    finally:
+        cuda_libs._user_dirs_file = real_f
+        cuda_libs._bundled_dirs = real_b
+        cuda_libs._system_cuda_dirs = real_s
+
+
 def test_download_missing_dll_raises():
     """wheel 里没有标志 DLL 时应报错(防静默残缺)。"""
     d = tempfile.mkdtemp()

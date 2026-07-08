@@ -275,13 +275,21 @@ class SetupWindow:
         # 有 N 卡但缺 CUDA -> 给一键下载 GPU 加速库
         self.cuda_q = queue.Queue()
         self.cuda_downloading = False
+        cudabtns = tk.Frame(hwrow, bg="#161c22")
+        self.cuda_btnrow = cudabtns
+        self.cuda_browse = tk.Button(
+            cudabtns, text=t("📁 已有?指定文件夹"), command=self._browse_cuda,
+            font=("Microsoft YaHei", 9), bg="#2a323a", fg=FG, relief="flat",
+            padx=8)
+        self.cuda_browse.pack(side="left", padx=(0, 6))
         self.cuda_btn = tk.Button(
-            hwrow, text=t("⬇ 下载 GPU 加速库 ({size})").format(
-                size=_cuda_size()), command=self._download_cuda,
+            cudabtns, text=t("⬇ 下载 ({size})").format(size=_cuda_size()),
+            command=self._download_cuda,
             font=("Microsoft YaHei", 9), bg=GOLD, fg="#101418", relief="flat",
             padx=10)
+        self.cuda_btn.pack(side="left")
         if gpu_state == "need_cuda":
-            self.cuda_btn.grid(row=0, column=1, sticky="e")
+            cudabtns.grid(row=0, column=1, sticky="e")
         self.cuda_bar = ttk.Progressbar(hwrow, style="level.Horizontal.TProgressbar",
                                         length=380, maximum=100)
         self.cuda_bar.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(6, 0))
@@ -350,7 +358,30 @@ class SetupWindow:
         self.root.after(120, self._dl_poll)
         self.root.after(140, self._cuda_poll)
 
-    # ---------- CUDA 加速库下载 ----------
+    # ---------- CUDA 加速库: 指定已有 / 下载 ----------
+
+    def _browse_cuda(self):
+        """让用户选一个已有 CUDA 库的文件夹, 验证后登记、免下载。"""
+        from tkinter import filedialog
+        import cuda_libs
+        folder = filedialog.askdirectory(
+            title=t("选择含 cuBLAS/cuDNN 的文件夹 (如 …\\nvidia)"))
+        if not folder:
+            return
+        ok, hits = cuda_libs.add_user_dir(folder)
+        if ok:
+            self.cuda_btnrow.grid_remove()
+            self.status.config(
+                text=t("✓ 已认到本地 CUDA 库，无需下载！运行选「自动/GPU」并重启即可"),
+                fg=GREEN)
+        elif hits:
+            self.status.config(
+                text=t("这里只找到部分 CUDA 库，缺 cuBLAS 或 cuDNN；换个更全的文件夹或直接下载"),
+                fg="#ffcf70")
+        else:
+            self.status.config(
+                text=t("该文件夹(含子目录)里没找到 CUDA 库(cublas64_12.dll / cudnn64_9.dll)"),
+                fg="#ff8a8a")
 
     def _download_cuda(self):
         import cuda_libs
@@ -387,7 +418,7 @@ class SetupWindow:
                 elif kind == "done":
                     self.cuda_downloading = False
                     self.cuda_bar.grid_remove()
-                    self.cuda_btn.grid_remove()
+                    self.cuda_btnrow.grid_remove()
                     self.status.config(
                         text=t("✓ GPU 加速库已就绪！运行选「自动/GPU」并重启语音指挥即可"),
                         fg=GREEN)

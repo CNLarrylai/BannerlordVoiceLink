@@ -31,6 +31,66 @@ def cuda_dir():
     return d
 
 
+def _user_dirs_file():
+    return os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+                        APP_DIRNAME, "cuda_extra_dirs.txt")
+
+
+def user_extra_dirs():
+    """用户"指定文件夹"手动登记的 CUDA 库目录 (已有库、免下载)。"""
+    p = _user_dirs_file()
+    if not os.path.exists(p):
+        return []
+    try:
+        with open(p, encoding="utf-8") as f:
+            return [ln.strip() for ln in f if ln.strip() and os.path.isdir(ln.strip())]
+    except Exception:
+        return []
+
+
+def add_user_dir(folder):
+    """在 folder 里(含子目录)找 CUDA 库, 找到就登记。
+
+    返回 (是否齐全, [登记的目录])。用户可能选中父目录(如 .venv 的 nvidia),
+    cuBLAS/cuDNN 分处 cublas/bin 与 cudnn/bin —— 递归找出真正含 DLL 的目录。
+    """
+    hits = []
+    for dp, _dirs, files in os.walk(folder):
+        low = {f.lower() for f in files}
+        if any(dll in low for dll in _REQUIRED):
+            hits.append(dp)
+        if dp.count(os.sep) - folder.count(os.sep) > 4:   # 限深, 别扫太久
+            _dirs[:] = []
+    if not hits:
+        return False, []
+    existing = set(user_extra_dirs())
+    existing.update(hits)
+    os.makedirs(os.path.dirname(_user_dirs_file()), exist_ok=True)
+    with open(_user_dirs_file(), "w", encoding="utf-8") as f:
+        f.write("\n".join(sorted(existing)) + "\n")
+    # 齐不齐: 登记后两个标志 DLL 是否都能在某个登记目录里找到
+    all_dirs = list(existing)
+    ok = all(any(os.path.exists(os.path.join(d, dll)) for d in all_dirs)
+             for dll in _REQUIRED)
+    return ok, hits
+
+
+def _system_cuda_dirs():
+    """系统 CUDA Toolkit 的 bin (装了 Toolkit 的人自动认到, 免下载)。"""
+    dirs = []
+    cp = os.environ.get("CUDA_PATH")
+    if cp and os.path.isdir(os.path.join(cp, "bin")):
+        dirs.append(os.path.join(cp, "bin"))
+    root = os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"),
+                        "NVIDIA GPU Computing Toolkit", "CUDA")
+    if os.path.isdir(root):
+        for v in os.listdir(root):
+            b = os.path.join(root, v, "bin")
+            if os.path.isdir(b):
+                dirs.append(b)
+    return dirs
+
+
 def _bundled_dirs():
     """源码版/未来 GPU 包里 pip 装的 nvidia 库路径 (可能有多个根)。"""
     dirs = []
@@ -47,9 +107,15 @@ def _bundled_dirs():
 
 
 def search_dirs():
-    """所有可能放着 CUDA DLL 的目录 (下载目录 + pip 包目录)。"""
-    dirs = [cuda_dir()] + _bundled_dirs()
-    return [d for d in dirs if os.path.isdir(d)]
+    """所有可能放着 CUDA DLL 的目录 (下载 / pip包 / 用户指定 / 系统Toolkit)。"""
+    dirs = ([cuda_dir()] + user_extra_dirs() + _bundled_dirs()
+            + _system_cuda_dirs())
+    seen, out = set(), []
+    for d in dirs:
+        if d and os.path.isdir(d) and d not in seen:
+            seen.add(d)
+            out.append(d)
+    return out
 
 
 def add_to_search_path():

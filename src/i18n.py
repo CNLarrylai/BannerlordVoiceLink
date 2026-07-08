@@ -215,6 +215,17 @@ _EN = {
         "NVIDIA GPU found, CUDA libs missing → download to enable GPU",
     "未检测到可用 GPU → 用 CPU 运行": "No usable GPU detected → running on CPU",
     "⬇ 下载 GPU 加速库 ({size})": "⬇ Download GPU libs ({size})",
+    "⬇ 下载 ({size})": "⬇ Download ({size})",
+    "📁 已有?指定文件夹": "📁 Have it? Pick folder",
+    "选择含 cuBLAS/cuDNN 的文件夹 (如 …\\nvidia)":
+        "Pick a folder containing cuBLAS/cuDNN (e.g. …\\nvidia)",
+    "✓ 已认到本地 CUDA 库，无需下载！运行选「自动/GPU」并重启即可":
+        "✓ Found local CUDA libs, no download needed! Set Run to Auto/GPU and restart",
+    "这里只找到部分 CUDA 库，缺 cuBLAS 或 cuDNN；换个更全的文件夹或直接下载":
+        "Only part of the CUDA libs here (missing cuBLAS or cuDNN); pick a fuller "
+        "folder or just download",
+    "该文件夹(含子目录)里没找到 CUDA 库(cublas64_12.dll / cudnn64_9.dll)":
+        "No CUDA libs (cublas64_12.dll / cudnn64_9.dll) found in that folder",
     "约 1.2 GB": "~1.2 GB",
     "正在下载 GPU 加速库…（约 1.2GB，一次性）":
         "Downloading GPU libraries… (~1.2 GB, one time)",
