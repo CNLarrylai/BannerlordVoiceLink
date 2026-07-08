@@ -68,12 +68,18 @@ def mod_version():
 
 
 def _running_count():
-    """当前跑着几个 BannerlordVoice.exe (打包版; 会锁模组文件)。"""
+    """会锁住待更新文件的进程数。
+
+    两类都会锁: ①BannerlordVoice.exe(打包版, 锁 VoiceApp) ②骑砍 launcher/游戏
+    (验证/加载模组时锁 BannerlordVoiceLink.dll)。任一开着都得先关。
+    """
     try:
         r = subprocess.run(
             ["powershell.exe", "-NoProfile", "-Command",
-             "(Get-Process BannerlordVoice -ErrorAction SilentlyContinue"
-             " | Measure-Object).Count"],
+             "(Get-Process -ErrorAction SilentlyContinue | Where-Object {"
+             " $_.ProcessName -match 'BannerlordVoice|Bannerlord\\.'"
+             " -or $_.ProcessName -match 'TaleWorlds\\.MountAndBlade\\.Launcher'"
+             " } | Measure-Object).Count"],
             capture_output=True, text=True)
         return int((r.stdout or "0").strip() or "0")
     except Exception:
@@ -96,18 +102,25 @@ def main():
     # —— 预检: 运行中的打包版会锁 VoiceApp/DLL, 部分部署会留下"号新内容旧"的
     #    说谎版本。所以先检查、早退, 一个文件都别碰(教训: 版本戳曾先于复制写入)。
     if _running_count() > 0:
-        print("!! 有 BannerlordVoice.exe 正在运行 (手动开的或游戏自动弹的),")
-        print("   会锁住待更新的文件。请先全部关掉再重跑, 本次未改动任何文件。")
+        print("!! 检测到会锁文件的进程正在运行:")
+        print("   - BannerlordVoice.exe (打包版语音程序), 或")
+        print("   - 骑砍 launcher / 游戏本体 (验证/加载模组时锁 DLL)")
+        print("   请先全部关掉再重跑。本次未改动任何文件(版本号也没变, 不会说谎)。")
         sys.exit(1)
 
     print(f"== 1/4 构建模组 DLL ==")
     run(["dotnet", "build", "-c", "Release",
          os.path.join(ROOT, "mod", "BannerlordVoiceLink")])
     os.makedirs(os.path.join(MOD_DST, "bin", "Win64_Shipping_Client"), exist_ok=True)
-    # DLL 复制失败=硬错误(不再"跳过"), 否则会 DLL旧/版本新 不一致
-    shutil.copy(os.path.join(ROOT, "mod", "BannerlordVoiceLink", "bin",
-                             "Release", "BannerlordVoiceLink.dll"),
-                os.path.join(MOD_DST, "bin", "Win64_Shipping_Client"))
+    # DLL 复制失败=硬停(不"跳过", 否则会 DLL旧/版本新 不一致)
+    try:
+        shutil.copy(os.path.join(ROOT, "mod", "BannerlordVoiceLink", "bin",
+                                 "Release", "BannerlordVoiceLink.dll"),
+                    os.path.join(MOD_DST, "bin", "Win64_Shipping_Client"))
+    except PermissionError:
+        print("!! DLL 被锁(骑砍 launcher/游戏中途开了?)。请关掉后重跑,")
+        print("   本次未写版本号, 不会出现号新内容旧。")
+        sys.exit(1)
 
     if not skip_exe:
         print("== 2/4 打包语音程序 EXE (临时净化配置, 完毕自动还原) ==")
