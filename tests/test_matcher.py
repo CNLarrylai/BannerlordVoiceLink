@@ -146,6 +146,9 @@ TARGET_CASES = [
     ("进攻弓箭手", None, "archers"),          # 无主语: 作用于当前选中编队
     ("骑兵冲锋", "cavalry", None),            # 无目标: 普通冲锋
     ("弓箭手进攻", "archers", None),          # 主语在动词前, 不是目标
+    # Whisper 连读断句塞的标点(全角冒号/顿号)不能破坏识别: 弓、骑兵 应仍是弓骑兵
+    ("弓、骑兵：冲锋：对方：弓、骑兵：。", "horse_archers", "horse_archers"),
+    ("骑兵，进攻，弓箭手。", "cavalry", "archers"),
 ]
 for text, want_g, want_t in TARGET_CASES:
     tr = m.explain(text)

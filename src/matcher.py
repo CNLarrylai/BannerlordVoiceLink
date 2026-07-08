@@ -116,10 +116,16 @@ class Matcher:
         return data.get("en", []) if self.lang == "en" else data.get("aliases", [])
 
     def _clean(self, text):
-        """去噪。中文: 去标点/空白; 英文: 小写并只留字母数字(去空格标点)。"""
+        """去噪, 白名单式: 只留汉字/数字/字母, 其余(标点/空格)一律去掉。
+
+        白名单比黑名单(PUNCT_RE)稳: Whisper 会在连读里塞各种标点(全角冒号、
+        顿号…), 一个个列举必漏 —— 曾漏全角冒号'：', 把'弓骑兵：冲锋'的冒号
+        算进杂字, 指令占比被拉低误判成聊天。只保留会用到的字符, 从此免疫。
+        """
         if self.lang == "en":
             return re.sub(r"[^a-z0-9]", "", text.lower())
-        return PUNCT_RE.sub("", text)
+        # 一-鿿 常用汉字 + 㐀-䶿 扩展A + 字母数字
+        return re.sub(r"[^一-鿿㐀-䶿0-9a-zA-Z]", "", text)
 
     @classmethod
     def from_config(cls, commands, control, lang="zh"):
