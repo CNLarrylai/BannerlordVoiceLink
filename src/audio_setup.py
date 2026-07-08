@@ -186,6 +186,11 @@ class SetupWindow:
             fg=GOLD, bg=BG, font=("Microsoft YaHei", 14, "bold"),
         ).pack(padx=24, pady=(16, 8))
 
+        # status 标签必须在引擎区之前"创建"(引擎区的 CPU 大模型警告会写它;
+        # 曾因创建顺序在后, 打包版CPU机器一进音频设置就崩), 但按原布局稍后 pack。
+        self.status = tk.Label(self.root, text="", fg=GREEN, bg=BG,
+                               font=("Microsoft YaHei", 11))
+
         self._build_engine_section()
 
         tk.Label(
@@ -220,9 +225,7 @@ class SetupWindow:
             self._add_row(frame, row, idx, name, saved == name)
             self.meters[idx] = Meter(idx)
 
-        self.status = tk.Label(self.root, text="", fg=GREEN, bg=BG,
-                               font=("Microsoft YaHei", 11))
-        self.status.pack(pady=(8, 0))
+        self.status.pack(pady=(8, 0))   # 创建在引擎区之前, 布局位置不变
 
         btns = tk.Frame(self.root, bg=BG)
         btns.pack(pady=(6, 18))

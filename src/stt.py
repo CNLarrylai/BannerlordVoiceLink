@@ -1,5 +1,6 @@
 """语音识别封装 —— faster-whisper (本地 GPU)。"""
 import os
+import re
 import sys
 
 
@@ -27,6 +28,24 @@ HALLUCINATIONS = (
     "点赞", "订阅", "转发", "打赏", "明镜", "点点栏目",
     "字幕", "谢谢观看", "请关注", "下期再见", "MING PAO",
 )
+
+# 退化循环检测: temperature=0 关掉了质量回退(为锁延迟), Whisper 偶发的
+# 重复环("轻轻轻轻轻…")会漏出来 —— 用文本形态兜底, 零解码开销。
+_CHAR_LOOP_RE = re.compile(r"(.)\1{5,}")            # 同一字符连续 6+
+_WORD_LOOP_RE = re.compile(r"(.{2,8}?)\1{2,}")      # 同一 2~8 字片段连续 3+
+
+
+def looks_degenerate(text: str) -> bool:
+    """是不是重复幻觉/退化输出 (真人指令不会长这样)。"""
+    if not text:
+        return False
+    core = re.sub(r"[\s,。、!！?？.…~]+", "", text)
+    if _CHAR_LOOP_RE.search(core) or _WORD_LOOP_RE.search(core):
+        return True
+    # 压缩比思想: 够长但字符种类极少 ("轻轻 轻轻 轻轻…")
+    if len(core) >= 8 and len(set(core)) <= max(2, len(core) // 6):
+        return True
+    return False
 
 
 def _cuda_libs_available():
@@ -159,5 +178,9 @@ class Transcriber:
         text = "".join(seg.text for seg in segments).strip()
         # 整句就是已知幻觉话术 => 当作没说话
         if text and any(h in text for h in HALLUCINATIONS):
+            return ""
+        # 重复退化("轻轻轻轻…") => 丢弃并留痕, 别让它去撞词典
+        if looks_degenerate(text):
+            print(f"[STT] ⚠ 检出重复幻觉, 已丢弃: 「{text[:30]}…」")
             return ""
         return text
