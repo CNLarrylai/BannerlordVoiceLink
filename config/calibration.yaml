@@ -25,6 +25,5 @@ drill:
   - {order: fire_at_will}
   - {order: hold_fire}
   - {order: mount_toggle}
-  - {order: attack_nearest}
   - {group: all, order: charge}
-  - {group: cavalry, order: attack_nearest}
+  - {group: cavalry, order: charge}

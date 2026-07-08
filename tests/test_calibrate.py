@@ -100,7 +100,7 @@ def test_usage_top_commands():
         assert usage.top_commands("zh", n=20, min_rows=40) is None
         # 攒够后: 按频次排序, 去重, miss/他语言不计入
         for _ in range(35):
-            usage.record("zh", "ok", "cavalry", "attack_nearest", "mod", 0.4, "x")
+            usage.record("zh", "ok", "cavalry", "advance", "mod", 0.4, "x")
         for _ in range(5):
             usage.record("zh", "ok", None, "halt", "keys", 0.3, "立定")
         for _ in range(9):
@@ -109,7 +109,7 @@ def test_usage_top_commands():
             usage.record("en", "ok", "all", "retreat", "keys", 0.3, "retreat")
         top = usage.top_commands("zh", n=2, min_rows=40)
         assert top is not None and len(top) == 2
-        assert top[0][0] == ("cavalry", "attack_nearest") and top[0][1] == 35
+        assert top[0][0] == ("cavalry", "advance") and top[0][1] == 35
         assert top[1][0] == ("all", "charge")
     finally:
         usage._path = real
@@ -128,11 +128,11 @@ def test_load_drill_sources():
         assert ("all", "charge") in drill
         # 有使用数据 -> 你的 top 清单(过滤掉词典里不存在的键)
         usage.top_commands = lambda lang, n=20, min_rows=40: [
-            (("cavalry", "attack_nearest"), 35), ((None, "halt"), 9),
+            (("cavalry", "advance"), 35), ((None, "halt"), 9),
             (("ghost_group", "charge"), 5)]
         drill, src = load_drill(cmds, "zh")
         assert src == "usage"
-        assert drill == [("cavalry", "attack_nearest"), (None, "halt")]
+        assert drill == [("cavalry", "advance"), (None, "halt")]
     finally:
         usage.top_commands = real
 

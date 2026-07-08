@@ -66,22 +66,25 @@ orders:
               往上冲, 压上去打, 打他们, 冲他们, 攻击他们, 灭了他们]
     en: [charge, attack, engage, charge them, attack them, go get them,
          take them out, focus them, kill them]
-  attack_nearest:
-    # 需要伴侣模组(mod/BannerlordVoiceLink): 语音直接命令编队攻击"最近的"敌军,
-    # 不用准星。模组不可用时退化为普通冲锋(F1F3, 游戏冲锋本就先打就近之敌)。
-    modlink_target: nearest
-    keys: [f1, f3]
-    aliases: [打最近的, 攻击最近的, 进攻最近的敌人, 打最近的敌人, 冲最近的,
-              攻击最近目标]
-    en: [attack nearest, attack the nearest, charge the nearest, attack closest,
-         attack the closest, attack the nearest enemy, attack the nearest unit,
-         charge the closest, go for the nearest, take out the nearest]
+  # 注: 曾有独立的 attack_nearest("打最近的"), 已删 —— 游戏原生冲锋(charge)
+  # 本就让编队去打最近的敌人, 单列冗余。模组的独特价值是"定向按兵种攻击"
+  # (骑兵专打敌弓箭手), 走 charge 的 takes_target, 不需要单独指令。
   advance:
     takes_target: true   # 交战(F1F4)同样支持指向性目标, 见 charge 注释
     keys: [f1, f4]
     aliases: [开战, 交战, 前进, 进军, 推进, 上前, 向前, 往前走, 压上去, 顶上去,
               向前推, 推上去, 往前压, 往前顶, 上前压]
     en: [advance, move up, push forward, forward, push up, engage the enemy]
+  focus_target:
+    # 需伴侣模组: "打这只/打眼前的" —— 集火离玩家最近的那支敌军(混战里最本能的
+    # 喊法, 多半就指眼前那支)。所有被下令编队集火同一支。模组不可用退化为
+    # 普通冲锋(F1F3)。别名刻意与 charge 的"打他们"(泛指全军冲锋)区分。
+    # 别名避坑: 不用"这个/那个/军队/…的/它"(与聊天词或松兵种别名如马队撞),
+    # 用量词"只"最稳。更全的说法留给 KWS 引擎(能组合式识别, 不怕子串误匹配)。
+    modlink_target: player
+    keys: [f1, f3]
+    aliases: [打这只, 就打这只, 集火这只, 打那只, 打这一只, 打面前这只, 灭了这只]
+    en: [get that one, focus that, attack that one, hit that one, focus fire]
   fall_back:
     keys: [f1, f5]
     aliases: [退后, 后退, 撤一点, 往后, 后撤, 往后退, 退一退, 撤一撤, 往后撤,

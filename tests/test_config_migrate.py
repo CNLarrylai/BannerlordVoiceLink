@@ -54,7 +54,7 @@ def test_stale_config_refreshed_prefs_kept():
     try:
         refresh_config(d, SRC)
         cmds = open(os.path.join(d, "commands.yaml"), encoding="utf-8").read()
-        assert "打最近的" in cmds, "老词典没被刷新!"
+        assert "打他们" in cmds, "老词典没被刷新!"   # charge 新增别名, 应在刷新后出现
         st = open(os.path.join(d, "settings.yaml"), encoding="utf-8").read()
         assert 'device: "麦克风 (NVIDIA Broadcast)"' in st, "用户麦克风选择丢了"
         assert "language: en" in st, "用户语言选择丢了"

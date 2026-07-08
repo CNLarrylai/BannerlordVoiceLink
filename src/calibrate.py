@@ -49,8 +49,8 @@ DRILL = [
     (None, "charge"), (None, "halt"), (None, "advance"),
     (None, "fall_back"), (None, "retreat"), (None, "shield_wall"),
     (None, "line"), (None, "loose"), (None, "fire_at_will"),
-    (None, "hold_fire"), (None, "mount_toggle"), (None, "attack_nearest"),
-    ("all", "charge"), ("cavalry", "attack_nearest"),
+    (None, "hold_fire"), (None, "mount_toggle"),
+    ("all", "charge"), ("cavalry", "charge"),
 ]
 
 

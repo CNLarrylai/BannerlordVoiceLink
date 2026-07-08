@@ -220,21 +220,27 @@ namespace BannerlordVoiceLink
             return res;
         }
 
+        /// <summary>玩家所在位置 (操控角色; 没有则用主将; 再没有则原点)。</summary>
+        private static TaleWorlds.Library.Vec2 PlayerPos()
+        {
+            var me = Mission.Current.MainAgent;
+            if (me != null)
+                return me.Position.AsVec2;
+            return Mission.Current.PlayerTeam.GeneralAgent?.Position.AsVec2
+                   ?? TaleWorlds.Library.Vec2.Zero;
+        }
+
         private string Info()
         {
             if (!InBattle())
                 return "err no_battle";
-            var me = Mission.Current.MainAgent;
-            var pos = me != null
-                ? me.Position.AsVec2
-                : Mission.Current.PlayerTeam.GeneralAgent?.Position.AsVec2
-                  ?? TaleWorlds.Library.Vec2.Zero;
+            var pos = PlayerPos();
             var sb = new StringBuilder("ok");
             foreach (var f in EnemyFormations())
             {
                 sb.Append(' ').Append(f.FormationIndex)
                   .Append(':').Append(f.CountOfUnits)
-                  .Append(':').Append((int)f.CurrentPosition.Distance(pos));
+                  .Append(':').Append((int)f.CachedAveragePosition.Distance(pos));
             }
             return sb.ToString();
         }
@@ -270,19 +276,36 @@ namespace BannerlordVoiceLink
             if (groups.Count == 0)
                 return "err group_empty";
 
-            // 2. resolve target filter
+            var enemies = EnemyFormations();
+            if (enemies.Count == 0)
+                return "err no_enemies";
+
+            // 2. resolve target mode
+            //    "player": 集火离玩家最近的那支(混战里"打这只/打他"的本能, 多半
+            //              指玩家眼前的敌军) —— 所有被下令编队都打同一支。
+            //    <兵种>  : 定向按敌方兵种(骑兵专打敌弓箭手) —— 每支各打自己最近的
+            //              该类敌军, 多队自然铺开。
             var byClass = false;
             FormationClass tc = FormationClass.Infantry;
-            if (targetName != "nearest")
+            Formation fixedTarget = null;
+            if (targetName == "player")
+            {
+                var ppos = PlayerPos();
+                var bd = float.MaxValue;
+                foreach (var e in enemies)
+                {
+                    var d = e.CachedAveragePosition.Distance(ppos);
+                    if (d < bd) { bd = d; fixedTarget = e; }
+                }
+                if (fixedTarget == null)
+                    return "err no_target";
+            }
+            else
             {
                 if (!TryClass(targetName, out tc))
                     return "err bad_target";
                 byClass = true;
             }
-
-            var enemies = EnemyFormations();
-            if (enemies.Count == 0)
-                return "err no_enemies";
 
             // 3. each commanded formation charges its own best-matching target.
             //    IMPORTANT: use the exact native PLAYER order path
@@ -299,16 +322,21 @@ namespace BannerlordVoiceLink
 
             var done = 0;
             var lastDesc = "";
+            // 位置一律用 CachedAveragePosition(编队实际士兵均值, RTSCamera 同款),
+            // 不用 CurrentPosition(空编队/纵队会退回下令点, 不准)。
             foreach (var g in groups)
             {
-                Formation best = null;
-                var bestD = float.MaxValue;
-                foreach (var e in enemies)
+                Formation best = fixedTarget;   // player 模式: 固定同一目标(集火)
+                if (best == null)               // 按兵种模式: 各打各自最近的该类敌军
                 {
-                    if (byClass && e.FormationIndex != tc)
-                        continue;
-                    var d = g.CurrentPosition.Distance(e.CurrentPosition);
-                    if (d < bestD) { bestD = d; best = e; }
+                    var bestD = float.MaxValue;
+                    foreach (var e in enemies)
+                    {
+                        if (byClass && e.FormationIndex != tc)
+                            continue;
+                        var d = g.CachedAveragePosition.Distance(e.CachedAveragePosition);
+                        if (d < bestD) { bestD = d; best = e; }
+                    }
                 }
                 if (best == null)
                     continue;
@@ -316,7 +344,7 @@ namespace BannerlordVoiceLink
                 oc.SelectFormation(g);
                 oc.SetOrderWithFormation(OrderType.Charge, best);
                 done++;
-                lastDesc = best.FormationIndex + ":" + best.CountOfUnits + ":" + (int)bestD;
+                lastDesc = best.FormationIndex + ":" + best.CountOfUnits;
             }
 
             // put the player's own UI selection back the way it was
