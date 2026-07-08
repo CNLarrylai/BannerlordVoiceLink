@@ -12,14 +12,19 @@ SRC = os.path.join(ROOT, "src")
 datas = [
     (os.path.join(ROOT, "config", "settings.yaml"), "config"),
     (os.path.join(ROOT, "config", "commands.yaml"), "config"),
+    (os.path.join(ROOT, "config", "order_tree.yaml"), "config"),
+    (os.path.join(ROOT, "config", "calibration.yaml"), "config"),
     (os.path.join(ROOT, "assets", "icon.ico"), "assets"),
 ]
 binaries = []
 hiddenimports = [
-    # app.py 里是函数内条件导入, 显式列出保证被打进去
+    # app.py 及各处是函数内条件导入, 显式列出保证被打进去
     "launcher", "main", "listen", "audio_setup", "command_gui",
     "matcher", "executor", "stt", "audio", "overlay", "paths",
     "license", "version", "machine_id",
+    # 后加的模块(多为函数内 import, 静态分析易漏)
+    "i18n", "models", "retry", "modlink", "dictionary", "usage",
+    "procman", "order_tree", "calibrate", "cuda_libs",
     "yaml", "rapidfuzz", "pydirectinput", "keyboard", "numpy",
 ]
 
