@@ -67,6 +67,19 @@ def mod_version():
     return f"v{APP_VERSION}.{n}"
 
 
+def _running_count():
+    """当前跑着几个 BannerlordVoice.exe (打包版; 会锁模组文件)。"""
+    try:
+        r = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command",
+             "(Get-Process BannerlordVoice -ErrorAction SilentlyContinue"
+             " | Measure-Object).Count"],
+            capture_output=True, text=True)
+        return int((r.stdout or "0").strip() or "0")
+    except Exception:
+        return 0
+
+
 def stamped_submodule_xml(ver):
     """读仓库 SubModule.xml, 把 Version 换成构建版本号, 返回文本。"""
     p = os.path.join(ROOT, "mod", "BannerlordVoiceLink", "SubModule.xml")
@@ -78,21 +91,23 @@ def stamped_submodule_xml(ver):
 
 def main():
     skip_exe = "--skip-exe" in sys.argv
-
     ver = mod_version()
-    print(f"== 1/4 构建并部署模组 DLL (版本 {ver}) ==")
+
+    # —— 预检: 运行中的打包版会锁 VoiceApp/DLL, 部分部署会留下"号新内容旧"的
+    #    说谎版本。所以先检查、早退, 一个文件都别碰(教训: 版本戳曾先于复制写入)。
+    if _running_count() > 0:
+        print("!! 有 BannerlordVoice.exe 正在运行 (手动开的或游戏自动弹的),")
+        print("   会锁住待更新的文件。请先全部关掉再重跑, 本次未改动任何文件。")
+        sys.exit(1)
+
+    print(f"== 1/4 构建模组 DLL ==")
     run(["dotnet", "build", "-c", "Release",
          os.path.join(ROOT, "mod", "BannerlordVoiceLink")])
     os.makedirs(os.path.join(MOD_DST, "bin", "Win64_Shipping_Client"), exist_ok=True)
-    # 部署的 SubModule.xml 打上构建版本戳 —— launcher Mods 页可见, 方便核对新旧
-    with open(os.path.join(MOD_DST, "SubModule.xml"), "w", encoding="utf-8") as f:
-        f.write(stamped_submodule_xml(ver))
-    try:
-        shutil.copy(os.path.join(ROOT, "mod", "BannerlordVoiceLink", "bin",
-                                 "Release", "BannerlordVoiceLink.dll"),
-                    os.path.join(MOD_DST, "bin", "Win64_Shipping_Client"))
-    except PermissionError:
-        print("  !! DLL 被占用(游戏/launcher开着?), 跳过 DLL 更新 — 关掉后重跑")
+    # DLL 复制失败=硬错误(不再"跳过"), 否则会 DLL旧/版本新 不一致
+    shutil.copy(os.path.join(ROOT, "mod", "BannerlordVoiceLink", "bin",
+                             "Release", "BannerlordVoiceLink.dll"),
+                os.path.join(MOD_DST, "bin", "Win64_Shipping_Client"))
 
     if not skip_exe:
         print("== 2/4 打包语音程序 EXE (临时净化配置, 完毕自动还原) ==")
@@ -116,14 +131,8 @@ def main():
     if not os.path.isdir(src):
         print("!! dist/BannerlordVoice 不存在, 先不带 --skip-exe 跑一次")
         sys.exit(1)
-    # 运行中的打包版会锁住 VoiceApp 文件 —— 先给人话提示, 不甩堆栈
-    chk = subprocess.run(
-        ["powershell.exe", "-NoProfile", "-Command",
-         "(Get-Process BannerlordVoice -ErrorAction SilentlyContinue).Count"],
-        capture_output=True, text=True)
-    if (chk.stdout or "").strip() not in ("", "0"):
-        print("!! 有 BannerlordVoice.exe 正在运行 (自动弹出的语音面板?),")
-        print("   请先关掉那些窗口再重跑本脚本。")
+    if _running_count() > 0:                     # 打包途中有人开了打包版? 再挡一次
+        print("!! 组装前检测到 BannerlordVoice.exe 又跑起来了, 请关掉后重跑。")
         sys.exit(1)
     if os.path.isdir(dst):
         shutil.rmtree(dst)
@@ -153,6 +162,11 @@ def main():
         print(f"  {'✓' if ok else '✗✗✗ 随包配置错'} {token}")
         if not ok:
             sys.exit(1)
+
+    # —— 最后一步才写版本戳: 只有 DLL + VoiceApp + 体检全过, 版本号才更新。
+    #    这样"launcher 显示的版本"永远等于"真正部署进去的内容", 绝不说谎。
+    with open(os.path.join(MOD_DST, "SubModule.xml"), "w", encoding="utf-8") as f:
+        f.write(stamped_submodule_xml(ver))
     print(f"\n✓ 工坊整包就绪: {MOD_DST}")
     print(f"  模组版本: {ver}  ← 开游戏前在 launcher Mods 页核对这个号")
     print("  上传方式见 mod/PUBLISH.md")
