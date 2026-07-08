@@ -42,8 +42,7 @@ GREEN = "#7dff9b"
 RED = "#ff8a8a"
 BLUE = "#7Fd1ff"
 
-# 练习单: (group_key, order_key)。None 表示该侧不考。
-# 前段单词校准(用于错听学习), 末尾两条组合句(实战练习, 不做别名学习)。
+# 内置兜底练习单: (group_key, order_key)。正常情况用 config/calibration.yaml。
 DRILL = [
     ("infantry", None), ("archers", None), ("cavalry", None),
     ("horse_archers", None), ("all", None),
@@ -55,17 +54,49 @@ DRILL = [
 ]
 
 
+def load_drill(commands, lang):
+    """题目来源三级: ①usage.csv 攒够数据 -> 你的真实 top_n
+    ②config/calibration.yaml 默认题库 ③内置 DRILL。返回 (清单, 来源说明key)。"""
+    cfg = {}
+    try:
+        with open(config_path("calibration.yaml"), encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+    except Exception:
+        pass
+    import usage
+    top = usage.top_commands(lang, n=cfg.get("top_n", 20),
+                             min_rows=cfg.get("min_usage_rows", 40))
+    if top:
+        drill = []
+        for (g, o), _cnt in top:
+            if g and g not in commands["groups"]:
+                continue
+            if o and o not in commands["orders"]:
+                continue
+            drill.append((g, o))
+        if drill:
+            return drill, "usage"
+    conf = cfg.get("drill")
+    if conf:
+        drill = [(d.get("group"), d.get("order")) for d in conf
+                 if (d.get("group") in commands["groups"] or not d.get("group"))
+                 and (d.get("order") in commands["orders"] or not d.get("order"))]
+        if drill:
+            return drill, "default"
+    return list(DRILL), "builtin"
+
+
 def primary(commands, sec, key, lang):
     d = commands[sec][key]
     al = (d.get("en") if lang == "en" else d.get("aliases")) or ["?"]
     return al[0]
 
 
-def build_items(commands, lang):
+def build_items(commands, lang, drill=None):
     """练习单 -> [{say, group, order, combo}]。"""
     items = []
     joiner = " " if lang == "en" else ""
-    for g, o in DRILL:
+    for g, o in (drill if drill is not None else DRILL):
         parts = []
         if g:
             parts.append(primary(commands, "groups", g, lang))
@@ -134,7 +165,8 @@ class CalibrateGUI:
         self.commands = dictionary.load_commands()
         self.matcher = Matcher.from_config(self.commands, self.cfg["control"],
                                            lang=self.lang)
-        self.items = build_items(self.commands, self.lang)
+        drill, self.drill_source = load_drill(self.commands, self.lang)
+        self.items = build_items(self.commands, self.lang, drill)
         self.attempts = []
         self.rec_dir = os.path.join(os.path.dirname(log_dir()), "calibration")
         self.q = queue.Queue()
@@ -197,6 +229,10 @@ class CalibrateGUI:
             self.log.tag_configure(tag, foreground=color)
 
         # 点开始前就把全流程讲清楚
+        src_txt = {"usage": t("题目来源: 你的使用记录 Top{n} (最常用优先)"),
+                   "default": t("题目来源: 默认题库 (使用数据攒够后自动改用你的常用指令)"),
+                   "builtin": t("题目来源: 内置题库")}[self.drill_source]
+        self._append(src_txt.format(n=len(self.items)) + "\n", "gold")
         self._append(t("流程一共 4 步:") + "\n", "gold")
         self._append(t("  ① 点「开始校准」(首次会加载识别模型, 稍等)") + "\n", "dim")
         self._append(t("  ② 屏幕大字出题, 共 {n} 条 —— 对着麦克风念出来即可; "
@@ -354,9 +390,11 @@ class CalibrateGUI:
                              "dim")
             self.start_btn.config(text=t("✍ 学进我的个人词典"),
                                   command=self.apply_sugs, state="normal")
+            # 学不学是用户的选择 —— 必须给"不学"的路
+            self.skip_btn.config(text=t("先不学"), state="normal",
+                                 command=self._decline_sugs)
         else:
-            self.start_btn.config(text=t("▶ 再来一轮"), command=self.start,
-                                  state="normal")
+            self._reset_buttons()
 
     def apply_sugs(self):
         n = 0
@@ -366,8 +404,17 @@ class CalibrateGUI:
                 n += 1
         self._append(t("✓ 已写入 {n} 条到个人词典 (语音程序按 F10 生效)")
                      .format(n=n) + "\n", "ok")
+        self._reset_buttons()
+
+    def _decline_sugs(self):
+        self._append(t("· 本轮建议未采纳 (随时可再跑一轮)") + "\n", "dim")
+        self._reset_buttons()
+
+    def _reset_buttons(self):
         self.start_btn.config(text=t("▶ 再来一轮"), command=self.start,
                               state="normal")
+        self.skip_btn.config(text=t("跳过这条"), command=self.skip,
+                             state="disabled")
 
     def close(self):
         self.running = False

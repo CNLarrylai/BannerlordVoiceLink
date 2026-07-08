@@ -1,0 +1,30 @@
+# ============================================================
+#  校准题库 —— 新玩家跟读的默认清单 (可自行增删)
+# ============================================================
+#  group/order 用 commands.yaml 里的键名; 两者都填 = 组合句(只练习,
+#  不做错听学习)。
+#  当使用记录攒够 min_usage_rows 条后, 校准会自动改用"你实际最常用的
+#  top_n 条"出题 (数据在 logs/usage.csv, 仅本地) —— 默认清单只是冷启动。
+# ============================================================
+min_usage_rows: 40
+top_n: 20
+drill:
+  - {group: infantry}
+  - {group: archers}
+  - {group: cavalry}
+  - {group: horse_archers}
+  - {group: all}
+  - {order: charge}
+  - {order: halt}
+  - {order: advance}
+  - {order: fall_back}
+  - {order: retreat}
+  - {order: shield_wall}
+  - {order: line}
+  - {order: loose}
+  - {order: fire_at_will}
+  - {order: hold_fire}
+  - {order: mount_toggle}
+  - {order: attack_nearest}
+  - {group: all, order: charge}
+  - {group: cavalry, order: attack_nearest}

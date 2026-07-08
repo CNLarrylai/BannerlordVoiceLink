@@ -87,6 +87,56 @@ def test_suggest_rules():
     assert sugs[0]["alias"] == "利己" and sugs[0]["key"] == "halt"
 
 
+def test_usage_top_commands():
+    import tempfile
+    import usage
+    d = tempfile.mkdtemp(prefix="usage_")
+    real = usage._path
+    usage._path = lambda: os.path.join(d, "usage.csv")
+    try:
+        # 不足 min_rows -> None (退回默认题库)
+        for _ in range(10):
+            usage.record("zh", "ok", "all", "charge", "keys", 0.5, "全军冲锋")
+        assert usage.top_commands("zh", n=20, min_rows=40) is None
+        # 攒够后: 按频次排序, 去重, miss/他语言不计入
+        for _ in range(35):
+            usage.record("zh", "ok", "cavalry", "attack_nearest", "mod", 0.4, "x")
+        for _ in range(5):
+            usage.record("zh", "ok", None, "halt", "keys", 0.3, "立定")
+        for _ in range(9):
+            usage.record("zh", "miss", None, None, "", 0.3, "聊天")
+        for _ in range(50):
+            usage.record("en", "ok", "all", "retreat", "keys", 0.3, "retreat")
+        top = usage.top_commands("zh", n=2, min_rows=40)
+        assert top is not None and len(top) == 2
+        assert top[0][0] == ("cavalry", "attack_nearest") and top[0][1] == 35
+        assert top[1][0] == ("all", "charge")
+    finally:
+        usage._path = real
+
+
+def test_load_drill_sources():
+    import usage
+    from calibrate import load_drill
+    _, cmds = _matcher()
+    real = usage.top_commands
+    # 无使用数据 -> 默认题库(calibration.yaml)
+    usage.top_commands = lambda lang, n=20, min_rows=40: None
+    try:
+        drill, src = load_drill(cmds, "zh")
+        assert src == "default" and len(drill) > 15
+        assert ("all", "charge") in drill
+        # 有使用数据 -> 你的 top 清单(过滤掉词典里不存在的键)
+        usage.top_commands = lambda lang, n=20, min_rows=40: [
+            (("cavalry", "attack_nearest"), 35), ((None, "halt"), 9),
+            (("ghost_group", "charge"), 5)]
+        drill, src = load_drill(cmds, "zh")
+        assert src == "usage"
+        assert drill == [("cavalry", "attack_nearest"), (None, "halt")]
+    finally:
+        usage.top_commands = real
+
+
 def test_bare_charge_not_hijacked():
     # 回归锁定: 光杆"冲锋"曾被 mount_toggle 的"上马冲锋"和 cavalry 的"冲锋骑"
     # 抢走(短文本滑进长别名满分, 同分比长度错赢)。

@@ -110,6 +110,15 @@ _EN = {
     "▶ 开始校准 (约3分钟)": "▶ Start calibration (~3 min)",
     "跳过这条": "Skip this one",
     "流程一共 4 步:": "Four steps:",
+    "先不学": "Not now",
+    "· 本轮建议未采纳 (随时可再跑一轮)":
+        "· Suggestions skipped (run another round anytime)",
+    "题目来源: 你的使用记录 Top{n} (最常用优先)":
+        "Drill source: your usage Top{n} (most-used first)",
+    "题目来源: 默认题库 (使用数据攒够后自动改用你的常用指令)":
+        "Drill source: default list (switches to your most-used commands "
+        "once enough usage data exists)",
+    "题目来源: 内置题库": "Drill source: built-in list",
     "  ① 点「开始校准」(首次会加载识别模型, 稍等)":
         "  1. Click Start (the speech model loads first, one moment)",
     "  ② 屏幕大字出题, 共 {n} 条 —— 对着麦克风念出来即可; 没念对自动给第二次机会, 也可点「跳过这条」":

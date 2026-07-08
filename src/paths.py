@@ -11,7 +11,8 @@ import sys
 
 FROZEN = getattr(sys, "frozen", False)
 APP_DIRNAME = "BannerlordVoice"
-_CONFIG_FILES = ("settings.yaml", "commands.yaml", "order_tree.yaml")
+_CONFIG_FILES = ("settings.yaml", "commands.yaml", "order_tree.yaml",
+                 "calibration.yaml")
 
 
 def bundle_dir():

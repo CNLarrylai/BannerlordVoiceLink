@@ -25,6 +25,7 @@ from rapidfuzz import fuzz
 
 from audio import (ContinuousListener, Recorder, input_device_label,
                    resolve_input_device)
+import usage
 from executor import Executor
 from i18n import t
 from matcher import Matcher
@@ -317,6 +318,7 @@ class App:
                 self._near(tr["group"], self.matcher.group_threshold),
                 self._near(tr["order"], self.matcher.order_threshold))
             print(f"    ✗ 听到「{text}」→ 未匹配/聊天, 未执行（识别 {t_stt:.2f}s）")
+            usage.record(self.lang, "miss", None, None, "", t_stt, text)
             self._debug(t("上一条 ✗ 听到「{t}」→ 未匹配/聊天, 未执行").format(t=text))
             self._set(t("未匹配"), t("听到: {t}").format(t=text), "#ff8a8a")
             time.sleep(0.6)
@@ -344,6 +346,8 @@ class App:
                         .replace("[target (aim at them!)]", "[locked by mod]"))
         else:
             self.executor.execute(parsed)
+        usage.record(self.lang, "ok", g_key, o_key,
+                     "mod" if via_mod else "keys", t_stt, text)
         self.retry.note_exec(g_key, o_key)
         # 执行了但兵种没过线(只作用于当前选中编队): 记为差点命中 —— 用户若马上
         # 重说, 说明发错了对象, 下一遍放大该兵种 (专治 "all units"→"or units")
