@@ -144,7 +144,12 @@ class App:
         self.mode = c.get("mode", "continuous")
         self.ptt = c.get("push_to_talk_key", "caps lock")
         self.reload_key = c.get("reload_key") or ""
+        self.toggle_key = c.get("listen_toggle_key") or ""
+        self.auto_battle_gate = c.get("auto_battle_gate", False)
         self.prefixes = c.get("command_prefix") or []
+        # 监听门: 手动开关 + 战斗自动门。listen_on=手动状态; battle_on=模组报的战斗中
+        self.listen_on = True
+        self.battle_on = not self.auto_battle_gate   # 不开自动门时恒真
         self.dry_run = "--dry-run" in sys.argv
         self.samplerate = settings["audio"]["samplerate"]
         self.silence_rms = settings["audio"].get("silence_rms", 0.006)
@@ -218,6 +223,15 @@ class App:
             self.overlay.push(status, detail, color)
 
     def _idle(self, detail=""):
+        # 监听门关着: 明确显示静音原因, 让主播/观众知道现在不收指令
+        if not self._gate_open():
+            if not self.listen_on:
+                self._set(t("🔇 已关闭识别"),
+                          t("按 [{k}] 开启").format(k=self.toggle_key.upper()),
+                          "#9aa4ad")
+            else:
+                self._set(t("🔇 战斗外静音"), t("进入战斗自动开启"), "#9aa4ad")
+            return
         if self.mode == "continuous":
             self._set(t("👂 监听中…"), detail or t("说出指令即可"), "#7Fd1ff")
         else:
@@ -256,6 +270,42 @@ class App:
         except Exception as e:
             print(f"[重载] ⚠ 热键 {self.reload_key} 注册失败: {e}")
 
+    def _register_toggle_hotkey(self):
+        if not self.toggle_key:
+            return
+        try:
+            keyboard.add_hotkey(self.toggle_key, self._toggle_listen)
+            print(f"[监听] 按 [{self.toggle_key.upper()}] 可开/关命令识别 "
+                  f"(直播聊天时关掉防误触)。")
+        except Exception as e:
+            print(f"[监听] ⚠ 开关键 {self.toggle_key} 注册失败: {e}")
+
+    def _toggle_listen(self):
+        self.listen_on = not self.listen_on
+        state = "开" if self.listen_on else "关"
+        print(f"[监听] 命令识别已{state}。")
+        self._idle()
+
+    def _gate_open(self):
+        """现在该不该处理命令: 手动开着 且 (没开自动门 或 在战斗中)。"""
+        return self.listen_on and self.battle_on
+
+    def _battle_gate_poll(self):
+        """后台轮询伴侣模组: ping 通=在战斗中(模组的 socket 只在战斗开)。"""
+        import threading
+        import time as _t
+
+        def loop():
+            while self.running:
+                on = bool(self.modlink and self.modlink.ping())
+                if on != self.battle_on:
+                    self.battle_on = on
+                    print(f"[监听] 战斗自动门: {'进入战斗, 开始识别' if on else '离开战斗, 已静音'}")
+                    self._idle()
+                _t.sleep(2.0)
+
+        threading.Thread(target=loop, daemon=True).start()
+
     def _debug(self, text):
         """更新浮层底部常驻 debug 行 (上一条发生了什么)。"""
         if self.overlay:
@@ -277,6 +327,10 @@ class App:
 
     def _handle(self, audio):
         """处理一段语音: 识别 -> 前缀 -> 匹配 -> 执行。带分阶段耗时日志。"""
+        # 监听门关着(手动关 或 不在战斗) => 连识别都不做, 省算力也防误触
+        if not self._gate_open():
+            self._idle()
+            return
         t_seg = time.perf_counter()
         secs = audio.shape[0] / self.samplerate
         print(f"[{time.strftime('%H:%M:%S')}] 🎧 捕到语音 {secs:.1f}s")
@@ -405,6 +459,10 @@ class App:
     def loop(self):
         boost_thread_priority()
         self._register_reload_hotkey()
+        self._register_toggle_hotkey()
+        if self.auto_battle_gate:
+            print("[监听] 战斗自动门已开: 大地图/菜单静音, 进入战斗自动识别。")
+            self._battle_gate_poll()
         if self.mode == "continuous":
             self.loop_continuous()
         else:
@@ -414,11 +472,12 @@ class App:
         self.running = False
         if self.listener:
             self.listener.stop()
-        if self.reload_key:
-            try:
-                keyboard.remove_hotkey(self.reload_key)
-            except Exception:
-                pass
+        for k in (self.reload_key, self.toggle_key):
+            if k:
+                try:
+                    keyboard.remove_hotkey(k)
+                except Exception:
+                    pass
 
 
 def main():
