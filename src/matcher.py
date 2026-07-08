@@ -160,12 +160,16 @@ class Matcher:
         """
         pt = self.pinyin_threshold if pinyin_threshold is None else pinyin_threshold
         best = (None, None, 0, "", (0, 0))
+        best_cmp = (0, False, 0)   # (分数, 别名是否在输入里完整出现, 别名长度)
         for key, data in table.items():
             for alias in self._aliases(data):
                 ca = self._clean_map.get(alias) or self._clean(alias)
                 if not ca:
                     continue
                 pos = text.find(ca)
+                # 别名(>=2字)整体出现在输入里 —— 用于 tiebreak 压过"含它的更长别名"。
+                # 限>=2字: 单字精确("冲"在"冲缝"里)本就弱, 不该压过拼音匹配的"冲锋"。
+                exact = pos >= 0 and len(ca) >= 2
                 if pos >= 0:
                     score, span = 100, (pos, pos + len(ca))
                 else:
@@ -182,7 +186,10 @@ class Matcher:
                             score = pa.score
                 if bonus_map:
                     score += bonus_map.get(key, 0)
-                if (score, len(ca)) > (best[2], len(best[3])):
+                # tiebreak: 分数 > 别名完整出现(防"前进"被含它的"列队前进"抢) > 更长
+                cand = (score, exact, len(ca))
+                if cand > best_cmp:
+                    best_cmp = cand
                     best = (key, data, score, alias, span)
         return best
 

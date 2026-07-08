@@ -44,9 +44,9 @@ orders:
   # ---------- 移动类 (F1 子菜单) ----------
   to_position:
     keys: [f1, f1]
-    aliases: [到这里, 去那里, 守住这里, 到指定位置, 就位, 到位, 去那儿, 到这儿,
-              来这儿, 守这儿, 站这儿, 待在这儿, 去那边儿, 到那边儿, 守住这儿,
-              去那边, 到那边, 守这里, 站这里]
+    aliases: [到这里, 去那里, 来这里, 守住这里, 到指定位置, 就位, 到位, 去那儿,
+              到这儿, 来这儿, 守这儿, 站这儿, 待在这儿, 去那边儿, 到那边儿,
+              守住这儿, 去那边, 到那边, 守这里, 站这里]
     en: [move here, go there, hold this position, take position, move to position]
   follow_me:
     keys: [f1, f2]
@@ -61,9 +61,11 @@ orders:
     # (目标显示在浮层, 实际锁定靠准星悬停; 未来模组接管后变成真锁定)。
     takes_target: true
     keys: [f1, f3]
+    # 注: "打他们/打他" 移到 focus_target(集火眼前那支, 玩家'打他打他'的直觉);
+    # charge 泛指冲锋保留"冲他们/攻击他们"等。
     aliases: [冲锋, 冲, 进攻, 突击, 杀, 给我冲, 冲上去, 冲啊, 冲呀, 冲鸭,
               给我上, 上啊, 冲过去, 杀过去, 干他们, 打过去, 给我杀, 杀啊,
-              往上冲, 压上去打, 打他们, 冲他们, 攻击他们, 灭了他们]
+              往上冲, 压上去打, 冲他们, 攻击他们, 灭了他们]
     en: [charge, attack, engage, charge them, attack them, go get them,
          take them out, focus them, kill them]
   # 注: 曾有独立的 attack_nearest("打最近的"), 已删 —— 游戏原生冲锋(charge)
@@ -72,8 +74,8 @@ orders:
   advance:
     takes_target: true   # 交战(F1F4)同样支持指向性目标, 见 charge 注释
     keys: [f1, f4]
-    aliases: [开战, 交战, 前进, 进军, 推进, 上前, 向前, 往前走, 压上去, 顶上去,
-              向前推, 推上去, 往前压, 往前顶, 上前压]
+    aliases: [开战, 交战, 前进, 进军, 推进, 慢慢推进, 上前, 向前, 往前走, 压上去,
+              顶上去, 向前推, 推上去, 往前压, 往前顶, 上前压]
     en: [advance, move up, push forward, forward, push up, engage the enemy]
   focus_target:
     # 需伴侣模组: 集火离玩家最近的那支敌军(混战里"打这只军队/打他打他"最本能,
@@ -83,7 +85,8 @@ orders:
     modlink_target: player
     keys: [f1, f3]
     aliases: [打这只, 打这只军队, 打那只, 打那只军队, 就打这只, 集火这只,
-              集火这只军队, 打这一只, 打面前这只, 灭了这只, 打眼前这只]
+              集火这只军队, 打这一只, 打面前这只, 灭了这只, 打眼前这只,
+              打他们, 打他, 打他打他]
     en: [get that one, focus that, attack that one, hit that one, focus fire]
   fall_back:
     keys: [f1, f5]

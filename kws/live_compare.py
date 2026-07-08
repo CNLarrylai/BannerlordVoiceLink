@@ -30,21 +30,11 @@ import yaml  # noqa: E402
 import bench_kws as B  # noqa: E402
 
 
-def build_prompts(commands):
-    """出题清单: 5兵种单独 + 20指令单独 + 几条组合(实战说法)。"""
-    def name(sec, key):
-        return commands[sec][key]["aliases"][0]
-    prompts = []
-    for k in commands["groups"]:
-        prompts.append((name("groups", k), k, None))
-    for k in commands["orders"]:
-        prompts.append((name("orders", k), None, k))
-    # 组合(更接近实战)
-    for g, o in [("cavalry", "charge"), ("infantry", "shield_wall"),
-                 ("archers", "loose"), ("all", "advance"),
-                 ("cavalry", "focus_target")]:
-        prompts.append((name("groups", g) + name("orders", o), g, o))
-    return prompts
+def build_prompts(commands=None):
+    """出题清单: 直接读 tests/voice_test_cases.md (所有引擎共用的标准用例)。"""
+    sys.path.insert(0, os.path.join(ROOT, "tests"))
+    from test_cases import load_cases
+    return [(phrase, g, o) for phrase, g, o, _cat in load_cases()]
 
 
 def main():
