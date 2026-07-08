@@ -55,9 +55,15 @@ namespace BannerlordVoiceLink
                     VoiceLinkBehavior.Beacon("VoiceApp 未随模组分发(开发模式), 不自动启动");
                     return;
                 }
-                if (File.Exists(Path.Combine(appDir, "autostart_off.txt")))
+                // 关闭开关有两处: 随包目录(整包级) 和 用户目录(个人级, 不会被
+                // 模组更新/重装覆盖 —— 开发者本人用源码版时放这里最合适)
+                var userOff = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "BannerlordVoice", "autostart_off.txt");
+                if (File.Exists(Path.Combine(appDir, "autostart_off.txt"))
+                    || File.Exists(userOff))
                 {
-                    VoiceLinkBehavior.Beacon("autostart_off.txt 存在, 跳过自动启动");
+                    VoiceLinkBehavior.Beacon("autostart_off 开关存在, 跳过自动启动");
                     return;
                 }
                 if (Process.GetProcessesByName("BannerlordVoice").Length > 0)

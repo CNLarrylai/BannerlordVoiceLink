@@ -91,6 +91,15 @@ def main():
     if not os.path.isdir(src):
         print("!! dist/BannerlordVoice 不存在, 先不带 --skip-exe 跑一次")
         sys.exit(1)
+    # 运行中的打包版会锁住 VoiceApp 文件 —— 先给人话提示, 不甩堆栈
+    chk = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command",
+         "(Get-Process BannerlordVoice -ErrorAction SilentlyContinue).Count"],
+        capture_output=True, text=True)
+    if (chk.stdout or "").strip() not in ("", "0"):
+        print("!! 有 BannerlordVoice.exe 正在运行 (自动弹出的语音面板?),")
+        print("   请先关掉那些窗口再重跑本脚本。")
+        sys.exit(1)
     if os.path.isdir(dst):
         shutil.rmtree(dst)
     shutil.copytree(src, dst)

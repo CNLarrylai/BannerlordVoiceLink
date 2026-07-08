@@ -192,6 +192,8 @@ _EN = {
     "先选一个麦克风设备再保存": "Pick a microphone first",
     "✓ 已保存 · 麦克风:{mic} · 模型:{m} · 运行:{d}   (重启语音指挥后生效)":
         "✓ Saved · mic: {mic} · model: {m} · run: {d}   (restart Voice Command to apply)",
+    "⚠ CPU 上跑 {m} 会很慢(每句数秒), 无独显强烈建议 base":
+        "⚠ {m} on CPU is very slow (seconds per phrase); without a GPU use base",
     "约 {n} MB": "≈ {n} MB",
     "约 {n} GB": "≈ {n} GB",
     "大小未知": "size unknown",

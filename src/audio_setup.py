@@ -327,6 +327,15 @@ class SetupWindow:
         import models
         mv = self._selected_model()
         eff = self._effective(mv)
+        # CPU 跑大模型 = 每句好几秒, 体验像"坏了" —— 当场提醒
+        gpu_ok, _ = detect_gpu()
+        forced_cpu = self.device_map.get(self.device_box.get()) == "cpu" \
+            if hasattr(self, "device_box") else False
+        if (not gpu_ok or forced_cpu) and eff in ("medium", "large-v3",
+                                                  "large-v3-turbo"):
+            self.status.config(
+                text=t("⚠ CPU 上跑 {m} 会很慢(每句数秒), 无独显强烈建议 base")
+                .format(m=eff), fg="#ffcf70")
         if models.is_ready(eff):
             self.dl_status.config(
                 text=t("✓ {m} 已就绪（本地已有，直接用）").format(m=mv), fg=GREEN)

@@ -29,20 +29,99 @@ def user_data_dir():
 
 
 def config_dir():
-    """返回可读写的配置目录; 打包首次运行时从包内默认配置播种。"""
+    """返回可读写的配置目录; 打包版按版本播种/迁移包内默认配置。"""
     if not FROZEN:
         return os.path.join(bundle_dir(), "config")
     d = os.path.join(user_data_dir(), "config")
     os.makedirs(d, exist_ok=True)
-    src = os.path.join(bundle_dir(), "config")
+    try:
+        refresh_config(d, os.path.join(bundle_dir(), "config"))
+    except Exception:
+        # 迁移失败绝不能挡启动: 至少把缺的文件补上
+        for name in _CONFIG_FILES:
+            dst = os.path.join(d, name)
+            if not os.path.exists(dst):
+                try:
+                    shutil.copy(os.path.join(bundle_dir(), "config", name), dst)
+                except Exception:
+                    pass
+    return d
+
+
+# 版本更新时仍保留的用户选择 (其余改动在 backup/ 里可手动找回)
+_KEEP_PREFS = (("audio", "device"), ("stt", "model"),
+               ("stt", "device"), ("stt", "language"))
+
+
+def refresh_config(d, src):
+    """按版本播种/迁移用户配置目录。
+
+    没有这个机制的教训: 老包用户升级后 exe 是新的、%LOCALAPPDATA% 里的
+    commands.yaml 永远停在旧版 —— 新增说法/指令全不生效, 识别"变差"。
+    策略: 版本戳(.bundled_version)不匹配 => 旧文件整体备份到 backup/<旧版本>/,
+    覆盖为新包默认, 再把用户的麦克风/模型/语言等选择写回新 settings.yaml。
+    """
+    from version import APP_VERSION
+    stamp_p = os.path.join(d, ".bundled_version")
+    stamp = ""
+    if os.path.exists(stamp_p):
+        with open(stamp_p, encoding="utf-8") as f:
+            stamp = f.read().strip()
+    if stamp == APP_VERSION:
+        for name in _CONFIG_FILES:      # 版本一致: 只补缺
+            dst = os.path.join(d, name)
+            if not os.path.exists(dst):
+                shutil.copy(os.path.join(src, name), dst)
+        return
+
+    old_settings = None
+    sp = os.path.join(d, "settings.yaml")
+    if os.path.exists(sp):
+        with open(sp, encoding="utf-8") as f:
+            old_settings = f.read()
+
+    # 备份旧配置 (首次安装无旧文件, 自动跳过)
+    bdir = os.path.join(d, "backup", stamp or "old")
     for name in _CONFIG_FILES:
         dst = os.path.join(d, name)
-        if not os.path.exists(dst):
-            try:
-                shutil.copy(os.path.join(src, name), dst)
-            except Exception:
-                pass
-    return d
+        if os.path.exists(dst):
+            os.makedirs(bdir, exist_ok=True)
+            shutil.copy(dst, os.path.join(bdir, name))
+
+    for name in _CONFIG_FILES:
+        if os.path.exists(os.path.join(src, name)):
+            shutil.copy(os.path.join(src, name), os.path.join(d, name))
+
+    if old_settings:
+        _reapply_prefs(sp, old_settings)
+    with open(stamp_p, "w", encoding="utf-8") as f:
+        f.write(APP_VERSION)
+
+
+def _reapply_prefs(new_settings_path, old_text):
+    """把旧 settings.yaml 里的用户选择(白名单)写回新模板。"""
+    import re
+    prefs = {}
+    section = None
+    for line in old_text.splitlines():
+        if re.match(r"^\S", line):
+            section = line.split(":")[0]
+        m = re.match(r"^\s+(\w+)\s*:\s*(.+?)\s*$", line)
+        if m and (section, m.group(1)) in _KEEP_PREFS:
+            prefs[(section, m.group(1))] = m.group(2)
+    if not prefs:
+        return
+    with open(new_settings_path, encoding="utf-8") as f:
+        lines = f.readlines()
+    section = None
+    for i, line in enumerate(lines):
+        if re.match(r"^\S", line):
+            section = line.split(":")[0]
+        m = re.match(r"^(\s+)(\w+)(\s*:).*$", line)
+        if m and (section, m.group(2)) in prefs:
+            lines[i] = f"{m.group(1)}{m.group(2)}: {prefs[(section, m.group(2))]}\n"
+    with open(new_settings_path, "w", encoding="utf-8") as f:
+        f.writelines(lines)
 
 
 def config_path(name):

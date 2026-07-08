@@ -33,6 +33,10 @@ def main():
     if rc != 0:
         print("\n❌ modlink 测试有失败! 先修这个。")
         sys.exit(1)
+    rc = run("配置版本迁移 (打包版升级, 正确性门槛)", "test_config_migrate.py")
+    if rc != 0:
+        print("\n❌ 配置迁移测试有失败! 先修这个。")
+        sys.exit(1)
     rc = run("指令树校验 (词典键位对照物, 正确性门槛)", "test_order_tree.py")
     if rc != 0:
         print("\n❌ 指令树校验有失败! 先修这个。")
