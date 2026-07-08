@@ -41,6 +41,10 @@ def main():
     if rc != 0:
         print("\n❌ 指令树校验有失败! 先修这个。")
         sys.exit(1)
+    rc = run("校准/个人词典 (发音适配, 正确性门槛)", "test_calibrate.py")
+    if rc != 0:
+        print("\n❌ 校准测试有失败! 先修这个。")
+        sys.exit(1)
     if skip_bench:
         print("\n✓ 匹配回归通过 (已跳过识别基准)。")
         return

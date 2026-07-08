@@ -94,6 +94,40 @@ _EN = {
     "✓ 已切到 {name} · 重启语音指挥生效 (Restart to apply)":
         "✓ Switched to {name} · restart Voice Command to apply",
 
+    "🎯\n上手校准": "🎯\nCalibrate",
+    "跟读学指令\n适配你的发音": "Learn commands,\ntune to your voice",
+    "✓ 上手校准已启动 (跟着屏幕念)": "✓ Calibration started (read the prompts)",
+
+    # ---------- 校准 calibrate ----------
+    "上手校准 — 骑砍语音指挥": "Calibration — Bannerlord Voice Command",
+    "🎯 上手校准（教学 + 发音适配）": "🎯 Calibration (learn commands + tune to your voice)",
+    "跟着屏幕念指令, 系统实时判定。全部念完会生成报告, 并把「你的稳定错听」学进个人词典 —— 越用越懂你。":
+        "Read the prompted commands aloud; each is checked live. At the end you "
+        "get a report, and your consistent mis-hearings are learned into your "
+        "personal dictionary — it adapts to you.",
+    "点「开始」后跟着念": "Press Start, then read aloud",
+    "▶ 开始": "▶ Start",
+    "跳过这条": "Skip this one",
+    "加载识别模型中…": "Loading speech model…",
+    "校准出错: {e}": "Calibration error: {e}",
+    "请念：「{s}」": "Say: \"{s}\"",
+    "第 {i} / {n} 条": "{i} / {n}",
+    "👂 听你说…": "👂 Listening…",
+    "✓ 很好！({s}s)": "✓ Nice! ({s}s)",
+    " · 再念一次试试": " · try once more",
+    "✗ 听到「{h}」没对上{more}": "✗ heard \"{h}\", no match{more}",
+    "🎉 校准完成": "🎉 Calibration complete",
+    "命中 {p}% · 平均识别 {s}s · 录音已存本地":
+        "Hit rate {p}% · avg recognition {s}s · recordings saved locally",
+    "—— 报告: {n} 条练习, 命中率 {p}% ——":
+        "—— Report: {n} drills, hit rate {p}% ——",
+    "发现你的稳定说法/错听, 建议学进个人词典:":
+        "Found your consistent phrasings / mis-hearings, suggest learning them:",
+    "✍ 学进我的个人词典": "✍ Learn into my dictionary",
+    "▶ 再来一轮": "▶ Another round",
+    "✓ 已写入 {n} 条到个人词典 (语音程序按 F10 生效)":
+        "✓ {n} entries saved to personal dictionary (press F10 in the voice app)",
+
     # ---------- 浮层 overlay ----------
     "待命中…": "Standing by…",
     "按住热键说话": "Hold the hotkey and speak",

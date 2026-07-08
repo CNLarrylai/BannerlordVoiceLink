@@ -107,6 +107,9 @@ def main():
     elif mode == "audio":
         from audio_setup import SetupWindow
         SetupWindow().run()
+    elif mode == "calibrate":
+        from calibrate import main as calibrate_main
+        calibrate_main()
     elif mode == "dict":
         from command_gui import CommandGUI
         CommandGUI().run()

@@ -24,7 +24,9 @@ groups:
     en: [archers, bowmen, ranged, bows, archer, group two, second group]
   cavalry:
     key: "3"
-    aliases: [骑兵, 骑兵们, 重骑, 重骑兵, 骑士, 冲锋骑, 突骑, 马队, 骑马的,
+    # 注意: 别名不能"包含其它指令的完整别名"(如曾有的"冲锋骑"包含"冲锋"),
+    # 否则光杆短指令会滑进长别名拿满分, 同分比长度反而错赢 -> 乱路由。
+    aliases: [骑兵, 骑兵们, 重骑, 重骑兵, 骑士, 突骑, 马队, 骑马的,
               三队, 第三队]
     en: [cavalry, horsemen, knights, horse, riders, group three, third group]
   horse_archers:
@@ -151,8 +153,9 @@ orders:
     en: [hold fire, cease fire, stop shooting, hold your fire]
   mount_toggle:
     keys: [f5]
+    # "上马冲锋"已移除: 包含 charge 的完整别名"冲锋", 会把光杆"冲锋"抢成上马
     aliases: [上马, 骑马, 下马, 步战, 上下马, 都上马, 骑上马, 都下马, 下来步战,
-              下马作战, 上马冲锋, 翻身上马]
+              下马作战, 翻身上马]
     en: [mount, dismount, mount up, get on your horses, get off your horses]
   ai_control:
     keys: [f6]

@@ -103,11 +103,12 @@ def boost_thread_priority():
 
 
 def load_cfg():
+    import dictionary
     from paths import config_path
     with open(config_path("settings.yaml"), encoding="utf-8") as f:
         settings = yaml.safe_load(f)
-    with open(config_path("commands.yaml"), encoding="utf-8") as f:
-        commands = yaml.safe_load(f)
+    # 基础词典 + 个人词典(校准学到的说法)合并
+    commands = dictionary.load_commands()
     return settings, commands
 
 

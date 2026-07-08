@@ -36,10 +36,10 @@ BLUE = "#7Fd1ff"
 
 class ListenGUI:
     def __init__(self):
+        import dictionary
         with open(config_path("settings.yaml"), encoding="utf-8") as f:
             self.cfg = yaml.safe_load(f)
-        with open(config_path("commands.yaml"), encoding="utf-8") as f:
-            self.commands = yaml.safe_load(f)
+        self.commands = dictionary.load_commands()   # 含个人词典
         self.lang = self.cfg["stt"].get("language", "zh")
         self.matcher = Matcher.from_config(self.commands, self.cfg["control"],
                                            lang=self.lang)

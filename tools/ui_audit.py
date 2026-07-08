@@ -138,6 +138,15 @@ def audit(lang):
     w.close()
     fails += _report("audio_setup", lang, bad)
 
+    # --- 上手校准 (worker 只在点开始后才启动, 构建无副作用) ---
+    from calibrate import CalibrateGUI
+    cg = CalibrateGUI()
+    bad = find_clipped(cg.root)
+    shot(cg.root, f"calibrate_{lang}")
+    cg.running = False
+    cg.root.destroy()
+    fails += _report("calibrate", lang, bad)
+
     # --- 游戏指令树 ---
     from order_tree import OrderTreeWindow
     ot = OrderTreeWindow(lang=lang)

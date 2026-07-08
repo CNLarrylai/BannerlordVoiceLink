@@ -133,6 +133,7 @@ class Launcher:
         row = tk.Frame(self.root, bg=BG)
         row.pack(padx=30, pady=(0, 6))
         minis = [
+            (t("🎯\n上手校准"), t("跟读学指令\n适配你的发音"), self.start_calibrate),
             (t("🎧\n测试模式"), t("只听不发键\n安全调试"), self.start_listen),
             (t("🎙\n音频设置"), t("选麦克风\n看音量条"), self.open_audio),
             (t("📖\n指令词典"), t("看/加说法\n改键位"), self.open_dict),
@@ -201,6 +202,10 @@ class Launcher:
         self.voice_proc = _spawn("voice", console=True)
         self._set(t("✓ 语音指挥已启动 (黑窗口在加载模型…)"))
         self._refresh_start_btn()
+
+    def start_calibrate(self):
+        _spawn("calibrate", console=False)
+        self._set(t("✓ 上手校准已启动 (跟着屏幕念)"))
 
     def start_listen(self):
         _spawn("listen", console=False)

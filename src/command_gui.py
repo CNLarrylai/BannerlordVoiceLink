@@ -39,11 +39,10 @@ PURPLE = "#c9a0ff"
 
 
 def load_all():
+    import dictionary
     with open(SETTINGS, encoding="utf-8") as f:
         settings = yaml.safe_load(f)
-    with open(COMMANDS, encoding="utf-8") as f:
-        commands = yaml.safe_load(f)
-    return settings, commands
+    return settings, dictionary.load_commands()   # 基础词典+个人词典合并
 
 
 def _edit_entry_line(section: str, key: str, line_re: str, replace_fn):
@@ -476,9 +475,11 @@ class CommandGUI:
                             alias=alias, name=self._name(d)), fg=RED)
                     return
         section, key = self.target_map[label]
-        if not add_alias_to_yaml(section, key, alias, field=self._field()):
-            self.status.config(text=t("写入失败: commands.yaml 里没找到该条目"), fg=RED)
-            return
+        # 写进个人词典(user_aliases.yaml): 软件版本更新会刷新 commands.yaml,
+        # 但绝不会动个人词典 —— 用户加的说法永远保得住。
+        import dictionary
+        dictionary.add_user_alias(section, key, alias,
+                                  "en" if self.lang == "en" else "zh")
         # 重新加载, 让词典/匹配器立即生效
         self.settings, self.commands = load_all()
         self._build_matcher()
