@@ -78,6 +78,15 @@ EN_CHAT_MARKERS = []          # 英文暂不做讨论词黑名单, 靠占比过�
 EN_MAX_EFFECTIVE_LEN = 42
 
 
+def _mostly_inside(inner, outer):
+    """inner 区间是否大部分落在 outer 内 (>=60% 重叠)。用于判"寄生"子串匹配。"""
+    a, b = inner
+    if b <= a:
+        return False
+    ov = max(0, min(b, outer[1]) - max(a, outer[0]))
+    return ov / (b - a) >= 0.6
+
+
 class Matcher:
     def __init__(self, commands: dict, threshold: int = 70, chat_filter: bool = True,
                  pinyin_match: bool = True, pinyin_threshold: int = 85,
@@ -263,6 +272,13 @@ class Matcher:
         o_key, o_data, o_score, o_alias, o_span = self._best(
             clean, self.orders, text_py, pos2char, self.pinyin_threshold,
             boost.get("orders"))
+        # 抑制"寄生兵种": 指令别名已覆盖某段, 兵种却在那段子串里蹭出一个
+        # (如"打这只军队"整句=focus_target, 兵种却把"军队"认成"马队"→骑兵)。
+        # 兵种命中区间被指令区间基本包住 => 是寄生, 丢掉。真兵种(如"骑兵冲锋"
+        # 的"骑兵")在指令区间之外, 不受影响。
+        if (g_key and o_key and o_score >= self.order_threshold
+                and _mostly_inside(g_span, o_span)):
+            g_key = None
         if g_key:
             trace["group"] = {
                 "name": g_key, "alias": g_alias, "score": round(g_score),
