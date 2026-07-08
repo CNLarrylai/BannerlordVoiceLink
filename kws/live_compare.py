@@ -66,11 +66,16 @@ def main():
     if new:
         w.writerow(["ts", "prompt", "want_group", "want_order",
                     "kws_keys", "kws_ok", "kws_ms",
-                    "whisper_text", "whisper_keys", "whisper_ok", "whisper_ms"])
+                    "whisper_text", "whisper_keys", "whisper_ok", "whisper_ms",
+                    "hybrid_keys", "hybrid_ok", "hybrid_engine", "hybrid_ms"])
+
+    from hybrid import HybridRecognizer
+    hy = HybridRecognizer(kws, B.kws_spot, tr, m, commands)
 
     listener = ContinuousListener(cfg)
     seg = listener.segments()
-    kws_hit = whisper_hit = n = 0
+    kws_hit = whisper_hit = hybrid_hit = n = 0
+    hy_fast = 0
 
     print(f"\n共 {len(prompts)} 条。看到题目就念, 念完自动进下一条。Ctrl+C 结束。\n")
     try:
@@ -98,17 +103,29 @@ def main():
                     wkeys.add(wr["order"]["name"])
             wms = (time.perf_counter() - t0) * 1000
 
+            # 混合: 快路=复用已算好的 kkeys; 慢路=复用 wkeys (同一段音频,
+            # 不重复计算 —— 延迟按"实际会发生的路径"折算)
+            if kkeys & hy.orders:
+                hkeys, heng, hms = kkeys, "kws", kms
+                hy_fast += 1
+            else:
+                hkeys, heng, hms = wkeys, "whisper", kms + wms
+            hok = (not wg or wg in hkeys) and (not wo or wo in hkeys)
+
             kok = (not wg or wg in kkeys) and (not wo or wo in kkeys)
             wok = (not wg or wg in wkeys) and (not wo or wo in wkeys)
             n += 1
             kws_hit += kok
             whisper_hit += wok
+            hybrid_hit += hok
             print(f"\r[{i}/{len(prompts)}] 「{text}」  "
                   f"KWS {'✓' if kok else '✗'}{sorted(kkeys)} {kms:.0f}ms  |  "
-                  f"Whisper {'✓' if wok else '✗'}「{wtext}」{sorted(wkeys)} {wms:.0f}ms")
+                  f"Whisper {'✓' if wok else '✗'}「{wtext}」{sorted(wkeys)} {wms:.0f}ms"
+                  f"  |  混合 {'✓' if hok else '✗'}[{heng}] {hms:.0f}ms")
             w.writerow([time.strftime("%H:%M:%S"), text, wg or "", wo or "",
                         "|".join(sorted(kkeys)), int(kok), f"{kms:.0f}",
-                        wtext, "|".join(sorted(wkeys)), int(wok), f"{wms:.0f}"])
+                        wtext, "|".join(sorted(wkeys)), int(wok), f"{wms:.0f}",
+                        "|".join(sorted(hkeys)), int(hok), heng, f"{hms:.0f}"])
             cf.flush()
     except (KeyboardInterrupt, StopIteration):
         print("\n(结束)")
@@ -120,6 +137,8 @@ def main():
         print(f"\n===== 汇总 ({n} 条) =====")
         print(f"  KWS 命中     {kws_hit}/{n} ({kws_hit/n*100:.0f}%)")
         print(f"  Whisper 命中 {whisper_hit}/{n} ({whisper_hit/n*100:.0f}%)")
+        print(f"  混合 命中    {hybrid_hit}/{n} ({hybrid_hit/n*100:.0f}%)"
+              f"  (快路 {hy_fast}/{n})")
         print(f"  CSV: {csv_path}")
 
 

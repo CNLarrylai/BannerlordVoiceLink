@@ -138,6 +138,20 @@ def main():
     bench(lambda s, sr: kws_spot(kws, s, sr), "sherpa-onnx KWS")
     bench(lambda s, sr: whisper_spot(tr, m, s, sr)[0], "Whisper + 匹配层")
 
+    import dictionary
+    from hybrid import HybridRecognizer
+    hy = HybridRecognizer(kws, kws_spot, tr, m, dictionary.load_commands())
+    hy_engine = {"kws": 0, "whisper": 0}
+
+    def hybrid_fn(s, sr):
+        keys, eng, _ms, _t = hy.recognize(s, sr)
+        hy_engine[eng] += 1
+        return keys
+
+    bench(hybrid_fn, "混合 (KWS快路+Whisper兜底)")
+    print(f"  快/慢路分布: KWS直出 {hy_engine['kws']} 次, "
+          f"退回Whisper {hy_engine['whisper']} 次")
+
     # 逐条看 KWS 漏了哪些
     print("\n== KWS 逐条(只列未全中) ==")
     for i, item in enumerate(cmds):
