@@ -1,0 +1,76 @@
+# 骑砍语音指挥 (Bannerlord Voice Commander)
+
+中文语音指挥《骑马与砍杀2》军队的软件 + 游戏伴侣模组。作者是游戏主播(中文交流),
+目标: 替代 VoiceAttack, 分发给粉丝, 长期拓展多游戏并变现。
+
+## 架构一图流
+
+```
+麦克风 → ContinuousListener(VAD断句) → 混合识别 → matcher(模糊+拼音+词序)
+                                        │             → Executor(F键注入)
+         快路: 流式zipformer+热词(~0.1s)─┤             → ModLink(TCP 35127)
+         兜底: faster-whisper(GPU/CPU) ──┘               → 游戏内模组定向攻击
+```
+
+- `src/main.py` 主程序(App._handle 是主流水线; --dry-run 冒烟)
+- `src/matcher.py` 意图匹配(裁决规则密集, 改前必读其注释, 每条规则都有实战血案)
+- `src/stream_asr.py` 快路引擎(峰值归一化0.5必须; 热词=每命令前2别名)
+- `src/dictionary.py` 三层词典: commands.yaml + user_aliases.yaml(个人) + fun包(整活)
+- `mod/BannerlordVoiceLink/` C#模组(net472, 引用本机游戏DLL, 编译过=API兼容)
+- `config/commands.yaml` 词典与键位; `config/settings.yaml` 全部开关
+- `kws/` 识别引擎评测工具(bench_stream/bench_accents/colloquial_sweep, 模型已gitignore)
+
+## 铁律 (违反=返工)
+
+1. **版本绝不说谎**: 每次改动部署必须递增 APP_VERSION(src/version.py),
+   模组版本=v{APP_VERSION}.{git提交数}, 部署后向用户报版本号。
+   tools/build_workshop.py 的预检/最后写戳机制不许绕过。
+2. **交付前亲自跑真实入口**: `python src/main.py --dry-run` 看启动横幅,
+   编译/单测不够。测试套件: `python tests/run_all.py [--skip-bench]`。
+3. **UI 改动后跑 `tools/ui_audit.py`**(双语截断扫描), 新窗口要注册进去。
+4. **游戏指令树/键位必须查实**(config/order_tree.yaml 是对照物), 不凭记忆填。
+5. **测试用例的单一出处**是 `tests/voice_test_cases.md`(改表会挪题号,
+   旧录音要存档)。TTS 语料缓存必须按内容哈希命名, 不许按题号。
+
+## matcher 裁决规则速查 (每条都有回归锁定, tests/test_matcher.py)
+
+- 拼音兜底人人可走取更高分(不设"汉字分低才走"门槛); 整句拼音明显短于
+  别名拼音(×1.5)跳过; 对齐丢掉别名否定前缀(别/不/停/收/住)=候选作废。
+- tiebreak: 分数 > 解释整句 > 精确出现 > 更长; 同为满分时区间真包含
+  对方且更长的赢(功骑兵≠骑兵); 整句==单字别名算精确(喊"冲"是冲锋)。
+- 兵种/指令抢同段: 指令多覆盖字=兵种寄生丢兵种; 同段兵种精确=指令让位;
+  同段都模糊分差<10=歧义不执行。
+- 别名选词: 不用日常聊天词/直播口头禅; 不含其它指令的完整别名;
+  不含聊天标记词(这个/那个——永远过不了聊天过滤, 这是"打这只"的由来);
+  高频自然话术必须显式收录(出击/回来/集火的教训)。
+- 设计取向: **位置指代 > 名字指代**(focus_target"打他们"免疫识别误差)。
+
+## 识别引擎共识 (数据在 kws/results 与记忆中)
+
+- 快路=sherpa-onnx 流式 zipformer 双语(~70M)+热词+matcher, 真人实测
+  90-97%, 换说话人不塌; KWS 3M 已淘汰(声学天花板, 换人塌到72%)。
+- Whisper 兜底接快路解不出的(单字词/重口音); 混合=两全。
+- 模型对麦克风电平敏感→stream_asr.transcribe 里峰值归一化到0.5(0.9会过)。
+- TTS 口音评测(bench_accents 6声线)只信"跨声线系统性失败", 单条伪影不追。
+- 长期路线: 语音数据共建(donation.py)攒语料 → icefall 微调小模型
+  (就绪线: ≥3000条/≥10说话人/常用指令各≥100, tools/ingest_donations.py 看进度)。
+
+## 平台与部署
+
+- **Windows 台式机 = 游戏机**: 打包(PyInstaller app.spec)、部署
+  (tools/build_workshop.py → 游戏 Modules, 预检要求游戏/语音程序全关)、
+  模组编译(dotnet build, 引用 C:\SteamLibraryforstream 下游戏DLL)只能在这做。
+- **Mac = 纯开发**: matcher/词典/测试(纯逻辑部分)/文档可改; keyboard/
+  pydirectinput/模组编译不可用; 改完推回来在 Windows 机验证+部署。
+- 用户数据在 %LOCALAPPDATA%\BannerlordVoice\(个人词典/usage/共建录音/日志),
+  不进仓库; 日志 app.log, 模组心跳 mod.log, 每条识别 usage.csv(黑窗日志
+  有"不落盘之谜", usage.csv 才是可靠数据源)。
+- 排错流程: 用户从启动器测, 报问题看 app.log 最后一个"新会话"段落 + mod.log
+  心跳三行 + usage.csv 尾部。
+
+## 当前状态 (2026-07-10)
+
+v0.7.9 已部署实测通过(游戏1.4.7): 混合识别/指令复盘(F11)/语音数据共建/
+整活词典(fun.pack)/游戏内双通道通知(顶部横幅+左下记录, notify协议UTF-8)。
+待办: 创意工坊上传(差用户跑上传命令+宣传图); B站第一期视频
+(脚本 docs/video-ep1-script.md); 英文快路热词; 语料攒够后微调小模型。
