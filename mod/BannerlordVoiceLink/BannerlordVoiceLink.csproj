@@ -38,6 +38,10 @@
     <Reference Include="TaleWorlds.DotNet">
       <HintPath>$(GameBin)\TaleWorlds.DotNet.dll</HintPath><Private>false</Private>
     </Reference>
+    <!-- TextObject (顶部快讯横幅 AddQuickInformation 需要) -->
+    <Reference Include="TaleWorlds.Localization">
+      <HintPath>$(GameBin)\TaleWorlds.Localization.dll</HintPath><Private>false</Private>
+    </Reference>
   </ItemGroup>
 
 </Project>

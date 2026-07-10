@@ -21,7 +21,8 @@ def _fake_mod(reply):
     def run():
         try:
             c, _ = srv.accept()
-            f = c.makefile("rw", encoding="ascii", newline="\n")
+            # 协议是 UTF-8 (notify 带中文), 假服务器同步
+            f = c.makefile("rw", encoding="utf-8", newline="\n")
             got[0] = (f.readline() or "").strip()
             f.write(reply + "\n")
             f.flush()
@@ -70,6 +71,15 @@ def test_unavailable_returns_none_fast():
 def test_disabled_noop():
     assert ModLink(port=1, enabled=False).attack("cavalry", "nearest") is None
     assert ModLink(port=1, enabled=False).ping() is None
+    assert ModLink(port=1, enabled=False).notify("骑兵 · 冲锋") is None
+
+
+def test_notify_utf8_roundtrip():
+    # 中文描述(含空格)整行到达, 不被按空格截断; UTF-8 编解码往返无损
+    port, got = _fake_mod("ok")
+    r = ModLink(port=port).notify("全军 · 盾墙 顶住")
+    assert r == "ok", r
+    assert got[0] == "notify 全军 · 盾墙 顶住", got[0]
 
 
 if __name__ == "__main__":

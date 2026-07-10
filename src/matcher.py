@@ -78,6 +78,10 @@ EN_CHAT_MARKERS = []          # 英文暂不做讨论词黑名单, 靠占比过�
 EN_MAX_EFFECTIVE_LEN = 42
 
 
+# 否定字: 别名以这些字开头且对齐时把它们丢掉 => 匹到的是反义(别开火→开火)
+NEG_PREFIX = set("别不停收住甭莫")
+
+
 def _mostly_inside(inner, outer):
     """inner 区间是否大部分落在 outer 内 (>=60% 重叠)。用于判"寄生"子串匹配。"""
     a, b = inner
@@ -160,7 +164,7 @@ class Matcher:
         """
         pt = self.pinyin_threshold if pinyin_threshold is None else pinyin_threshold
         best = (None, None, 0, "", (0, 0))
-        best_cmp = (0, False, 0)   # (分数, 别名是否在输入里完整出现, 别名长度)
+        best_cmp = (0, False, False, 0)  # (分数, 解释整句, 完整出现, 别名长度)
         for key, data in table.items():
             for alias in self._aliases(data):
                 ca = self._clean_map.get(alias) or self._clean(alias)
@@ -169,29 +173,81 @@ class Matcher:
                 pos = text.find(ca)
                 # 别名(>=2字)整体出现在输入里 —— 用于 tiebreak 压过"含它的更长别名"。
                 # 限>=2字: 单字精确("冲"在"冲缝"里)本就弱, 不该压过拼音匹配的"冲锋"。
-                exact = pos >= 0 and len(ca) >= 2
+                # 例外: 整句就是这个别名(ca==text) —— 用户只喊了"冲", 必须赢
+                # "跟我冲"这类把单字藏在肚子里的更长别名。
+                exact = pos >= 0 and (len(ca) >= 2 or ca == text)
                 if pos >= 0:
                     score, span = 100, (pos, pos + len(ca))
+                    neg_drop = False
                 else:
                     a = fuzz.partial_ratio_alignment(ca, text)
                     score, span = a.score, (a.dest_start, a.dest_end)
-                # 谐音兜底(仅中文): 汉字明显对不上(<70)且别名>=2字时比拼音。
-                if (self.pinyin_match and score < 70 and len(ca) >= 2 and text_py):
+                    neg_drop = bool(NEG_PREFIX & set(ca[:a.src_start]))
+                # 谐音兜底(仅中文): 别名>=2字时比拼音, 取更高分。
+                # 不设"汉字分低才比"的门槛 —— 曾因门槛(<70)把"三角镇"vs"三角阵"
+                # (汉字80, 拼音100)关在门外, 反让"交战"(汉字低→进兜底, 拼音87.5)
+                # 超车。真命中必须也有资格走拼音。
+                if (self.pinyin_match and score < 100 and len(ca) >= 2 and text_py):
                     apy = self._alias_py.get(alias) or alias_pinyin(alias)
-                    if apy and len(apy) >= 4:
+                    # 整句拼音明显比别名拼音短 => 不可能说的是这个别名, 跳过。
+                    # (防"方"fang 在"结盾防御"jiedunFANGyu 里滑窗蹭出100分)
+                    if apy and len(apy) >= 4 and len(text_py) * 1.5 >= len(apy):
                         pa = fuzz.partial_ratio_alignment(apy, text_py)
                         if pa.score >= pt and pa.score > score:
                             span = self._map_span(pa.dest_start, pa.dest_end,
                                                   pos2char, len(text))
                             score = pa.score
+                            neg_drop = bool(
+                                NEG_PREFIX & self._py_prefix_chars(
+                                    alias, pa.src_start))
+                # 否定前缀守卫: 对齐只盖住别名后半截、被丢掉的前缀含否定字
+                # ("开货"滑进"别开火"只匹到"开火") => 语义反转(想开火变停火),
+                # 这个候选整个作废。反例"别开火"完整出现时 pos>=0 不受影响。
+                if neg_drop:
+                    continue
                 if bonus_map:
                     score += bonus_map.get(key, 0)
-                # tiebreak: 分数 > 别名完整出现(防"前进"被含它的"列队前进"抢) > 更长
-                cand = (score, exact, len(ca))
-                if cand > best_cmp:
+                # tiebreak: 分数 > 解释整句 > 别名完整出现 > 更长。
+                # "解释整句"(覆盖全文)优先于精确: "停止蛇己"(=停止射击的平翘舌
+                # 错听)整句拼音与"停止射击"全同, 不能输给只覆盖一半的字面子串
+                # "停止" —— 否则喊停止射击会执行成立定。
+                # 只认"整句"不认"更长": 部分覆盖不许压精确 —— "步兵进攻骑兵"里
+                # "弓骑兵"拼音正好藏在"进攻骑兵"(jinGONGQIBING)中覆盖4字,
+                # 若按覆盖长度比会抢走"步兵"。
+                # 精确仍防"前进"被含它的"列队前进"抢(两者都整句时精确赢)。
+                full = (span[1] - span[0]) >= len(text)
+                cand = (score, full, exact, len(ca))
+                better = cand > best_cmp
+                # 同为满分且一方区间真包含另一方: 解释更多文本的同音整词赢。
+                # 专治同音字替换造出的精确子串陷阱: "弓骑兵"听成"功骑兵",
+                # 拼音满分的"弓骑兵"(盖3字)不能输给字面藏在里面的"骑兵"(2字),
+                # 否则"进攻对方弓骑兵"会变成打骑兵。反向包含时则守住现任。
+                if cand[0] == best_cmp[0] and cand[0] >= 100 and best[0]:
+                    a, b = span, best[4]
+                    if (a[0] <= b[0] and a[1] >= b[1]
+                            and a[1] - a[0] > b[1] - b[0]):
+                        better = True
+                    elif (b[0] <= a[0] and b[1] >= a[1]
+                            and b[1] - b[0] > a[1] - a[0]):
+                        better = False
+                if better:
                     best_cmp = cand
                     best = (key, data, score, alias, span)
         return best
+
+    @staticmethod
+    def _py_prefix_chars(alias, py_start):
+        """别名拼音串前 py_start 位覆盖不到的开头几个字 (整字被对齐丢掉的)。"""
+        out = set()
+        acc = 0
+        for ch in alias:
+            ln = len(_char_py(ch))
+            if ln and acc + ln <= py_start:
+                out.add(ch)
+                acc += ln
+            else:
+                break
+        return out
 
     @staticmethod
     def _map_span(s, e, pos2char, n):
@@ -279,13 +335,29 @@ class Matcher:
         o_key, o_data, o_score, o_alias, o_span = self._best(
             clean, self.orders, text_py, pos2char, self.pinyin_threshold,
             boost.get("orders"))
-        # 抑制"寄生兵种": 指令别名已覆盖某段, 兵种却在那段子串里蹭出一个
-        # (如"打这只军队"整句=focus_target, 兵种却把"军队"认成"马队"→骑兵)。
-        # 兵种命中区间被指令区间基本包住 => 是寄生, 丢掉。真兵种(如"骑兵冲锋"
-        # 的"骑兵")在指令区间之外, 不受影响。
+        # 抑制"寄生"匹配: 兵种和指令抢同一段文本时, 只能活一个。
+        # 指令区间比兵种多覆盖了别的字 => 指令解释了更多文本, 兵种是寄生
+        #   (如"打这只军队"整句=focus_target, 兵种把"军队"蹭成"马队"→骑兵)。
+        # 两者区间基本重合且兵种分更高 => 指令才是寄生
+        #   (如"骑射"精确=骑射手兵种100分, 指令"开射"却谐音蹭到89分 ——
+        #    光喊兵种名不该触发自由射击)。
+        # 真组合(如"骑兵冲锋")两段互不包含, 不受影响。
         if (g_key and o_key and o_score >= self.order_threshold
                 and _mostly_inside(g_span, o_span)):
-            g_key = None
+            o_extra = (o_span[1] - o_span[0]) - max(
+                0, min(o_span[1], g_span[1]) - max(o_span[0], g_span[0]))
+            if o_extra >= 1:
+                g_key = None      # 指令覆盖了更多字, 兵种是寄生
+            elif o_score >= 100:
+                g_key = None      # 同段, 指令精确/全同音 => 指令赢
+            elif g_score >= 100 or o_score - g_score < 10:
+                # 兵种精确(如"骑射"100 vs 谐音"开射"89), 或两边都模糊且分差
+                # 拉不开(如错听"提设": 骑射80 vs 开射89, 差9) => 歧义, 宁可
+                # 不发指令也不乱发 (用户重说一遍有 retry 助推接着)。
+                # 分差线取10: 「炎症」圆阵93 vs 远程80差13, 是真指令要放行
+                o_key = None
+            else:
+                g_key = None      # 同段, 指令明显更像 => 兵种让位
         if g_key:
             trace["group"] = {
                 "name": g_key, "alias": g_alias, "score": round(g_score),

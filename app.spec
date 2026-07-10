@@ -16,6 +16,9 @@ datas = [
     (os.path.join(ROOT, "config", "calibration.yaml"), "config"),
     (os.path.join(ROOT, "assets", "icon.ico"), "assets"),
 ]
+# 整活包示例 (首次运行播种到用户配置目录, 之后永不覆盖)
+for _f in glob.glob(os.path.join(ROOT, "config", "fun", "*.yaml")):
+    datas.append((_f, "config/fun"))
 binaries = []
 hiddenimports = [
     # app.py 及各处是函数内条件导入, 显式列出保证被打进去
@@ -24,9 +27,22 @@ hiddenimports = [
     "license", "version", "machine_id",
     # 后加的模块(多为函数内 import, 静态分析易漏)
     "i18n", "models", "retry", "modlink", "dictionary", "usage",
-    "procman", "order_tree", "calibrate", "cuda_libs",
+    "procman", "order_tree", "calibrate", "cuda_libs", "stream_asr", "review",
+    "donation",
     "yaml", "rapidfuzz", "pydirectinput", "keyboard", "numpy",
 ]
+
+# 内置流式 zipformer (混合识别快路, 只带 int8 encoder 省体积 ≈191MB)
+_STREAM = os.path.join(
+    ROOT, "kws", "models",
+    "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20")
+for f in ("encoder-epoch-99-avg-1.int8.onnx", "decoder-epoch-99-avg-1.onnx",
+          "joiner-epoch-99-avg-1.int8.onnx", "tokens.txt"):
+    fp = os.path.join(_STREAM, f)
+    if os.path.isfile(fp):
+        datas.append((fp, "models/streaming-zipformer-zh-en"))
+    else:
+        print(f"[spec] ⚠ 流式模型缺 {f}, 打出的包只有纯 Whisper")
 
 # 内置 base 模型 (免联网; 国内 HuggingFace 首次下载常失败)
 _snaps = glob.glob(os.path.expanduser(
@@ -38,7 +54,7 @@ if _snaps:
             datas.append((fp, "models/faster-whisper-base"))
 
 # 这些包 PyInstaller 静态分析抓不全, 用 collect_all 兜底
-for pkg in ("faster_whisper", "ctranslate2", "av",
+for pkg in ("faster_whisper", "ctranslate2", "av", "sherpa_onnx",
             "sounddevice", "soundfile", "onnxruntime", "tokenizers", "pypinyin"):
     try:
         d, b, h = collect_all(pkg)

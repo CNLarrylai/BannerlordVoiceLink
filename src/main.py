@@ -172,7 +172,73 @@ class App:
         except ValueError as e:
             print(f"[音频] ⚠ {e}")
         self.transcriber = Transcriber(settings)  # 加载模型 (慢)
+        self.fast = self._make_fast(settings, commands)
+        from donation import Donation
+        self.donation = Donation(settings)
+        if self.donation.enabled:
+            print("[共建] 语音数据共建已开启: 只保存执行了的指令片段, "
+                  "存本机, 导出才离开电脑。")
+        self._report_fun_pack()
         self.running = True
+
+    @staticmethod
+    def _report_fun_pack():
+        import dictionary
+        pack = dictionary.active_fun_pack()
+        if not pack:
+            return
+        data = dictionary.load_fun_pack(pack)
+        if data is None:
+            return  # load_commands 已打过警告
+        n = sum(len(v if isinstance(v, list) else v.get("aliases", []))
+                for sec in ("groups", "orders")
+                for v in (data.get(sec) or {}).values())
+        print(f"[整活] 已激活整活包「{pack}」: {n} 条猎奇说法生效 "
+              f"(切包改 settings 的 fun.pack 后按 F10)。")
+
+    def _make_fast(self, settings, commands):
+        """stt.engine=hybrid 时装配快路(流式ASR); 任何缺失都退回纯 Whisper。
+
+        快路只开中文: 英文热词还没做, 且该模型英文质量未验证。
+        """
+        if settings["stt"].get("engine", "whisper") != "hybrid":
+            return None
+        if self.lang != "zh":
+            print("[快路] 英文模式暂不启用快路, 使用纯 Whisper。")
+            return None
+        import stream_asr
+        ok, why = stream_asr.available()
+        if not ok:
+            print(f"[快路] 不可用({why}), 退回纯 Whisper。")
+            return None
+        try:
+            fast = stream_asr.FastTranscriber(self.commands)
+        except Exception as e:
+            print(f"[快路] 加载失败({e}), 退回纯 Whisper。")
+            return None
+        print("[快路] 流式引擎就绪: 命令~0.1s直出, 解不出时 Whisper 兜底。")
+        return fast
+
+    def _transcribe(self, audio, hotwords):
+        """混合识别: 快路文本能解析出可执行指令 => 直出; 否则 Whisper 兜底。
+
+        判据是"整条链路走得通"(前缀+聊天过滤+阈值), 不是裸文本像不像 ——
+        快路听岔时兜底的 Whisper 常能救回(线阵/圆阵实测如此)。
+        返回 (文本, 引擎标签)。
+        """
+        if self.fast:
+            try:
+                ftext = self.fast.transcribe(audio, self.samplerate)
+            except Exception as e:
+                print(f"    [快路] ⚠ 识别异常({e}), 本条走 Whisper")
+                ftext = ""
+            if ftext:
+                armed, cleaned = self._check_prefix(ftext)
+                if armed:
+                    boost, _ = self.retry.boost_for(cleaned)
+                    if self.matcher.parse(cleaned, boost=boost):
+                        return ftext, "快路"
+        return self.transcriber.transcribe(audio, hotwords=hotwords), "Whisper"
 
     @staticmethod
     def _make_retry(c):
@@ -255,6 +321,14 @@ class App:
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
         self.prefixes = c.get("command_prefix") or []
         self.silence_rms = settings["audio"].get("silence_rms", self.silence_rms)
+        if self.fast:
+            try:
+                self.fast.rebuild(commands)  # 热词跟着新词典走
+            except Exception as e:
+                print(f"[快路] ⚠ 热词重建失败({e}), 快路继续用旧热词。")
+        from donation import Donation
+        self.donation = Donation(settings)  # 共建开关热生效(启动器改完按F10)
+        self._report_fun_pack()             # 整活包切换热生效
         n = sum(len(d.get("aliases", []))
                 for sec in ("groups", "orders")
                 for d in commands.get(sec, {}).values())
@@ -285,6 +359,32 @@ class App:
         state = "开" if self.listen_on else "关"
         print(f"[监听] 命令识别已{state}。")
         self._idle()
+
+    def _register_review_hotkey(self):
+        key = self.settings["control"].get("review_key") or ""
+        if not key:
+            return
+        try:
+            keyboard.add_hotkey(key, self._open_review)
+            print(f"[复盘] 按 [{key.upper()}] 打开指令复盘 (逐条看识别/纠错绑定)。")
+        except Exception as e:
+            print(f"[复盘] ⚠ 热键 {key} 注册失败: {e}")
+
+    def _open_review(self):
+        """游戏里发现错配 -> 按键呼出复盘目录, 当场改绑定。独立进程, 不卡识别。"""
+        import subprocess
+        from paths import FROZEN
+        if FROZEN:
+            cmd = [sys.executable, "--mode", "review"]
+        else:
+            pyw = sys.executable.replace("python.exe", "pythonw.exe")
+            cmd = [pyw if os.path.exists(pyw) else sys.executable,
+                   os.path.join(ROOT, "src", "app.py"), "--mode", "review"]
+        try:
+            subprocess.Popen(cmd)
+            print("[复盘] 指令复盘窗口已打开。")
+        except Exception as e:
+            print(f"[复盘] ⚠ 打开失败: {e}")
 
     def _gate_open(self):
         """现在该不该处理命令: 手动开着 且 (没开自动门 或 在战斗中)。"""
@@ -344,8 +444,9 @@ class App:
         # 重试窗口内: 把上次差点命中的说法喂给识别器, 偏置这一遍听准
         hotwords = self.retry.hotwords()
         t0 = time.perf_counter()
-        text = self.transcriber.transcribe(audio, hotwords=hotwords)
+        text, engine = self._transcribe(audio, hotwords)
         t_stt = time.perf_counter() - t0
+        eng = f"[{engine}]" if self.fast else ""
         if t_stt > self.slow_warn_sec:
             print(f"    [⚠ 识别偏慢] {t_stt:.1f}s (音频 {secs:.1f}s) "
                   f"—— 多半是游戏在抢 GPU, 试试游戏内锁帧/关游戏模式")
@@ -371,8 +472,12 @@ class App:
                 cleaned,
                 self._near(tr["group"], self.matcher.group_threshold),
                 self._near(tr["order"], self.matcher.order_threshold))
-            print(f"    ✗ 听到「{text}」→ 未匹配/聊天, 未执行（识别 {t_stt:.2f}s）")
-            usage.record(self.lang, "miss", None, None, "", t_stt, text)
+            print(f"    ✗ 听到「{text}」→ 未匹配/聊天, 未执行"
+                  f"（识别 {t_stt:.2f}s{eng}）")
+            usage.record(self.lang, "miss", None, None, "", t_stt, text,
+                         engine if self.fast else "")
+            self.donation.save(audio, self.samplerate, "miss", None, None,
+                               text, engine)
             self._debug(t("上一条 ✗ 听到「{t}」→ 未匹配/聊天, 未执行").format(t=text))
             self._set(t("未匹配"), t("听到: {t}").format(t=text), "#ff8a8a")
             time.sleep(0.6)
@@ -400,8 +505,16 @@ class App:
                         .replace("[target (aim at them!)]", "[locked by mod]"))
         else:
             self.executor.execute(parsed)
+            # 按键指令的战场回执: 推给模组打顶部快讯横幅 (定向进攻由模组
+            # 自己播报更详细的, 不重复; 没模组/不在战斗则毫秒级静默失败)
+            if self.modlink and not self.dry_run:
+                self.modlink.notify(desc)
+        t_key = parsed["target"]["name"] if parsed.get("target") else ""
         usage.record(self.lang, "ok", g_key, o_key,
-                     "mod" if via_mod else "keys", t_stt, text)
+                     "mod" if via_mod else "keys", t_stt, text,
+                     engine if self.fast else "", t_key)
+        self.donation.save(audio, self.samplerate, "ok", g_key, o_key,
+                           text, engine, target=t_key)
         self.retry.note_exec(g_key, o_key)
         # 执行了但兵种没过线(只作用于当前选中编队): 记为差点命中 —— 用户若马上
         # 重说, 说明发错了对象, 下一遍放大该兵种 (专治 "all units"→"or units")
@@ -413,7 +526,7 @@ class App:
         how = t("模组直达") if via_mod \
             else t("发键 {keys}").format(keys=" ".join(keys))
         print(f"    ✓ 听到「{text}」→ {desc} · {how}"
-              f"（识别 {t_stt:.2f}s + 执行 {t_keys:.2f}s = 共 {total:.2f}s）")
+              f"（识别 {t_stt:.2f}s{eng} + 执行 {t_keys:.2f}s = 共 {total:.2f}s）")
         self._debug(t("上一条 ✓ 听到「{t}」→ {d} · {how}（{s}s）").format(
             t=text, d=desc, how=how, s=f"{t_stt:.1f}"))
         self._set(f"✓ {desc}", t("听到: {t}").format(t=text), "#7dff9b")
@@ -460,6 +573,7 @@ class App:
         boost_thread_priority()
         self._register_reload_hotkey()
         self._register_toggle_hotkey()
+        self._register_review_hotkey()
         if self.auto_battle_gate:
             print("[监听] 战斗自动门已开: 大地图/菜单静音, 进入战斗自动识别。")
             self._battle_gate_poll()

@@ -57,6 +57,18 @@ def main():
     if rc != 0:
         print("\n❌ 校准测试有失败! 先修这个。")
         sys.exit(1)
+    rc = run("指令复盘 (说法提取/usage兼容, 正确性门槛)", "test_review.py")
+    if rc != 0:
+        print("\n❌ 指令复盘测试有失败! 先修这个。")
+        sys.exit(1)
+    rc = run("语音数据共建 (采集/导出/归集, 正确性门槛)", "test_donation.py")
+    if rc != 0:
+        print("\n❌ 数据共建测试有失败! 先修这个。")
+        sys.exit(1)
+    rc = run("整活词典 (激活/合并/路由, 正确性门槛)", "test_fun_pack.py")
+    if rc != 0:
+        print("\n❌ 整活词典测试有失败! 先修这个。")
+        sys.exit(1)
     if skip_bench:
         print("\n✓ 匹配回归通过 (已跳过识别基准)。")
         return

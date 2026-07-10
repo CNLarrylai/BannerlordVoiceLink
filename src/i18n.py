@@ -101,6 +101,83 @@ _EN = {
     "跟读学指令\n适配你的发音": "Learn commands,\ntune to your voice",
     "✓ 上手校准已启动 (跟着屏幕念)": "✓ Calibration started (read the prompts)",
 
+    # ---------- 语音数据共建 donation ----------
+    "🎤 参与语音数据共建 (自愿, 只存指令片段)":
+        "🎤 Donate voice data (optional, command clips only)",
+    "📦 导出数据包": "📦 Export data pack",
+    "语音数据共建": "Voice Data Donation",
+    "✓ 已开启共建 (语音指挥运行中的话按 F10 生效)":
+        "✓ Donation on (press F10 in the voice app to apply)",
+    "已关闭共建, 不再保存任何片段": "Donation off — no clips will be saved",
+    "还没有留存的片段 (先勾选共建并打几场)":
+        "No clips saved yet (enable donation and play some battles)",
+    "导出失败: {e}": "Export failed: {e}",
+    "✓ 数据包已导出 ({n}条/{mb}MB), 把它发给作者即可":
+        "✓ Data pack exported ({n} clips / {mb}MB) — send it to the author",
+    ("参与「语音数据共建」意味着:\n\n"
+     "· 只保存「被识别为指令并执行」的那 1~2 秒语音片段和识别文本\n"
+     "  (聊天、闲话、未匹配的内容一律不保存)\n"
+     "· 数据只存在你自己电脑上 (%LOCALAPPDATA%\\BannerlordVoice\\donation)\n"
+     "· 只有你自己点「导出数据包」并把它发给作者, 数据才会离开你的电脑\n"
+     "· 数据包只含语音片段、指令标注、软件版本和一个匿名机器编号,\n"
+     "  不含你的任何个人信息\n"
+     "· 用途: 训练/微调更小更快的指令识别模型, 让所有玩家受益\n"
+     "· 随时可以取消勾选停止保存; 删掉那个文件夹即可清空\n\n"
+     "确认参与吗?"):
+        ("Joining Voice Data Donation means:\n\n"
+         "- Only the 1-2s clips of RECOGNIZED AND EXECUTED commands (plus the\n"
+         "  recognized text) are saved. Chat and unmatched speech are never saved.\n"
+         "- Data stays on YOUR computer\n"
+         "  (%LOCALAPPDATA%\\BannerlordVoice\\donation)\n"
+         "- Data only leaves your machine when YOU click Export and send the\n"
+         "  pack to the author\n"
+         "- The pack contains only: audio clips, command labels, app version,\n"
+         "  and an anonymous machine hash. No personal information.\n"
+         "- Purpose: fine-tune a smaller, faster command model for everyone\n"
+         "- Untick anytime to stop; delete the folder to wipe everything\n\n"
+         "Join?"),
+
+    # ---------- 指令复盘 review ----------
+    "📜\n指令复盘": "📜\nReview",
+    "看识别记录\n纠错改绑定": "Browse history,\nfix bindings",
+    "✓ 已打开指令复盘 (游戏里也可按 F11 呼出)":
+        "✓ Command Review opened (press F11 in game too)",
+    "指令复盘": "Command Review",
+    "📜 指令复盘 — 每句话都听成了什么、触发了什么":
+        "📜 Command Review — what was heard, what was triggered",
+    "发现错配: 选中那条 → 指定正确指令/兵种 → 学进个人词典":
+        "Found a mismatch? Select it → set the right command → learn it",
+    "时间": "Time",
+    "听到": "Heard",
+    "判定": "Parsed",
+    "方式": "Via",
+    "耗时": "Sec",
+    "✗ 未匹配": "✗ no match",
+    "模组": "mod",
+    "按键": "keys",
+    "↑ 选中一条记录查看/纠错": "↑ Select a row to inspect / fix",
+    "听到: 「{t}」": "Heard: \"{t}\"",
+    "正确兵种:": "Correct troop:",
+    "正确指令:": "Correct order:",
+    "打击目标:": "Attack target:",
+    "(不指定)": "(none)",
+    "(无)": "(none)",
+    "要学的说法(自动提取, 可改):": "Alias to learn (auto, editable):",
+    "✎ 保存绑定(学进个人词典)": "✎ Save binding (personal dict)",
+    "🔄 刷新": "🔄 Refresh",
+    "绑定保存后: 语音程序按 F10 生效, 下次启动自动生效":
+        "After saving: press F10 in the voice app to apply (auto on restart)",
+    "还没有记录: 先开语音指挥打一场": "No records yet — play a battle first",
+    "把下面的兵种/指令改成这句话该触发的, 再点保存":
+        "Set the troop/order this phrase SHOULD trigger, then save",
+    "先在表格里选中一条记录": "Select a row in the table first",
+    "没有可保存的改动 (兵种/指令都与记录相同)":
+        "Nothing to save (troop/order unchanged)",
+    "说法「{a}」太短(至少2个字), 请在输入框改":
+        "Alias \"{a}\" too short (min 2 chars), edit it above",
+    "✓ 已学 {d} · 语音程序按 F10 生效(重启也生效)":
+        "✓ Learned {d} · press F10 in the voice app to apply",
+
     # ---------- 校准 calibrate ----------
     "上手校准 — 骑砍语音指挥": "Calibration — Bannerlord Voice Command",
     "🎯 上手校准（教学 + 发音适配）": "🎯 Calibration (learn commands + tune to your voice)",

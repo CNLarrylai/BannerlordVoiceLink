@@ -160,7 +160,13 @@ def main():
     for must in ("SubModule.xml",
                  os.path.join("bin", "Win64_Shipping_Client",
                               "BannerlordVoiceLink.dll"),
-                 os.path.join("VoiceApp", "BannerlordVoice.exe")):
+                 os.path.join("VoiceApp", "BannerlordVoice.exe"),
+                 # 混合识别快路的流式模型(缺了会静默退回纯Whisper, 打包必须带全)
+                 os.path.join("VoiceApp", "_internal", "models",
+                              "streaming-zipformer-zh-en",
+                              "encoder-epoch-99-avg-1.int8.onnx"),
+                 os.path.join("VoiceApp", "_internal", "models",
+                              "streaming-zipformer-zh-en", "tokens.txt")):
         ok = os.path.exists(os.path.join(MOD_DST, must))
         print(f"  {'✓' if ok else '✗✗✗ 缺'} {must}")
         if not ok:
@@ -170,7 +176,8 @@ def main():
                            "settings.yaml")
     with open(shipped, encoding="utf-8") as f:
         cfg = f.read()
-    for token in ("device: null", "model: auto", "language: zh"):
+    for token in ("device: null", "model: auto", "language: zh",
+                  "engine: hybrid"):
         ok = token in cfg
         print(f"  {'✓' if ok else '✗✗✗ 随包配置错'} {token}")
         if not ok:

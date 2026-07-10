@@ -113,6 +113,9 @@ def main():
     elif mode == "dict":
         from command_gui import CommandGUI
         CommandGUI().run()
+    elif mode == "review":
+        from review import main as review_main
+        review_main()
     else:
         print(f"未知模式: {mode}")
         sys.exit(2)

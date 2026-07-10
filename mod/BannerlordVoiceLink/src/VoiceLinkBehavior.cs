@@ -14,10 +14,11 @@ namespace BannerlordVoiceLink
     /// <summary>
     /// Localhost TCP bridge between the voice app (Python) and the battle.
     ///
-    /// Protocol: one ASCII line per request, one line per reply.
+    /// Protocol: one UTF-8 line per request, one line per reply.
     ///   ping                      -> "ok battle=1|0"
     ///   info                      -> "ok Ranged:80:142 Cavalry:40:200 ..." (enemy formations: class:units:dist)
     ///   attack <group> <target>   -> "ok attacked=N target=Ranged:80:142" or "err <reason>"
+    ///   notify <中文文本>          -> "ok"  (顶部快讯横幅播报普通按键指令)
     ///     group : infantry|archers|cavalry|horse_archers|all
     ///     target: infantry|archers|cavalry|horse_archers|nearest
     ///
@@ -126,12 +127,15 @@ namespace BannerlordVoiceLink
                     client.ReceiveTimeout = 2000;
                     client.SendTimeout = 2000;
                     using (var stream = client.GetStream())
-                    using (var reader = new StreamReader(stream, Encoding.ASCII))
-                    using (var writer = new StreamWriter(stream, Encoding.ASCII) { AutoFlush = true })
+                    using (var reader = new StreamReader(stream, new UTF8Encoding(false)))
+                    // UTF8Encoding(false): 不带 BOM —— 带 BOM 会污染首条回复,
+                    // Python 侧 "ok"/"err" 前缀判断会失灵
+                    using (var writer = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true })
                     {
                         var line = reader.ReadLine();
                         if (line == null)
                             continue;
+                        // (协议已转 UTF-8: notify 带中文; ASCII 命令不受影响)
                         var req = new Req { Line = line.Trim() };
                         _requests.Enqueue(req);
                         string reply;
@@ -168,6 +172,15 @@ namespace BannerlordVoiceLink
 
         private string Handle(string line)
         {
+            // notify 的正文是自由中文(可含空格), 不走按空格分词
+            if (line.StartsWith("notify ", StringComparison.Ordinal))
+            {
+                var text = line.Substring(7).Trim();
+                if (text.Length == 0)
+                    return "err empty_text";
+                Notify(text);
+                return "ok";
+            }
             var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 0)
                 return "err empty";
@@ -201,6 +214,61 @@ namespace BannerlordVoiceLink
                 case "cavalry": fc = FormationClass.Cavalry; return true;
                 case "horse_archers": fc = FormationClass.HorseArcher; return true;
                 default: fc = FormationClass.Infantry; return false;
+            }
+        }
+
+        // ---------- 游戏内通知 ----------
+        // 模组下的定向指令不走游戏原生的下令 UI 反馈, 玩家看不到"谁在打谁";
+        // 用战斗记录区(左下角)的金色消息把指令说清楚。
+
+        private static string Cn(FormationClass fc)
+        {
+            switch (fc)
+            {
+                case FormationClass.Infantry: return "步兵";
+                case FormationClass.Ranged: return "弓箭手";
+                case FormationClass.Cavalry: return "骑兵";
+                case FormationClass.HorseArcher: return "骑射";
+                default: return fc.ToString();
+            }
+        }
+
+        private static string CnGroup(string name)
+        {
+            switch (name)
+            {
+                case "infantry": return "步兵";
+                case "archers": return "弓箭手";
+                case "cavalry": return "骑兵";
+                case "horse_archers": return "骑射";
+                case "all": return "全军";
+                default: return name;
+            }
+        }
+
+        private static void Notify(string text)
+        {
+            // 双通道: 顶部快讯横幅(敌军溃逃同款位置, 大字显眼, 观众一眼看到)
+            //        + 左下角战斗记录(留痕可回翻, 横幅淡出后还查得到)。
+            try
+            {
+                MBInformationManager.AddQuickInformation(
+                    new TaleWorlds.Localization.TextObject("【语音】" + text));
+            }
+            catch
+            {
+                // 横幅 API 变动/失败不影响下令, 还有下面的记录兜底
+            }
+            try
+            {
+                TaleWorlds.Library.InformationManager.DisplayMessage(
+                    new TaleWorlds.Library.InformationMessage(
+                        "【语音】" + text,
+                        TaleWorlds.Library.Color.FromUint(0xFFD4AF37)));   // 金色
+            }
+            catch
+            {
+                // 通知失败绝不影响下令
             }
         }
 
@@ -345,7 +413,15 @@ namespace BannerlordVoiceLink
                 oc.SetOrderWithFormation(OrderType.Charge, best);
                 done++;
                 lastDesc = best.FormationIndex + ":" + best.CountOfUnits;
+                // 按兵种模式各队目标不同, 逐队报; 集火模式统一在循环外报一条
+                if (fixedTarget == null)
+                    Notify(Cn(g.FormationIndex) + " → 进攻敌方" + Cn(best.FormationIndex)
+                           + "(" + best.CountOfUnits + "人)");
             }
+            if (fixedTarget != null && done > 0)
+                Notify(CnGroup(groupName) + " → 集火最近敌军: "
+                       + Cn(fixedTarget.FormationIndex)
+                       + "(" + fixedTarget.CountOfUnits + "人)");
 
             // put the player's own UI selection back the way it was
             oc.ClearSelectedFormations();

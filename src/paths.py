@@ -36,6 +36,7 @@ def config_dir():
     d = os.path.join(user_data_dir(), "config")
     os.makedirs(d, exist_ok=True)
     try:
+        _seed_fun_packs(d)
         refresh_config(d, os.path.join(bundle_dir(), "config"))
     except Exception:
         # 迁移失败绝不能挡启动: 至少把缺的文件补上
@@ -49,9 +50,23 @@ def config_dir():
     return d
 
 
+def _seed_fun_packs(d):
+    """播种包内整活包示例到用户配置目录 (只补缺, 永不覆盖 —— 整活包是
+    用户自己的定制内容, 跟个人词典同级, 版本更新不许碰)。"""
+    src = os.path.join(bundle_dir(), "config", "fun")
+    if not os.path.isdir(src):
+        return
+    dst = os.path.join(d, "fun")
+    os.makedirs(dst, exist_ok=True)
+    for name in os.listdir(src):
+        if name.endswith(".yaml") and not os.path.exists(os.path.join(dst, name)):
+            shutil.copy(os.path.join(src, name), os.path.join(dst, name))
+
+
 # 版本更新时仍保留的用户选择 (其余改动在 backup/ 里可手动找回)
 _KEEP_PREFS = (("audio", "device"), ("stt", "model"),
-               ("stt", "device"), ("stt", "language"))
+               ("stt", "device"), ("stt", "language"), ("stt", "engine"),
+               ("fun", "pack"))
 
 
 def refresh_config(d, src):

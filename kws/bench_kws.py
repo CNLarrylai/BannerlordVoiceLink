@@ -139,17 +139,22 @@ def main():
     bench(lambda s, sr: whisper_spot(tr, m, s, sr)[0], "Whisper + 匹配层")
 
     import dictionary
+    sys.path.insert(0, HERE)
+    import stream_asr
     from hybrid import HybridRecognizer
-    hy = HybridRecognizer(kws, kws_spot, tr, m, dictionary.load_commands())
-    hy_engine = {"kws": 0, "whisper": 0}
+    cmds_d = dictionary.load_commands()
+    stream = stream_asr.make_stream(stream_asr.build_hotwords(cmds_d))
+    hy = HybridRecognizer(
+        lambda s, sr: stream_asr.transcribe(stream, s, sr), tr, m, cmds_d)
+    hy_engine = {"stream": 0, "whisper": 0}
 
     def hybrid_fn(s, sr):
         keys, eng, _ms, _t = hy.recognize(s, sr)
         hy_engine[eng] += 1
         return keys
 
-    bench(hybrid_fn, "混合 (KWS快路+Whisper兜底)")
-    print(f"  快/慢路分布: KWS直出 {hy_engine['kws']} 次, "
+    bench(hybrid_fn, "混合 (流式快路+Whisper兜底)")
+    print(f"  快/慢路分布: 流式直出 {hy_engine['stream']} 次, "
           f"退回Whisper {hy_engine['whisper']} 次")
 
     # 逐条看 KWS 漏了哪些

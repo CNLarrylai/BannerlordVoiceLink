@@ -46,13 +46,13 @@ orders:
     keys: [f1, f1]
     aliases: [到这里, 去那里, 来这里, 守住这里, 到指定位置, 就位, 到位, 去那儿,
               到这儿, 来这儿, 守这儿, 站这儿, 待在这儿, 去那边儿, 到那边儿,
-              守住这儿, 去那边, 到那边, 守这里, 站这里]
+              守住这儿, 去那边, 到那边, 守这里, 站这里, 过来]
     en: [move here, go there, hold this position, take position, move to position]
   follow_me:
     keys: [f1, f2]
     aliases: [随我来, 跟随我, 跟着我, 跟我走, 跟我上, 跟我冲, 跟上, 跟着我走,
               都跟上, 跟紧我, 跟紧点儿, 跟我来, 都跟着我, 护驾, 救驾, 保护我,
-              来救我, 到我这里来, 到我这儿来]
+              来救我, 到我这里来, 到我这儿来, 来我这, 到我身边, 别掉队]
     en: [follow me, on me, with me, rally to me, stay with me]
   charge:
     # 指向性攻击(游戏1.2+原生): 鼠标/准星指着敌方编队图标(出现绿色四角准星)
@@ -63,9 +63,11 @@ orders:
     keys: [f1, f3]
     # 注: "打他们/打他" 移到 focus_target(集火眼前那支, 玩家'打他打他'的直觉);
     # charge 泛指冲锋保留"冲他们/攻击他们"等。
-    aliases: [冲锋, 冲, 进攻, 突击, 杀, 给我冲, 冲上去, 冲啊, 冲呀, 冲鸭,
+    # "出击"必须显式收录: 不在词典时, "全军出击"会被"护驾"(hujia)拼音蹭到89分
+    # 错路由成跟随我(2026-07-09 实战日志钓出, 连错三次)。
+    aliases: [冲锋, 冲, 进攻, 突击, 出击, 杀, 给我冲, 冲上去, 冲啊, 冲呀, 冲鸭,
               给我上, 上啊, 冲过去, 杀过去, 干他们, 打过去, 给我杀, 杀啊,
-              往上冲, 压上去打, 冲他们, 攻击他们, 灭了他们]
+              往上冲, 压上去打, 冲他们, 攻击他们, 灭了他们, 开干, 开团, 怼上去]
     en: [charge, attack, engage, charge them, attack them, go get them,
          take them out, focus them, kill them]
   # 注: 曾有独立的 attack_nearest("打最近的"), 已删 —— 游戏原生冲锋(charge)
@@ -75,7 +77,7 @@ orders:
     takes_target: true   # 交战(F1F4)同样支持指向性目标, 见 charge 注释
     keys: [f1, f4]
     aliases: [开战, 交战, 前进, 进军, 推进, 慢慢推进, 上前, 向前, 往前走, 压上去,
-              顶上去, 向前推, 推上去, 往前压, 往前顶, 上前压]
+              顶上去, 向前推, 推上去, 往前压, 往前顶, 上前压, 压上]
     en: [advance, move up, push forward, forward, push up, engage the enemy]
   focus_target:
     # 需伴侣模组: 集火离玩家最近的那支敌军(混战里"打这只军队/打他打他"最本能,
@@ -86,17 +88,18 @@ orders:
     keys: [f1, f3]
     aliases: [打这只, 打这只军队, 打那只, 打那只军队, 就打这只, 集火这只,
               集火这只军队, 打这一只, 打面前这只, 灭了这只, 打眼前这只,
-              打他们, 打他, 打他打他]
+              打他们, 打他, 打他打他, 秒他, 搞他, 盯着这只打, 集火, 集火他]
     en: [get that one, focus that, attack that one, hit that one, focus fire]
   fall_back:
     keys: [f1, f5]
-    aliases: [退后, 后退, 撤一点, 往后, 后撤, 往后退, 退一退, 撤一撤, 往后撤,
-              退回来, 后撤点儿, 往后点儿, 往后退点儿, 退一点儿]
+    # "回来"显式收录: 实战高频说法(骑兵回来/弓箭手回来), 曾只靠"退回来"模糊80分接
+    aliases: [退后, 后退, 回来, 撤一点, 往后, 后撤, 往后退, 退一退, 撤一撤, 往后撤,
+              退回来, 后撤点儿, 往后点儿, 往后退点儿, 退一点儿, 回防]
     en: [fall back, pull back, back up, move back, give ground]
   halt:
     keys: [f1, f6]
     aliases: [立定, 停止, 停下, 站住, 原地待命, 别动, 停, 停一停, 都别动,
-              原地不动, 稳住, 别走, 停在那儿, 站那儿别动, 都停下, 都停一停]
+              原地不动, 稳住, 别走, 停在那儿, 站那儿别动, 都停下, 都停一停, 停停停]
     en: [halt, stop, hold, stand ground, hold position, hold there, stay here,
          stay put, stay there, hold your ground, stand your ground,
          hold your position, remain here, dont move, freeze]
@@ -115,17 +118,17 @@ orders:
   shield_wall:
     keys: [f8]
     aliases: [盾墙, 盾阵, 举盾, 结盾, 结盾阵, 龟甲阵, 盾牌墙, 举起盾牌, 结盾防御,
-              铁壁, 结个盾墙, 摆盾墙, 举盾牌, 盾墙顶住, 龟壳阵, 都举盾]
+              铁壁, 结个盾墙, 摆盾墙, 举盾牌, 盾墙顶住, 龟壳阵, 都举盾, 龟起来, 把盾举起来]
     en: [shield wall, shields up, form a wall, wall up, raise shields]
   loose:
     keys: [f2, f3]
     aliases: [散阵, 散开, 疏散, 散开队形, 分散, 疏散队形, 散一散, 散开点儿,
-              都散开, 散开点, 拉开距离, 拉开点儿, 都散一散]
+              都散开, 散开点, 拉开距离, 拉开点儿, 都散一散, 别扎堆, 散一点, 别挤]
     en: [loose, spread out, loose formation, disperse, open up]
   circle:
     keys: [f2, f4]
     aliases: [圆阵, 圆形, 结圆阵, 围成圈, 围圈, 结个圆阵, 摆圆阵, 围成圆圈,
-              抱团, 结成圆阵]
+              抱团, 结成圆阵, 围一圈, 圈起来, 围起来]
     en: [circle, form a circle, circle formation, ring]
   square:
     keys: [f2, f5]
@@ -133,7 +136,7 @@ orders:
     en: [square, form a square, square formation]
   skein:
     keys: [f2, f6]
-    aliases: [三角阵, 尖阵, 尖头阵, 楔阵, 楔形, 楔形阵, 锥形阵, 锥子阵, 结楔阵]
+    aliases: [三角阵, 尖阵, 尖头阵, 楔阵, 楔形, 楔形阵, 锥形阵, 锥子阵, 结楔阵, 尖刀阵]
     en: [wedge, triangle, form a wedge, wedge formation, spearhead]
   column:
     keys: [f2, f7]
@@ -143,19 +146,19 @@ orders:
   scatter:
     keys: [f2, f8]
     aliases: [乱阵, 散兵, 四散, 散兵线, 各自为战, 打散, 散兵游勇, 各自散开,
-              自由散开]
+              自由散开, 自由站位, 打乱队形]
     en: [scatter, break formation, scatter formation, every man for himself]
 
   # ---------- 顶层直接生效键 (F4~F9 无子菜单, 单键) ----------
   fire_at_will:
     keys: [f4]
     aliases: [自由射击, 放箭, 射击, 开火, 给我射, 放, 放箭啊, 射他们, 开射,
-              攒射, 射啊, 给我放箭, 放箭射击, 自由开火, 尽情射击]
+              攒射, 射啊, 给我放箭, 放箭射击, 自由开火, 尽情射击, 火力全开, 射起来]
     en: [fire, fire at will, open fire, shoot them, let them fly]
   hold_fire:
     keys: [f4]
     aliases: [停止射击, 别射, 收弓, 停火, 别放箭, 别射了, 停手, 别开火, 住手,
-              收着点儿, 别放了, 都别射, 停止放箭]
+              收着点儿, 别放了, 都别射, 停止放箭, 收手, 省点箭]
     en: [hold fire, cease fire, stop shooting, hold your fire]
   mount_toggle:
     keys: [f5]
@@ -166,7 +169,7 @@ orders:
   ai_control:
     keys: [f6]
     aliases: [交给AI, 自动, 托管, 你来指挥, 自动作战, 委派指挥, 你来指挥吧,
-              自动打, AI接管, 自己打, 交给电脑, 自动指挥]
+              自动打, AI接管, 自己打, 交给电脑, 自动指挥, 你们自己来, 自由发挥]
     en: [ai control, give ai control, take over, auto command, you command them]
   face_direction:
     keys: [f7]

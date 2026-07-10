@@ -35,6 +35,7 @@ DIM = "#9aa4ad"
 GOLD = "#d4af37"
 GREEN = "#7dff9b"
 GRAY = "#2a323a"
+RED = "#ff8a8a"
 
 
 def _read_language():
@@ -146,6 +147,7 @@ class Launcher:
         minis = [
             (t("🎯\n上手校准"), t("跟读学指令\n适配你的发音"), self.start_calibrate),
             (t("🎧\n测试模式"), t("只听不发键\n安全调试"), self.start_listen),
+            (t("📜\n指令复盘"), t("看识别记录\n纠错改绑定"), self.open_review),
             (t("🎙\n音频设置"), t("选麦克风\n看音量条"), self.open_audio),
             (t("📖\n指令词典"), t("看/加说法\n改键位"), self.open_dict),
             (t("🧪\n跑测试"), t("命中率+延迟\n改完就验证"), self.run_tests),
@@ -153,6 +155,21 @@ class Launcher:
         btn_w = max(i18n.text_units(title) for title, _, _ in minis) + 2
         for title, sub, cmd in minis:
             self._mini(row, title, sub, cmd, btn_w)
+
+        # 语音数据共建 (自愿): 勾选留存指令片段, 导出发给作者攒微调语料
+        don = tk.Frame(self.root, bg=BG)
+        don.pack(pady=(10, 0))
+        self.don_var = tk.BooleanVar(value=self._donation_enabled())
+        tk.Checkbutton(
+            don, text=t("🎤 参与语音数据共建 (自愿, 只存指令片段)"),
+            variable=self.don_var, command=self._toggle_donation,
+            bg=BG, fg=FG, selectcolor="#1a2026", activebackground=BG,
+            activeforeground=FG, font=("Microsoft YaHei", 9),
+        ).pack(side="left")
+        tk.Button(don, text=t("📦 导出数据包"), command=self.export_donation,
+                  font=("Microsoft YaHei", 9), bg="#2a323a", fg=FG,
+                  activebackground="#3a444e", relief="flat",
+                  padx=10, pady=2).pack(side="left", padx=(10, 0))
 
         # 底部: 查看日志 (自己排错 / 发给作者)
         foot = tk.Frame(self.root, bg=BG)
@@ -236,6 +253,64 @@ class Launcher:
     def start_listen(self):
         _spawn("listen", console=False, job=self.job)
         self._set(t("✓ 测试模式已启动 (只听不发键)"))
+
+    def open_review(self):
+        _spawn("review", console=False, job=self.job)
+        self._set(t("✓ 已打开指令复盘 (游戏里也可按 F11 呼出)"))
+
+    # ---------- 语音数据共建 ----------
+
+    def _donation_enabled(self):
+        try:
+            import yaml
+            from paths import config_path
+            with open(config_path("settings.yaml"), encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            return bool((cfg.get("data_donation") or {}).get("enabled", False))
+        except Exception:
+            return False
+
+    def _toggle_donation(self):
+        import donation
+        from tkinter import messagebox
+        want = self.don_var.get()
+        if want:
+            # 首次开启: 完整知情同意, 不同意就回退
+            if not messagebox.askokcancel(t("语音数据共建"),
+                                          t(donation.CONSENT_TEXT)):
+                self.don_var.set(False)
+                return
+        try:
+            from audio_setup import save_yaml_setting
+            save_yaml_setting("data_donation", "enabled",
+                              "true" if want else "false")
+        except Exception as e:
+            self.don_var.set(not want)
+            self._set(t("切换失败: {e}").format(e=e), RED)
+            return
+        if want:
+            self._set(t("✓ 已开启共建 (语音指挥运行中的话按 F10 生效)"))
+        else:
+            self._set(t("已关闭共建, 不再保存任何片段"))
+
+    def export_donation(self):
+        import donation
+        n, mb = donation.stats()
+        if not n:
+            self._set(t("还没有留存的片段 (先勾选共建并打几场)"), DIM)
+            return
+        try:
+            p = donation.export_zip()
+        except Exception as e:
+            self._set(t("导出失败: {e}").format(e=e), RED)
+            return
+        try:
+            import subprocess
+            subprocess.Popen(["explorer", "/select,", p])
+        except Exception:
+            pass
+        self._set(t("✓ 数据包已导出 ({n}条/{mb}MB), 把它发给作者即可").format(
+            n=n, mb=mb))
 
     def open_audio(self):
         _spawn("audio", console=False, job=self.job)

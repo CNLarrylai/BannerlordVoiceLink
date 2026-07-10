@@ -45,6 +45,11 @@ SAMPLES = [
     ("骑兵冲锋", True),
     # 乱码错听不该乱执行: "冲锋"听成"撤锋", 不能因为有"撤"就当撤退
     ("骑兵撤锋", False),
+    # 光喊兵种名不执行 —— 曾被"开射"(kaishe)谐音蹭到89分触发自由射击:
+    # 兵种"骑射"精确100分占满同一段时, 谐音指令是寄生, 必须让位
+    ("骑射", False),
+    ("骑射。", False),
+    ("提设。", False),   # "骑射"的错听, 同样不该触发开射
     # ---- "全军"口语都要选中 all, 不能落到当前兵种 ----
     ("所有人跟随我", True),
     ("大家跟我上", True),
@@ -115,6 +120,24 @@ KEY_CASES = [
     ("步兵三角阵", ["1", "f2", "f6"]),
     ("弓箭手竖排", ["2", "f2", "f7"]),
     ("全军排成一列", ["0", "f2", "f7"]),
+    # "出击"必须直达冲锋: 不收录时被"护驾"拼音蹭89分错路由成跟随我
+    # (2026-07-09 实战连错三次)
+    ("全军出击", ["0", "f1", "f3"]),
+    ("出击", ["f1", "f3"]),
+    # 覆盖优先于精确(口音基准钓出): "停止蛇己"=平翘舌的"停止射击", 整句拼音
+    # 全同(覆盖4字)必须赢字面子串"停止"(只覆盖2字), 否则停止射击变立定
+    ("停止蛇己", ["f4"]),
+    ("停止射击", ["f4"]),
+    ("停止", ["f1", "f6"]),          # 光说"停止"仍是立定, 不许被上面带偏
+    ("回来", ["f1", "f5"]),          # 实战高频说法直达后退
+    # 否定前缀守卫: "开货"(=开火的错听)拼音滑进"别开火"会丢掉"别"→语义反转
+    # (想开火变停火)。丢否定字的对齐一律作废; 完整说"别开火"不受影响。
+    ("开货", ["f4"]),                # -> fire_at_will 开火
+    ("开火", ["f4"]),
+    ("别开火", ["f4"]),              # hold_fire 同键位 f4, 靠下面名字断言区分
+    # 整句=单字别名必须赢"藏着它的长别名": 喊"冲"是冲锋, 不是"跟我冲"
+    ("冲", ["f1", "f3"]),
+    ("集火", ["f1", "f3"]),          # 玩家最高频集火说法, 曾漏(只有"集火这只")
     # 弓骑兵难念 -> 数字定位/稳定错听都能选中第四队(key 4)
     ("第四队冲锋", ["4", "f1", "f3"]),
     ("骑射兵散开", ["4", "f2", "f3"]),
@@ -153,6 +176,11 @@ TARGET_CASES = [
     # Whisper 连读断句塞的标点(全角冒号/顿号)不能破坏识别: 弓、骑兵 应仍是弓骑兵
     ("弓、骑兵：冲锋：对方：弓、骑兵：。", "horse_archers", "horse_archers"),
     ("骑兵，进攻，弓箭手。", "cavalry", "archers"),
+    # 同音字替换的精确子串陷阱: "弓骑兵"听成"功骑兵", 拼音满分的整词(盖3字)
+    # 必须赢字面藏在里面的"骑兵"(2字) —— 否则打弓骑兵变成打骑兵(实战报告)
+    ("骑兵进攻对方功骑兵", "cavalry", "horse_archers"),
+    ("骑兵进攻对方弓骑兵", "cavalry", "horse_archers"),
+    ("功骑兵冲锋", "horse_archers", None),
 ]
 for text, want_g, want_t in TARGET_CASES:
     tr = m.explain(text)
@@ -164,6 +192,25 @@ for text, want_g, want_t in TARGET_CASES:
     print(f"  {'✓' if ok else '✗✗✗'} 「{text}」 -> 选中={got_g} 目标={got_t} "
           f"(期望 选中={want_g} 目标={want_t})")
 
-total = len(SAMPLES) + len(GROUP_CASES) + len(KEY_CASES) + len(TARGET_CASES)
+# 指令名专项: fire_at_will/hold_fire 同为 f4 键, 键序断言分不开, 按名字断言
+# (否定前缀守卫: "开货"=开火的错听, 绝不能滑进"别开火"变成停火)
+print("\n=== 指令名专项 (同键位反义对) ===")
+NAME_CASES = [
+    ("开火", "fire_at_will"),
+    ("开货", "fire_at_will"),        # 错听形, 否定守卫防滑进"别开火"
+    ("别开火", "hold_fire"),
+    ("别射了", "hold_fire"),
+    ("放箭", "fire_at_will"),
+    ("别放箭", "hold_fire"),
+]
+for text, want in NAME_CASES:
+    r = m.parse(text)
+    got = r["order"]["name"] if r else None
+    ok = got == want
+    fails += not ok
+    print(f"  {'✓' if ok else '✗✗✗'} 「{text}」 -> {got} (期望 {want})")
+
+total = (len(SAMPLES) + len(GROUP_CASES) + len(KEY_CASES) + len(TARGET_CASES)
+         + len(NAME_CASES))
 print(f"\n{total - fails}/{total} 通过")
 sys.exit(1 if fails else 0)

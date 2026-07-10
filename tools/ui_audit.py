@@ -181,6 +181,14 @@ def audit(lang):
     cg.root.destroy()
     fails += _report("calibrate", lang, bad)
 
+    # --- 指令复盘 ---
+    from review import ReviewGUI
+    rv = ReviewGUI()
+    bad = _full_check(rv.root)
+    shot(rv.root, f"review_{lang}")
+    rv.root.destroy()
+    fails += _report("review", lang, bad)
+
     # --- 游戏指令树 ---
     from order_tree import OrderTreeWindow
     ot = OrderTreeWindow(lang=lang)

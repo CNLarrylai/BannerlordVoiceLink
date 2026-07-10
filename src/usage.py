@@ -12,15 +12,22 @@ from collections import Counter
 
 from paths import log_dir
 
-_FIELDS = ["ts", "lang", "result", "group", "order", "via", "stt_sec", "heard"]
+_FIELDS = ["ts", "lang", "result", "group", "order", "via", "stt_sec", "heard",
+           "engine", "target"]
 
 
 def _path():
     return os.path.join(log_dir(), "usage.csv")
 
 
-def record(lang, result, group, order, via, stt_sec, heard):
-    """追加一条使用记录。result: ok/miss。绝不抛异常影响主流程。"""
+def record(lang, result, group, order, via, stt_sec, heard, engine="",
+           target=""):
+    """追加一条使用记录。result: ok/miss。绝不抛异常影响主流程。
+
+    engine: 快路/Whisper (混合识别哪条路出的结果)。
+    target: 指向性指令的打击目标兵种 ("骑兵进攻弓箭手"→archers)。
+    旧行没有这些列, 读方(recent)统一补空兼容。
+    """
     try:
         p = _path()
         new = not os.path.exists(p)
@@ -30,9 +37,31 @@ def record(lang, result, group, order, via, stt_sec, heard):
                 w.writerow(_FIELDS)
             w.writerow([time.strftime("%Y-%m-%d %H:%M:%S"), lang, result,
                         group or "", order or "", via, f"{stt_sec:.2f}",
-                        (heard or "")[:80]])
+                        (heard or "")[:80], engine, target or ""])
     except Exception:
         pass
+
+
+def recent(n=300):
+    """最近 n 条记录(新的在前), 复盘目录用。列表元素为 dict(_FIELDS 键)。
+
+    兼容旧文件: 没有 engine 列的行补空串; 读不了返回空列表。
+    """
+    try:
+        with open(_path(), encoding="utf-8-sig") as f:
+            rows = list(csv.reader(f))
+    except Exception:
+        return []
+    if not rows:
+        return []
+    out = []
+    for r in rows[1:]:
+        if len(r) < 8:
+            continue
+        d = dict(zip(_FIELDS, r + [""] * (len(_FIELDS) - len(r))))
+        out.append(d)
+    out.reverse()
+    return out[:n]
 
 
 def top_commands(lang, n=20, min_rows=40):
