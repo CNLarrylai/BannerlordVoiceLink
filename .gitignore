@@ -29,3 +29,10 @@ mod/BannerlordVoiceLink/obj/
 kws/models/
 kws/keywords.txt
 kws/results/
+
+# TTS 评测语料 (bench_accents/colloquial_sweep 可重新合成)
+kws/audio_accents/
+kws/audio_colloquial/
+# 真人录音 (隐私, 永不入库; 本地按轮存档)
+kws/results/recordings*/
+*.wav
