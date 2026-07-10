@@ -36,3 +36,6 @@ kws/audio_colloquial/
 # 真人录音 (隐私, 永不入库; 本地按轮存档)
 kws/results/recordings*/
 *.wav
+
+# 个人词典(每台机器本地的发音适配层, 不同步)
+config/user_aliases.yaml
