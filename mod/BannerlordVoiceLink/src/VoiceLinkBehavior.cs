@@ -18,6 +18,9 @@ namespace BannerlordVoiceLink
     ///   ping                      -> "ok battle=1|0"
     ///   info                      -> "ok Ranged:80:142 Cavalry:40:200 ..." (enemy formations: class:units:dist)
     ///   attack <group> <target>   -> "ok attacked=N target=Ranged:80:142" or "err <reason>"
+    ///   split <group>             -> "ok split=Cavalry a=20 b=20" (原生一分为二)
+    ///   sideorder <left|right> <order> -> "ok" (指挥分出的左/右半队, order=charge/
+    ///                                advance/follow/halt/fallback/retreat)
     ///   notify <中文文本>          -> "ok"  (顶部快讯横幅播报普通按键指令)
     ///     group : infantry|archers|cavalry|horse_archers|all
     ///     target: infantry|archers|cavalry|horse_archers|nearest
@@ -194,6 +197,14 @@ namespace BannerlordVoiceLink
                     return parts.Length < 3
                         ? "err usage: attack <group> <target>"
                         : Attack(parts[1], parts[2]);
+                case "split":
+                    return parts.Length < 2
+                        ? "err usage: split <group>"
+                        : DoSplit(parts[1]);
+                case "sideorder":
+                    return parts.Length < 3
+                        ? "err usage: sideorder <left|right> <order>"
+                        : DoSideOrder(parts[1], parts[2]);
                 default:
                     return "err unknown_cmd";
             }
@@ -431,6 +442,123 @@ namespace BannerlordVoiceLink
             return done == 0
                 ? "err target_not_found"
                 : "ok attacked=" + done + " target=" + lastDesc;
+        }
+
+        // ---------- 分队 ----------
+        // 最近一次分队的两半(左右在下令时按玩家朝向实时算, 不存左右状态 ——
+        // 队伍会移动, 存下来会过时)。战斗结束/编队清空自动失效。
+        private Formation _splitA;
+        private Formation _splitB;
+
+        private List<Formation> OwnNonEmpty()
+        {
+            var res = new List<Formation>();
+            var player = Mission.Current.PlayerTeam;
+            foreach (Formation f in player.FormationsIncludingEmpty)
+                if (f != null && f.CountOfUnits > 0)
+                    res.Add(f);
+            return res;
+        }
+
+        private string DoSplit(string groupName)
+        {
+            if (!InBattle())
+                return "err no_battle";
+            FormationClass gc;
+            if (!TryClass(groupName, out gc))
+                return "err bad_group";
+            var src = Mission.Current.PlayerTeam.GetFormation(gc);
+            if (src == null || src.CountOfUnits < 2)
+                return "err too_few";       // 1 个兵没法分
+
+            // 用前后差集找新队伍(不假设 Split 返回值语义 —— 最稳): 分完多出来
+            // 的那支非空编队就是新半队, 原编队 src 仍留另一半。
+            var before = new HashSet<Formation>(OwnNonEmpty());
+            src.Split(2);
+            Formation other = null;
+            foreach (var f in OwnNonEmpty())
+                if (!before.Contains(f)) { other = f; break; }
+            if (other == null)
+                return "err split_failed";
+
+            _splitA = src;
+            _splitB = other;
+            Notify(Cn(gc) + " 已分为两队(左右可分别指挥)");
+            return "ok split=" + gc + " a=" + src.CountOfUnits
+                   + " b=" + other.CountOfUnits;
+        }
+
+        /// <summary>玩家视角朝向的 2D 投影 (拿不到角色时退回默认前向)。</summary>
+        private static TaleWorlds.Library.Vec2 PlayerLook()
+        {
+            var me = Mission.Current.MainAgent;
+            if (me != null)
+            {
+                var d = me.LookDirection.AsVec2;
+                if (d.LengthSquared > 1e-4f)
+                    return d.Normalized();
+            }
+            return new TaleWorlds.Library.Vec2(0f, 1f);
+        }
+
+        private string DoSideOrder(string side, string order)
+        {
+            if (!InBattle())
+                return "err no_battle";
+            if (_splitA == null || _splitB == null
+                || _splitA.CountOfUnits == 0 || _splitB.CountOfUnits == 0)
+                return "err not_split";     // 还没分队 / 分的队没了
+
+            // 左右判定: 玩家朝向为前, 用叉积符号分左右。cross>0 = 在朝向左手侧。
+            // (叉积左右手性可能需按实测翻符号, 见部署后验证)
+            var look = PlayerLook();
+            var ppos = PlayerPos();
+            var va = _splitA.CachedAveragePosition - ppos;
+            var vb = _splitB.CachedAveragePosition - ppos;
+            float ca = look.x * va.y - look.y * va.x;
+            float cb = look.x * vb.y - look.y * vb.x;
+            // ca/cb 越大越靠左。左队=叉积更大的那支, 右队=更小的
+            bool wantLeft = side == "left";
+            Formation pick = ((ca >= cb) == wantLeft) ? _splitA : _splitB;
+
+            OrderType ot;
+            switch (order)
+            {
+                case "charge": ot = OrderType.Charge; break;
+                case "advance": ot = OrderType.Advance; break;
+                case "follow": ot = OrderType.FollowMe; break;
+                case "halt": ot = OrderType.StandYourGround; break;
+                case "fallback": ot = OrderType.FallBack; break;
+                case "retreat": ot = OrderType.Retreat; break;
+                default: return "err bad_order";
+            }
+
+            var oc = Mission.Current.PlayerTeam.PlayerOrderController;
+            var backup = new List<Formation>(oc.SelectedFormations);
+            oc.ClearSelectedFormations();
+            oc.SelectFormation(pick);
+            oc.SetOrder(ot);
+            oc.ClearSelectedFormations();
+            foreach (var f in backup)
+                oc.SelectFormation(f);
+
+            Notify((wantLeft ? "左队" : "右队") + " → " + CnOrder(order)
+                   + "(" + pick.CountOfUnits + "人)");
+            return "ok side=" + side + " units=" + pick.CountOfUnits;
+        }
+
+        private static string CnOrder(string order)
+        {
+            switch (order)
+            {
+                case "charge": return "冲锋";
+                case "advance": return "前进";
+                case "follow": return "跟随";
+                case "halt": return "原地待命";
+                case "fallback": return "后退";
+                case "retreat": return "撤退";
+                default: return order;
+            }
         }
     }
 }

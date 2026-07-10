@@ -39,6 +39,16 @@ groups:
     aliases: [全军, 全体, 所有人, 所有队伍, 大家, 大伙, 大伙儿, 士兵, 士兵们,
               全部队伍, 全部人, 全员, 儿郎们, 众将士, 全军将士, 各队, 各位]
     en: [everyone, all troops, all units, everybody, whole army, all of you, all]
+  # 分队后的左/右半队(需模组): 走 sideorder 指挥, 不经按键选择。key 留空 ——
+  # 这两个是"伪兵种", 只用来搭配指令解析出"哪半队+做什么", 由 main 路由给模组。
+  left:
+    key: ""
+    aliases: [左队, 左边, 左翼, 左路, 左军, 左边队, 左边那队, 左半队, 左侧]
+    en: [left, left group, left flank, left wing]
+  right:
+    key: ""
+    aliases: [右队, 右边, 右翼, 右路, 右军, 右边队, 右边那队, 右半队, 右侧]
+    en: [right, right group, right flank, right wing]
 
 orders:
   # ---------- 移动类 (F1 子菜单) ----------
@@ -79,6 +89,13 @@ orders:
     aliases: [开战, 交战, 前进, 进军, 推进, 慢慢推进, 上前, 向前, 往前走, 压上去,
               顶上去, 向前推, 推上去, 往前压, 往前顶, 上前压, 压上]
     en: [advance, move up, push forward, forward, push up, engage the enemy]
+  split:
+    # 需伴侣模组: 把某兵种一分为二(原生 Formation.Split), 之后可"左队/右队"
+    # 分别指挥。keys 空 —— 纯模组指令, 不走按键; 需搭配具体兵种("骑兵分队")。
+    keys: []
+    aliases: [分队, 一分为二, 分成两队, 分兵, 分成两拨, 一分为二分队, 拆成两队,
+              分作两队, 分兵两路]
+    en: [split, divide, split in two, split up, divide in two]
   focus_target:
     # 需伴侣模组: 集火离玩家最近的那支敌军(混战里"打这只军队/打他打他"最本能,
     # 多半就指玩家眼前那支)。所有被下令编队集火同一支。模组不可用退化为
@@ -98,7 +115,7 @@ orders:
     en: [fall back, pull back, back up, move back, give ground]
   halt:
     keys: [f1, f6]
-    aliases: [立定, 停止, 停下, 站住, 原地待命, 别动, 停, 停一停, 都别动,
+    aliases: [立定, 停止, 停下, 站住, 原地待命, 待命, 别动, 停, 停一停, 都别动,
               原地不动, 稳住, 别走, 停在那儿, 站那儿别动, 都停下, 都停一停, 停停停]
     en: [halt, stop, hold, stand ground, hold position, hold there, stay here,
          stay put, stay there, hold your ground, stand your ground,

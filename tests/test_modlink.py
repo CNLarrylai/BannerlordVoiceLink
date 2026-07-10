@@ -82,6 +82,26 @@ def test_notify_utf8_roundtrip():
     assert got[0] == "notify 全军 · 盾墙 顶住", got[0]
 
 
+def test_split_roundtrip():
+    port, got = _fake_mod("ok split=Cavalry a=20 b=20")
+    r = ModLink(port=port).split("cavalry")
+    assert r and r.startswith("ok split=")
+    assert got[0] == "split cavalry", got[0]
+
+
+def test_sideorder_roundtrip():
+    port, got = _fake_mod("ok side=left units=20")
+    r = ModLink(port=port).sideorder("left", "charge")
+    assert r == "ok side=left units=20", r
+    assert got[0] == "sideorder left charge", got[0]
+
+
+def test_sideorder_not_split_err():
+    port, _ = _fake_mod("err not_split")
+    r = ModLink(port=port).sideorder("right", "follow")
+    assert r == "err not_split", r
+
+
 if __name__ == "__main__":
     for _s in (sys.stdout, sys.stderr):
         try:

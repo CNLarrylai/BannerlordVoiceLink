@@ -210,7 +210,27 @@ for text, want in NAME_CASES:
     fails += not ok
     print(f"  {'✓' if ok else '✗✗✗'} 「{text}」 -> {got} (期望 {want})")
 
+# 分队专项: split 指令 + left/right 伪兵种(左右半队指挥)
+print("\n=== 分队/左右半队 ===")
+SPLIT_CASES = [
+    ("骑兵分队", "cavalry", "split"),
+    ("步兵一分为二", "infantry", "split"),
+    ("弓箭手分成两队", "archers", "split"),
+    ("左队进攻", "left", "charge"),
+    ("右队跟我", "right", "follow_me"),
+    ("左队待命", "left", "halt"),
+    ("右队后退", "right", "fall_back"),
+    ("左边那队冲锋", "left", "charge"),
+]
+for text, want_g, want_o in SPLIT_CASES:
+    r = m.parse(text)
+    gg = r["group"]["name"] if r and r["group"] else None
+    oo = r["order"]["name"] if r and r["order"] else None
+    ok = gg == want_g and oo == want_o
+    fails += not ok
+    print(f"  {'✓' if ok else '✗✗✗'} 「{text}」 -> {gg}/{oo} (期望 {want_g}/{want_o})")
+
 total = (len(SAMPLES) + len(GROUP_CASES) + len(KEY_CASES) + len(TARGET_CASES)
-         + len(NAME_CASES))
+         + len(NAME_CASES) + len(SPLIT_CASES))
 print(f"\n{total - fails}/{total} 通过")
 sys.exit(1 if fails else 0)

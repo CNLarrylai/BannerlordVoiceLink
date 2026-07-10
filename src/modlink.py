@@ -46,3 +46,12 @@ class ModLink:
     def notify(self, text):
         """把一条指令描述推给游戏顶部快讯横幅 (纯播报, 失败无所谓)。"""
         return self._send(f"notify {text}")
+
+    def split(self, group):
+        """把某兵种一分为二 (原生 Formation.Split)。返回模组回复或 None。"""
+        return self._send(f"split {group}")
+
+    def sideorder(self, side, order):
+        """指挥分出的左/右半队。side=left/right; order=charge/advance/follow/
+        halt/fallback/retreat。返回模组回复("ok ..."/"err ...") 或 None。"""
+        return self._send(f"sideorder {side} {order}")

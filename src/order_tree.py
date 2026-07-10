@@ -89,6 +89,9 @@ def validate_commands(tree, commands, lang="zh"):
     for k, d in (commands.get("groups") or {}).items():
         al = (d.get("en") if lang == "en" else d.get("aliases")) or ["?"]
         gk = str(d.get("key", "")).lower()
+        # 纯模组伪兵种(左/右半队, key 空): 由模组选编队, 不走按键树, 豁免
+        if not gk:
+            continue
         if gk in groups:
             out.append((al[0], gk, True, _disp(groups[gk], lang)))
         else:
@@ -97,6 +100,9 @@ def validate_commands(tree, commands, lang="zh"):
     for k, d in (commands.get("orders") or {}).items():
         al = (d.get("en") if lang == "en" else d.get("aliases")) or ["?"]
         keys = [str(x).lower() for x in (d.get("keys") or [])]
+        # 纯模组指令(如 split, keys 空): 走 Formation.Split 而非按键树, 豁免
+        if not keys:
+            continue
         ok, why = resolve(tree, keys, lang)
         out.append((al[0], "+".join(keys), ok, why))
     return out

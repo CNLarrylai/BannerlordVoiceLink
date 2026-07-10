@@ -283,6 +283,54 @@ class App:
                   "退回按键+准星方案")
         return False
 
+    # 左右半队支持的"派遣"指令 -> 模组 sideorder 令牌 (命令key 与模组用词对齐)
+    _SIDE_ORDERS = {"charge": "charge", "advance": "advance",
+                    "follow_me": "follow", "halt": "halt",
+                    "fall_back": "fallback", "retreat": "retreat"}
+    _SPLIT_CLASSES = ("infantry", "archers", "cavalry", "horse_archers")
+
+    def _do_formation_cmd(self, g_key, o_key, desc, text, t_stt, engine):
+        """分队("骑兵分队")或左右半队指挥("左队进攻") —— 走模组, 无按键退路。"""
+        if self.dry_run:
+            print(f"    ⚙ [dry-run] 分队指令: {desc}")
+            return
+        if not self.modlink:
+            print("    ⚙ 分队/左右指挥需要伴侣模组(游戏没开/模组没启用)")
+            self._set(t("⚙ 需要模组"), t("游戏没开或模组没启用"), "#ffb37f")
+            return
+        if o_key == "split":
+            if g_key not in self._SPLIT_CLASSES:
+                print("    ⚙ 分队要指定具体兵种, 例:「骑兵分队」")
+                self._set(t("⚙ 分队要指定兵种"), t("例：骑兵分队"), "#ffb37f")
+                return
+            r = self.modlink.split(g_key)
+        else:  # g_key in (left, right)
+            tok = self._SIDE_ORDERS.get(o_key)
+            if not tok:
+                print(f"    ⚙ 左右队暂不支持「{o_key}」(仅冲锋/前进/跟随/待命/后退/撤退)")
+                self._set(t("⚙ 左右队暂不支持这条"),
+                          t("仅：冲锋/前进/跟随/待命/后退/撤退"), "#ffb37f")
+                return
+            r = self.modlink.sideorder(g_key, tok)
+        via = "mod"
+        if r and r.startswith("ok"):
+            print(f"    ✓ 听到「{text}」→ {desc} · 模组直达 [{r}]")
+            self._set(f"✓ {desc}", t("听到: {t}").format(t=text), "#7dff9b")
+        elif r:
+            reason = {"not_split": "还没分队(先喊'骑兵分队')",
+                      "too_few": "这队人太少, 分不了",
+                      "no_battle": "不在战斗中"}.get(r.replace("err ", ""), r)
+            print(f"    ⚙ 分队未执行: {reason}")
+            self._set(t("⚙ 分队未执行"), reason, "#ffb37f")
+            via = "mod_err"
+        else:
+            print("    ⚙ 模组未连接(游戏没开/不在战斗)")
+            self._set(t("⚙ 模组未连接"), t("游戏没开或不在战斗"), "#ffb37f")
+            via = "mod_off"
+        usage.record(self.lang, "ok" if via == "mod" else "miss",
+                     g_key, o_key, via, t_stt, text,
+                     engine if self.fast else "")
+
     def _set(self, status, detail="", color="#FFFFFF"):
         print(f"  {status}  {detail}")
         if self.overlay:
@@ -498,6 +546,12 @@ class App:
             return
         if boost_why:
             print(f"    🔁 {boost_why}")
+        # 分队 / 左右半队指挥: 纯模组指令(原生 Formation.Split), 单独路由
+        if o_key == "split" or g_key in ("left", "right"):
+            self._do_formation_cmd(g_key, o_key, desc, text, t_stt, engine)
+            self.retry.note_exec(g_key, o_key)
+            self._idle()
+            return
         t0 = time.perf_counter()
         via_mod = self._try_modlink(parsed, g_key, o_key)
         if via_mod:
