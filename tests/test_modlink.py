@@ -91,14 +91,14 @@ def test_split_roundtrip():
 
 def test_sideorder_roundtrip():
     port, got = _fake_mod("ok side=left units=20")
-    r = ModLink(port=port).sideorder("left", "charge")
+    r = ModLink(port=port).sideorder("cavalry", "left", "charge")
     assert r == "ok side=left units=20", r
-    assert got[0] == "sideorder left charge", got[0]
+    assert got[0] == "sideorder cavalry left charge", got[0]
 
 
 def test_sideorder_not_split_err():
     port, _ = _fake_mod("err not_split")
-    r = ModLink(port=port).sideorder("right", "follow")
+    r = ModLink(port=port).sideorder("archers", "right", "follow")
     assert r == "err not_split", r
 
 

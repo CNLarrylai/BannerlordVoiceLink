@@ -304,14 +304,16 @@ class App:
                 self._set(t("⚙ 分队要指定兵种"), t("例：骑兵分队"), "#ffb37f")
                 return
             r = self.modlink.split(g_key)
-        else:  # g_key in (left, right)
+        else:  # g_key 形如 cavalry_left / archers_right
+            side = "left" if g_key.endswith("_left") else "right"
+            cls = g_key[:-5] if side == "left" else g_key[:-6]
             tok = self._SIDE_ORDERS.get(o_key)
             if not tok:
                 print(f"    ⚙ 左右队暂不支持「{o_key}」(仅冲锋/前进/跟随/待命/后退/撤退)")
                 self._set(t("⚙ 左右队暂不支持这条"),
                           t("仅：冲锋/前进/跟随/待命/后退/撤退"), "#ffb37f")
                 return
-            r = self.modlink.sideorder(g_key, tok)
+            r = self.modlink.sideorder(cls, side, tok)
         via = "mod"
         if r and r.startswith("ok"):
             print(f"    ✓ 听到「{text}」→ {desc} · 模组直达 [{r}]")
@@ -547,7 +549,9 @@ class App:
         if boost_why:
             print(f"    🔁 {boost_why}")
         # 分队 / 左右半队指挥: 纯模组指令(原生 Formation.Split), 单独路由
-        if o_key == "split" or g_key in ("left", "right"):
+        is_side = bool(g_key) and (g_key.endswith("_left")
+                                   or g_key.endswith("_right"))
+        if o_key == "split" or is_side:
             self._do_formation_cmd(g_key, o_key, desc, text, t_stt, engine)
             self.retry.note_exec(g_key, o_key)
             self._idle()

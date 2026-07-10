@@ -2,7 +2,7 @@
 
 APP_NAME = "骑砍语音指挥"
 APP_EN = "Bannerlord Voice Commander"
-APP_VERSION = "0.8.0"   # 0.8: 分队(原生Formation.Split)+左右半队指挥(视角朝向定左右)
+APP_VERSION = "0.8.1"   # 0.8.1: 分队左右改固定身份(左=原队/右=新队)+强制兵种前缀
 
 # dev / free / pro —— 打包分发时可改; 现在都当全功能
 BUILD_CHANNEL = "dev"

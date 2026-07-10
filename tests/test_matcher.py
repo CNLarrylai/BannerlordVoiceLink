@@ -216,11 +216,15 @@ SPLIT_CASES = [
     ("骑兵分队", "cavalry", "split"),
     ("步兵一分为二", "infantry", "split"),
     ("弓箭手分成两队", "archers", "split"),
-    ("左队进攻", "left", "charge"),
-    ("右队跟我", "right", "follow_me"),
-    ("左队待命", "left", "halt"),
-    ("右队后退", "right", "fall_back"),
-    ("左边那队冲锋", "left", "charge"),
+    # 左右半队必须带兵种前缀(左=原队/右=新队), 各兵种独立
+    ("骑兵左队进攻", "cavalry_left", "charge"),
+    ("骑兵右队跟我", "cavalry_right", "follow_me"),
+    ("弓箭手左队待命", "archers_left", "halt"),
+    ("步兵右队后退", "infantry_right", "fall_back"),
+    ("左路骑兵冲锋", "cavalry_left", "charge"),
+    ("骑射右队撤退", "horse_archers_right", "retreat"),
+    # 复合不能污染光杆兵种: "骑兵冲锋" 仍是 cavalry, 不被 cavalry_left 抢
+    ("骑兵冲锋", "cavalry", "charge"),
 ]
 for text, want_g, want_o in SPLIT_CASES:
     r = m.parse(text)

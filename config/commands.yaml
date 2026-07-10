@@ -39,16 +39,42 @@ groups:
     aliases: [全军, 全体, 所有人, 所有队伍, 大家, 大伙, 大伙儿, 士兵, 士兵们,
               全部队伍, 全部人, 全员, 儿郎们, 众将士, 全军将士, 各队, 各位]
     en: [everyone, all troops, all units, everybody, whole army, all of you, all]
-  # 分队后的左/右半队(需模组): 走 sideorder 指挥, 不经按键选择。key 留空 ——
-  # 这两个是"伪兵种", 只用来搭配指令解析出"哪半队+做什么", 由 main 路由给模组。
-  left:
+  # 分队后的左/右半队(需模组): key 名 = <兵种>_<left|right>, 是"伪兵种",
+  # 只用来解析"哪个兵种的哪半队", 由 main 拆出兵种+左右路由给模组 sideorder。
+  # 左=原队, 右=新分出的队(固定身份, 不看位置); 必须带兵种前缀防混淆
+  # (骑兵分左右 与 弓箭手分左右 各记一套)。别名首项=浮层显示名。
+  infantry_left:
     key: ""
-    aliases: [左队, 左边, 左翼, 左路, 左军, 左边队, 左边那队, 左半队, 左侧]
-    en: [left, left group, left flank, left wing]
-  right:
+    aliases: [步兵左队, 步兵左, 左路步兵, 左边步兵, 步兵左路, 步兵左半]
+    en: [infantry left, left infantry]
+  infantry_right:
     key: ""
-    aliases: [右队, 右边, 右翼, 右路, 右军, 右边队, 右边那队, 右半队, 右侧]
-    en: [right, right group, right flank, right wing]
+    aliases: [步兵右队, 步兵右, 右路步兵, 右边步兵, 步兵右路, 步兵右半]
+    en: [infantry right, right infantry]
+  archers_left:
+    key: ""
+    aliases: [弓箭手左队, 弓箭手左, 弓兵左队, 左路弓箭手, 左边弓箭手, 弓兵左]
+    en: [archers left, left archers]
+  archers_right:
+    key: ""
+    aliases: [弓箭手右队, 弓箭手右, 弓兵右队, 右路弓箭手, 右边弓箭手, 弓兵右]
+    en: [archers right, right archers]
+  cavalry_left:
+    key: ""
+    aliases: [骑兵左队, 骑兵左, 左路骑兵, 左边骑兵, 骑兵左路, 骑兵左半]
+    en: [cavalry left, left cavalry]
+  cavalry_right:
+    key: ""
+    aliases: [骑兵右队, 骑兵右, 右路骑兵, 右边骑兵, 骑兵右路, 骑兵右半]
+    en: [cavalry right, right cavalry]
+  horse_archers_left:
+    key: ""
+    aliases: [骑射左队, 骑射左, 左路骑射, 左边骑射, 骑射左路, 骑射手左队]
+    en: [horse archers left, left horse archers]
+  horse_archers_right:
+    key: ""
+    aliases: [骑射右队, 骑射右, 右路骑射, 右边骑射, 骑射右路, 骑射手右队]
+    en: [horse archers right, right horse archers]
 
 orders:
   # ---------- 移动类 (F1 子菜单) ----------
