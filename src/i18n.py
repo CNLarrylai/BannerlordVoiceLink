@@ -109,6 +109,16 @@ _EN = {
     "导出失败: {e}": "Export failed: {e}",
     "✓ 数据包已导出 ({n}条/{mb}MB), 把它发给作者即可":
         "✓ Data pack exported ({n} clips / {mb}MB) — send it to the author",
+    "上传数据包": "Upload data pack",
+    ("数据包已生成并在文件夹里高亮:\n{p}\n\n上传页已在浏览器打开 —— "
+     "把那个高亮的文件拖进网页即可 (不用登录)。\n\n"
+     "共 {n} 条 / {mb}MB。谢谢参与!"):
+        ("Your data pack is ready and highlighted in the folder:\n{p}\n\n"
+         "The upload page just opened in your browser — drag that highlighted "
+         "file into the page (no login needed).\n\n"
+         "{n} clips / {mb}MB. Thank you!"),
+    "✓ 已导出并打开上传页, 把高亮文件拖进去即可":
+        "✓ Exported & upload page opened — drag the highlighted file in",
     ("参与「语音数据共建」意味着:\n\n"
      "· 只保存「被识别为指令并执行」的那 1~2 秒语音片段和识别文本\n"
      "  (聊天、闲话、未匹配的内容一律不保存)\n"

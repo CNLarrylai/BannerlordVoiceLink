@@ -292,8 +292,19 @@ class Launcher:
         else:
             self._set(t("已关闭共建, 不再保存任何片段"))
 
+    def _upload_url(self):
+        try:
+            import yaml
+            from paths import config_path
+            with open(config_path("settings.yaml"), encoding="utf-8") as f:
+                cfg = yaml.safe_load(f)
+            return ((cfg.get("data_donation") or {}).get("upload_url") or "").strip()
+        except Exception:
+            return ""
+
     def export_donation(self):
         import donation
+        from tkinter import messagebox
         n, mb = donation.stats()
         if not n:
             self._set(t("还没有留存的片段 (先勾选共建并打几场)"), DIM)
@@ -303,13 +314,24 @@ class Launcher:
         except Exception as e:
             self._set(t("导出失败: {e}").format(e=e), RED)
             return
-        try:
+        try:      # 资源管理器里高亮这个 zip, 方便用户直接拖走
             import subprocess
             subprocess.Popen(["explorer", "/select,", p])
         except Exception:
             pass
-        self._set(t("✓ 数据包已导出 ({n}条/{mb}MB), 把它发给作者即可").format(
-            n=n, mb=mb))
+        url = self._upload_url()
+        if url:
+            import webbrowser
+            webbrowser.open(url)      # 自动打开收件箱网页
+            messagebox.showinfo(
+                t("上传数据包"),
+                t("数据包已生成并在文件夹里高亮:\n{p}\n\n上传页已在浏览器打开 —— "
+                  "把那个高亮的文件拖进网页即可 (不用登录)。\n\n"
+                  "共 {n} 条 / {mb}MB。谢谢参与!").format(p=p, n=n, mb=mb))
+            self._set(t("✓ 已导出并打开上传页, 把高亮文件拖进去即可"))
+        else:
+            self._set(t("✓ 数据包已导出 ({n}条/{mb}MB), 把它发给作者即可").format(
+                n=n, mb=mb))
 
     def open_audio(self):
         _spawn("audio", console=False, job=self.job)
