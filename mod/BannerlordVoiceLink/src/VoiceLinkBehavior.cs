@@ -475,22 +475,36 @@ namespace BannerlordVoiceLink
             if (!TryClass(groupName, out gc))
                 return "err bad_group";
             var src = Mission.Current.PlayerTeam.GetFormation(gc);
+            int n0 = (src == null) ? -1 : src.CountOfUnits;
+            Beacon("DoSplit " + gc + " src单位=" + n0);
             if (src == null || src.CountOfUnits < 2)
                 return "err too_few";       // 1 个兵没法分
 
-            // 用前后差集找新队伍(不假设 Split 返回值语义 —— 最稳): 分完多出来
-            // 的那支非空编队就是新半队, 原编队 src 仍留另一半。
+            // 找新分出的编队: 优先用 Split 返回值(那才是权威结果), 前后差集兜底。
+            // 不要求新队"分完瞬间就有兵" —— 引擎可能下一 tick 才把兵搬过去,
+            // 存下引用即可, sideorder/formorder 下令时会重新看 CountOfUnits。
             var before = new HashSet<Formation>(OwnNonEmpty());
-            src.Split(2);
+            IEnumerable<Formation> result = null;
+            try { result = src.Split(2); }
+            catch (Exception e) { Beacon("Split异常: " + e.Message); return "err split_ex"; }
+
             Formation other = null;
-            foreach (var f in OwnNonEmpty())
-                if (!before.Contains(f)) { other = f; break; }
+            if (result != null)
+                foreach (var f in result)
+                    if (f != null && f != src) { other = f; break; }
+            if (other == null)              // 返回值没给, 退回前后差集
+                foreach (var f in Mission.Current.PlayerTeam.FormationsIncludingEmpty)
+                    if (f != null && f != src && !before.Contains(f)
+                        && f.CountOfUnits > 0) { other = f; break; }
+
+            Beacon("DoSplit 结果 other="
+                   + (other == null ? "null" : other.FormationIndex + ":" + other.CountOfUnits)
+                   + " src现在=" + src.CountOfUnits);
             if (other == null)
                 return "err split_failed";
 
             _splits[gc] = new[] { src, other };   // [0]原队=左, [1]新队=右
-            Notify(Cn(gc) + " 已分为两队：左队=原队 右队=新队("
-                   + src.CountOfUnits + "/" + other.CountOfUnits + "人)");
+            Notify(Cn(gc) + " 已分为两队：左队=原队 右队=新队");
             return "ok split=" + gc + " a=" + src.CountOfUnits
                    + " b=" + other.CountOfUnits;
         }
