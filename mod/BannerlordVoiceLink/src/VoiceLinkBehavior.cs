@@ -456,6 +456,8 @@ namespace BannerlordVoiceLink
         // 骑兵分左右 与 弓箭手分左右 互不干扰(靠兵种前缀区分)。
         private readonly Dictionary<FormationClass, Formation[]> _splits =
             new Dictionary<FormationClass, Formation[]>();
+        // 最近分队的兵种: 光喊"左队/右队"(不带兵种前缀)时默认指它
+        private FormationClass _lastSplit = FormationClass.NumberOfAllFormations;
 
         private List<Formation> OwnNonEmpty()
         {
@@ -511,9 +513,13 @@ namespace BannerlordVoiceLink
                 return "err split_failed";
 
             _splits[gc] = new[] { src, target };   // [0]原队=左, [1]新队=右
-            Notify(Cn(gc) + " 已分为两队：左队=原队 右队=新队");
+            _lastSplit = gc;
+            // 新半队落在哪个槽 => 第几队, 告诉玩家(槽号取决于分队顺序, 不显式
+            // 说出来玩家没法用"第N队"指挥新队)
+            int newNo = (int)target.FormationIndex + 1;
+            Notify(Cn(gc) + "已分两队：左队=原队, 右队=第" + CnNums[newNo - 1] + "队");
             return "ok split=" + gc + " a=" + src.CountOfUnits
-                   + " b=" + target.CountOfUnits;
+                   + " b=" + target.CountOfUnits + " slot=" + newNo;
         }
 
         private string DoSideOrder(string groupName, string side, string order)
@@ -521,7 +527,13 @@ namespace BannerlordVoiceLink
             if (!InBattle())
                 return "err no_battle";
             FormationClass gc;
-            if (!TryClass(groupName, out gc))
+            if (groupName == "last")        // 光喊"左队/右队" => 最近分的那队
+            {
+                if (_lastSplit == FormationClass.NumberOfAllFormations)
+                    return "err not_split";
+                gc = _lastSplit;
+            }
+            else if (!TryClass(groupName, out gc))
                 return "err bad_group";
             Formation[] pair;
             if (!_splits.TryGetValue(gc, out pair)
@@ -530,6 +542,7 @@ namespace BannerlordVoiceLink
                 return "err not_split";     // 这个兵种还没分队 / 分的队没了
 
             var pick = (side == "left") ? pair[0] : pair[1];   // 左=原 右=新
+            Beacon("DoSideOrder " + gc + " " + side + " -> " + pick.CountOfUnits + "人");
             return IssueToFormation(pick, order,
                 Cn(gc) + (side == "left" ? "左队" : "右队"));
         }
@@ -545,6 +558,8 @@ namespace BannerlordVoiceLink
             if (!int.TryParse(slotStr, out n) || n < 1 || n > 8)
                 return "err bad_slot";
             var pick = Mission.Current.PlayerTeam.GetFormation((FormationClass)(n - 1));
+            Beacon("DoFormOrder 第" + n + "队 -> "
+                   + (pick == null ? "null" : pick.CountOfUnits + "人"));
             if (pick == null || pick.CountOfUnits == 0)
                 return "err empty_formation";   // 这个槽位没兵(还没分队/无此队)
             return IssueToFormation(pick, order, "第" + CnNums[n - 1] + "队");

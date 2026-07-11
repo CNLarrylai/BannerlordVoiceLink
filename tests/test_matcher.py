@@ -225,6 +225,11 @@ SPLIT_CASES = [
     ("骑射右队撤退", "horse_archers_right", "retreat"),
     # 复合不能污染光杆兵种: "骑兵冲锋" 仍是 cavalry, 不被 cavalry_left 抢
     ("骑兵冲锋", "cavalry", "charge"),
+    # 光喊左右队(不带兵种)=最近分的那队
+    ("左队进攻", "left", "charge"),
+    ("右队跟我", "right", "follow_me"),
+    # 带前缀仍精确到具体兵种, 不被光杆 left 抢
+    ("弓箭手左队待命", "archers_left", "halt"),
     # 第N队按槽位号指挥(第五~八队=分队新队落的空槽)
     ("第五队进攻", "form5", "charge"),
     ("第六队跟我", "form6", "follow_me"),
