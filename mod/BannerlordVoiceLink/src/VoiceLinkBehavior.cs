@@ -474,39 +474,46 @@ namespace BannerlordVoiceLink
             FormationClass gc;
             if (!TryClass(groupName, out gc))
                 return "err bad_group";
-            var src = Mission.Current.PlayerTeam.GetFormation(gc);
+            var player = Mission.Current.PlayerTeam;
+            var src = player.GetFormation(gc);
             int n0 = (src == null) ? -1 : src.CountOfUnits;
             Beacon("DoSplit " + gc + " src单位=" + n0);
             if (src == null || src.CountOfUnits < 2)
                 return "err too_few";       // 1 个兵没法分
 
-            // 找新分出的编队: 优先用 Split 返回值(那才是权威结果), 前后差集兜底。
-            // 不要求新队"分完瞬间就有兵" —— 引擎可能下一 tick 才把兵搬过去,
-            // 存下引用即可, sideorder/formorder 下令时会重新看 CountOfUnits。
-            var before = new HashSet<Formation>(OwnNonEmpty());
-            IEnumerable<Formation> result = null;
-            try { result = src.Split(2); }
-            catch (Exception e) { Beacon("Split异常: " + e.Message); return "err split_ex"; }
+            // 找一个空编队槽(0-7)接收新半队。Formation.Split() 走 MasterOrder-
+            // Controller.SplitFormation, 被 IsSplittableByAI 门禁挡住(玩家亲自
+            // 指挥的编队该值为 false)对玩家无效。改用它内部真正搬兵那步
+            // TransferUnitsAux + isPlayerOrder:true 强制绕过 AI 门禁。
+            Formation target = null;
+            for (int i = 0; i < 8; i++)
+            {
+                var f = player.GetFormation((FormationClass)i);
+                if (f != null && f.CountOfUnits == 0) { target = f; break; }
+            }
+            if (target == null)
+                return "err no_empty_slot";   // 8 个槽全占满, 没处放新队
 
-            Formation other = null;
-            if (result != null)
-                foreach (var f in result)
-                    if (f != null && f != src) { other = f; break; }
-            if (other == null)              // 返回值没给, 退回前后差集
-                foreach (var f in Mission.Current.PlayerTeam.FormationsIncludingEmpty)
-                    if (f != null && f != src && !before.Contains(f)
-                        && f.CountOfUnits > 0) { other = f; break; }
-
-            Beacon("DoSplit 结果 other="
-                   + (other == null ? "null" : other.FormationIndex + ":" + other.CountOfUnits)
+            int half = src.CountOfUnits / 2;
+            try
+            {
+                src.TransferUnitsAux(target, half, true, false);   // isPlayerOrder=true
+            }
+            catch (Exception e)
+            {
+                Beacon("Transfer异常: " + e.Message);
+                return "err split_ex";
+            }
+            Beacon("DoSplit 结果 target槽=" + (int)target.FormationIndex
+                   + " target单位=" + target.CountOfUnits
                    + " src现在=" + src.CountOfUnits);
-            if (other == null)
+            if (target.CountOfUnits == 0)
                 return "err split_failed";
 
-            _splits[gc] = new[] { src, other };   // [0]原队=左, [1]新队=右
+            _splits[gc] = new[] { src, target };   // [0]原队=左, [1]新队=右
             Notify(Cn(gc) + " 已分为两队：左队=原队 右队=新队");
             return "ok split=" + gc + " a=" + src.CountOfUnits
-                   + " b=" + other.CountOfUnits;
+                   + " b=" + target.CountOfUnits;
         }
 
         private string DoSideOrder(string groupName, string side, string order)

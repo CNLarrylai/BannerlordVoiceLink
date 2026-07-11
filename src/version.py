@@ -2,7 +2,7 @@
 
 APP_NAME = "骑砍语音指挥"
 APP_EN = "Bannerlord Voice Commander"
-APP_VERSION = "0.8.4"   # 0.8.4: 分队诊断+用Split返回值(修分队无响应), mod.log记状态
+APP_VERSION = "0.8.5"   # 0.8.5: 修分队(改用TransferUnitsAux+isPlayerOrder绕过IsSplittableByAI门禁)
 
 # dev / free / pro —— 打包分发时可改; 现在都当全功能
 BUILD_CHANNEL = "dev"
