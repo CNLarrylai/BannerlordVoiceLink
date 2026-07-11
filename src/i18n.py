@@ -68,8 +68,6 @@ _EN = {
     "选麦克风\n看音量条": "Pick your mic,\nsee levels",
     "📖\n指令词典": "📖\nCommands",
     "看/加说法\n改键位": "View/add phrases,\nedit keybinds",
-    "🧪\n跑测试": "🧪\nRun Tests",
-    "命中率+延迟\n改完就验证": "Accuracy + latency,\nverify changes",
     "📋 查看日志": "📋 View Log",
     "📁 打开日志文件夹": "📁 Open Log Folder",
     "🛑 全部停止": "🛑 Stop All",
@@ -90,9 +88,6 @@ _EN = {
         "Log is still empty — run Voice Command once first",
     "✓ 已打开日志文件夹 (把 app.log 发给作者即可)":
         "✓ Log folder opened (just send app.log to the author)",
-    "测试仅在源码环境可用": "Tests are only available when running from source",
-    "✓ 测试已启动 (黑窗里看命中率+延迟)":
-        "✓ Tests started (accuracy + latency in the console)",
     "切换失败: {e}": "Switch failed: {e}",
     "✓ 已切到 {name} · 重启语音指挥生效 (Restart to apply)":
         "✓ Switched to {name} · restart Voice Command to apply",

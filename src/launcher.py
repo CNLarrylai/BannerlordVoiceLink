@@ -150,7 +150,6 @@ class Launcher:
             (t("📜\n指令复盘"), t("看识别记录\n纠错改绑定"), self.open_review),
             (t("🎙\n音频设置"), t("选麦克风\n看音量条"), self.open_audio),
             (t("📖\n指令词典"), t("看/加说法\n改键位"), self.open_dict),
-            (t("🧪\n跑测试"), t("命中率+延迟\n改完就验证"), self.run_tests),
         ]
         btn_w = max(i18n.text_units(title) for title, _, _ in minis) + 2
         for title, sub, cmd in minis:
@@ -333,16 +332,6 @@ class Launcher:
         from paths import log_dir
         os.startfile(log_dir())
         self._set(t("✓ 已打开日志文件夹 (把 app.log 发给作者即可)"))
-
-    def run_tests(self):
-        # 测试是开发向工具, 打包版里不带; 源码下才拉起
-        if FROZEN:
-            self._set(t("测试仅在源码环境可用"), GOLD)
-            return
-        exe = PY
-        argv = [exe, os.path.join(ROOT, "tests", "run_all.py")]
-        subprocess.Popen(argv, cwd=ROOT)
-        self._set(t("✓ 测试已启动 (黑窗里看命中率+延迟)"))
 
     def _refresh_start_btn(self):
         running = self.voice_proc and self.voice_proc.poll() is None

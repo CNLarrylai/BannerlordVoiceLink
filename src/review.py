@@ -83,11 +83,15 @@ class ReviewGUI:
         self.commands = dictionary.load_commands()
         self.matcher = Matcher.from_config(
             self.commands, self.settings["control"], lang=self.lang)
-        # key<->显示名 (当前语言第一个别名)
+        # key<->显示名 (当前语言第一个别名)。纠错下拉只列"可纠成的基础兵种"
+        # (步/弓/骑/骑射/全军, 即有编队选择键的) —— 左右半队/第N队那些是寻址
+        # 伪兵种, 不是纠错目标, 排除(也避免它们的长英文名撑爆下拉宽度)。
         self.g_disp = {k: self._disp(d) for k, d in
-                       self.commands["groups"].items()}
+                       self.commands["groups"].items()
+                       if str(d.get("key", "")) != ""}
+        # 纯模组指令(split, keys 空)同理不作为纠错目标
         self.o_disp = {k: self._disp(d) for k, d in
-                       self.commands["orders"].items()}
+                       self.commands["orders"].items() if d.get("keys")}
         self.rows = []
         self._build()
         self.refresh()
