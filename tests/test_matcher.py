@@ -176,6 +176,9 @@ TARGET_CASES = [
     # Whisper 连读断句塞的标点(全角冒号/顿号)不能破坏识别: 弓、骑兵 应仍是弓骑兵
     ("弓、骑兵：冲锋：对方：弓、骑兵：。", "horse_archers", "horse_archers"),
     ("骑兵，进攻，弓箭手。", "cavalry", "archers"),
+    # 左右半队也能定向进攻: "骑兵左队进攻弓箭手" 选中左半队, 目标敌方弓箭手
+    ("骑兵左队进攻弓箭手", "cavalry_left", "archers"),
+    ("第五队进攻弓箭手", "form5", "archers"),
     # 同音字替换的精确子串陷阱: "弓骑兵"听成"功骑兵", 拼音满分的整词(盖3字)
     # 必须赢字面藏在里面的"骑兵"(2字) —— 否则打弓骑兵变成打骑兵(实战报告)
     ("骑兵进攻对方功骑兵", "cavalry", "horse_archers"),
@@ -225,11 +228,6 @@ SPLIT_CASES = [
     ("骑射右队撤退", "horse_archers_right", "retreat"),
     # 复合不能污染光杆兵种: "骑兵冲锋" 仍是 cavalry, 不被 cavalry_left 抢
     ("骑兵冲锋", "cavalry", "charge"),
-    # 光喊左右队(不带兵种)=最近分的那队
-    ("左队进攻", "left", "charge"),
-    ("右队跟我", "right", "follow_me"),
-    # 带前缀仍精确到具体兵种, 不被光杆 left 抢
-    ("弓箭手左队待命", "archers_left", "halt"),
     # 第N队按槽位号指挥(第五~八队=分队新队落的空槽)
     ("第五队进攻", "form5", "charge"),
     ("第六队跟我", "form6", "follow_me"),

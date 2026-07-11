@@ -289,46 +289,42 @@ class App:
                     "fall_back": "fallback", "retreat": "retreat"}
     _SPLIT_CLASSES = ("infantry", "archers", "cavalry", "horse_archers")
 
-    def _do_formation_cmd(self, g_key, o_key, desc, text, t_stt, engine):
-        """分队("骑兵分队")或左右半队指挥("左队进攻") —— 走模组, 无按键退路。"""
+    def _do_formation_cmd(self, g_key, o_key, desc, text, t_stt, engine,
+                          t_key=""):
+        """分队 / 左右半队 / 第N队 —— 走模组, 无按键退路。返回是否真正执行成功。"""
         if self.dry_run:
             print(f"    ⚙ [dry-run] 分队指令: {desc}")
-            return
+            return False
         if not self.modlink:
             print("    ⚙ 分队/左右指挥需要伴侣模组(游戏没开/模组没启用)")
             self._set(t("⚙ 需要模组"), t("游戏没开或模组没启用"), "#ffb37f")
-            return
+            return False
+        desc2 = desc     # 定向进攻时下面会补上目标, 让浮层/横幅显示"打谁"
         if o_key == "split":
             if g_key not in self._SPLIT_CLASSES:
                 print("    ⚙ 分队要指定具体兵种, 例:「骑兵分队」")
                 self._set(t("⚙ 分队要指定兵种"), t("例：骑兵分队"), "#ffb37f")
-                return
+                return False
             r = self.modlink.split(g_key)
         elif g_key.startswith("form"):        # 第N队 (form5..form8)
             tok = self._SIDE_ORDERS.get(o_key)
             if not tok:
-                print(f"    ⚙ 第N队暂不支持「{o_key}」(仅冲锋/前进/跟随/待命/后退/撤退)")
-                self._set(t("⚙ 左右队暂不支持这条"),
-                          t("仅：冲锋/前进/跟随/待命/后退/撤退"), "#ffb37f")
-                return
-            r = self.modlink.formorder(int(g_key[4:]), tok)
-        else:  # 光杆 left/right(=最近分的队) 或 cavalry_left / archers_right
-            if g_key in ("left", "right"):
-                cls, side = "last", g_key
-            else:
-                side = "left" if g_key.endswith("_left") else "right"
-                cls = g_key[:-5] if side == "left" else g_key[:-6]
+                return self._side_unsupported(o_key)
+            r = self.modlink.formorder(int(g_key[4:]), tok, t_key)
+            desc2 = self._with_target(desc, o_key, t_key)
+        else:  # cavalry_left / archers_right
+            side = "left" if g_key.endswith("_left") else "right"
+            cls = g_key[:-5] if side == "left" else g_key[:-6]
             tok = self._SIDE_ORDERS.get(o_key)
             if not tok:
-                print(f"    ⚙ 左右队暂不支持「{o_key}」(仅冲锋/前进/跟随/待命/后退/撤退)")
-                self._set(t("⚙ 左右队暂不支持这条"),
-                          t("仅：冲锋/前进/跟随/待命/后退/撤退"), "#ffb37f")
-                return
-            r = self.modlink.sideorder(cls, side, tok)
+                return self._side_unsupported(o_key)
+            r = self.modlink.sideorder(cls, side, tok, t_key)
+            desc2 = self._with_target(desc, o_key, t_key)
         via = "mod"
-        if r and r.startswith("ok"):
-            print(f"    ✓ 听到「{text}」→ {desc} · 模组直达 [{r}]")
-            self._set(f"✓ {desc}", t("听到: {t}").format(t=text), "#7dff9b")
+        ok = bool(r and r.startswith("ok"))
+        if ok:
+            print(f"    ✓ 听到「{text}」→ {desc2} · 模组直达 [{r}]")
+            self._set(f"✓ {desc2}", t("听到: {t}").format(t=text), "#7dff9b")
         elif r:
             reason = {"not_split": "还没分队(先喊'骑兵分队')",
                       "too_few": "这队人太少, 分不了",
@@ -343,9 +339,26 @@ class App:
             print("    ⚙ 模组未连接(游戏没开/不在战斗)")
             self._set(t("⚙ 模组未连接"), t("游戏没开或不在战斗"), "#ffb37f")
             via = "mod_off"
-        usage.record(self.lang, "ok" if via == "mod" else "miss",
+        usage.record(self.lang, "ok" if ok else "miss",
                      g_key, o_key, via, t_stt, text,
-                     engine if self.fast else "")
+                     engine if self.fast else "", t_key)
+        return ok
+
+    def _side_unsupported(self, o_key):
+        """左右队/第N队收到不支持的指令(如定点移动去那儿) —— 提示并返回失败。"""
+        print(f"    ⚙ 左右/第N队暂不支持「{o_key}」"
+              "(仅冲锋/进攻/前进/跟随/待命/后退/撤退; 定点移动用'跟我'把它们唤到身边)")
+        self._set(t("⚙ 左右队暂不支持这条"),
+                  t("仅冲锋/前进/跟随/待命/后退/撤退；定点移动用'跟我'"), "#ffb37f")
+        return False
+
+    def _with_target(self, desc, o_key, t_key):
+        """定向进攻时把'→ 目标兵种'补进描述, 让状态明确是定向而非简单冲锋。"""
+        if o_key == "charge" and t_key:
+            tgt = _disp(self.commands["groups"][t_key], self.lang)
+            arrow = " → 进攻敌方" if self.lang == "zh" else " → attacking enemy "
+            return desc.split(" → ")[0] + arrow + tgt
+        return desc
 
     def _set(self, status, detail="", color="#FFFFFF"):
         print(f"  {status}  {detail}")
@@ -563,12 +576,17 @@ class App:
         if boost_why:
             print(f"    🔁 {boost_why}")
         # 分队 / 左右半队 / 第N队: 纯模组指令(原生 Formation.Split), 单独路由
-        is_side = g_key in ("left", "right") or (bool(g_key) and (
-            g_key.endswith("_left") or g_key.endswith("_right")))
+        is_side = bool(g_key) and (g_key.endswith("_left")
+                                   or g_key.endswith("_right"))
         is_form = bool(g_key) and g_key.startswith("form") and g_key[4:].isdigit()
         if o_key == "split" or is_side or is_form:
-            self._do_formation_cmd(g_key, o_key, desc, text, t_stt, engine)
-            self.retry.note_exec(g_key, o_key)
+            t_key = parsed["target"]["name"] if parsed.get("target") else ""
+            ok = self._do_formation_cmd(g_key, o_key, desc, text, t_stt,
+                                        engine, t_key)
+            # 只有真正执行了才记录/防回声 —— 否则被拒的指令(如左右队不支持
+            # 定点移动)会把自己写进回声窗口, 重说反被误抑制(实战踩到)
+            if ok:
+                self.retry.note_exec(g_key, o_key)
             self._idle()
             return
         t0 = time.perf_counter()

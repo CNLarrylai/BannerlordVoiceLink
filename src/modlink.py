@@ -51,13 +51,13 @@ class ModLink:
         """把某兵种一分为二 (原生 Formation.Split)。返回模组回复或 None。"""
         return self._send(f"split {group}")
 
-    def sideorder(self, group, side, order):
+    def sideorder(self, group, side, order, target=""):
         """指挥某兵种分出的左/右半队(左=原队, 右=新队)。
         group=兵种; side=left/right; order=charge/advance/follow/halt/fallback/
-        retreat。返回模组回复("ok ..."/"err ...") 或 None。"""
-        return self._send(f"sideorder {group} {side} {order}")
-
-    def formorder(self, slot, order):
-        """按编队槽位号"第N队"指挥(slot 1-8)。order 同 sideorder。
+        retreat; target=敌方兵种(定向进攻, order=charge时有效, 空=简单冲锋)。
         返回模组回复("ok ..."/"err ...") 或 None。"""
-        return self._send(f"formorder {slot} {order}")
+        return self._send(f"sideorder {group} {side} {order} {target or '-'}")
+
+    def formorder(self, slot, order, target=""):
+        """按编队槽位号"第N队"指挥(slot 1-8)。order/target 同 sideorder。"""
+        return self._send(f"formorder {slot} {order} {target or '-'}")

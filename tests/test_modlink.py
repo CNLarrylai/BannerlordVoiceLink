@@ -93,7 +93,15 @@ def test_sideorder_roundtrip():
     port, got = _fake_mod("ok side=left units=20")
     r = ModLink(port=port).sideorder("cavalry", "left", "charge")
     assert r == "ok side=left units=20", r
-    assert got[0] == "sideorder cavalry left charge", got[0]
+    # 无目标时补占位 "-"(协议按空格分列, 不能留空列)
+    assert got[0] == "sideorder cavalry left charge -", got[0]
+
+
+def test_sideorder_directional_target():
+    port, got = _fake_mod("ok target=Ranged units=10")
+    r = ModLink(port=port).sideorder("cavalry", "left", "charge", "archers")
+    assert r and r.startswith("ok")
+    assert got[0] == "sideorder cavalry left charge archers", got[0]
 
 
 def test_sideorder_not_split_err():
@@ -106,7 +114,7 @@ def test_formorder_roundtrip():
     port, got = _fake_mod("ok units=18")
     r = ModLink(port=port).formorder(5, "charge")
     assert r == "ok units=18", r
-    assert got[0] == "formorder 5 charge", got[0]
+    assert got[0] == "formorder 5 charge -", got[0]
 
 
 if __name__ == "__main__":

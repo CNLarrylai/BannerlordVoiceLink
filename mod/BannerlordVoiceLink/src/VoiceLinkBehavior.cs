@@ -204,12 +204,14 @@ namespace BannerlordVoiceLink
                         : DoSplit(parts[1]);
                 case "sideorder":
                     return parts.Length < 4
-                        ? "err usage: sideorder <group> <left|right> <order>"
-                        : DoSideOrder(parts[1], parts[2], parts[3]);
+                        ? "err usage: sideorder <group> <left|right> <order> [target]"
+                        : DoSideOrder(parts[1], parts[2], parts[3],
+                                      parts.Length > 4 ? parts[4] : "-");
                 case "formorder":
                     return parts.Length < 3
-                        ? "err usage: formorder <slot 1-8> <order>"
-                        : DoFormOrder(parts[1], parts[2]);
+                        ? "err usage: formorder <slot 1-8> <order> [target]"
+                        : DoFormOrder(parts[1], parts[2],
+                                      parts.Length > 3 ? parts[3] : "-");
                 default:
                     return "err unknown_cmd";
             }
@@ -522,7 +524,8 @@ namespace BannerlordVoiceLink
                    + " b=" + target.CountOfUnits + " slot=" + newNo;
         }
 
-        private string DoSideOrder(string groupName, string side, string order)
+        private string DoSideOrder(string groupName, string side, string order,
+                                   string target)
         {
             if (!InBattle())
                 return "err no_battle";
@@ -542,15 +545,16 @@ namespace BannerlordVoiceLink
                 return "err not_split";     // 这个兵种还没分队 / 分的队没了
 
             var pick = (side == "left") ? pair[0] : pair[1];   // 左=原 右=新
-            Beacon("DoSideOrder " + gc + " " + side + " -> " + pick.CountOfUnits + "人");
+            Beacon("DoSideOrder " + gc + " " + side + " tgt=" + target
+                   + " -> " + pick.CountOfUnits + "人");
             return IssueToFormation(pick, order,
-                Cn(gc) + (side == "left" ? "左队" : "右队"));
+                Cn(gc) + (side == "left" ? "左队" : "右队"), target);
         }
 
         private static readonly string[] CnNums =
             { "一", "二", "三", "四", "五", "六", "七", "八" };
 
-        private string DoFormOrder(string slotStr, string order)
+        private string DoFormOrder(string slotStr, string order, string target)
         {
             if (!InBattle())
                 return "err no_battle";
@@ -562,12 +566,45 @@ namespace BannerlordVoiceLink
                    + (pick == null ? "null" : pick.CountOfUnits + "人"));
             if (pick == null || pick.CountOfUnits == 0)
                 return "err empty_formation";   // 这个槽位没兵(还没分队/无此队)
-            return IssueToFormation(pick, order, "第" + CnNums[n - 1] + "队");
+            return IssueToFormation(pick, order, "第" + CnNums[n - 1] + "队", target);
         }
 
-        /// <summary>选中某编队 -> 下派遣令 -> 恢复原选择 -> 播报。左右/第N队共用。</summary>
-        private string IssueToFormation(Formation pick, string order, string label)
+        /// <summary>选中某编队 -> 下派遣令 -> 恢复原选择 -> 播报。左右/第N队共用。
+        /// target 非空且 order=charge 时走"定向进攻"(冲最近的该类敌军)。</summary>
+        private string IssueToFormation(Formation pick, string order, string label,
+                                        string target)
         {
+            var oc = Mission.Current.PlayerTeam.PlayerOrderController;
+            var backup = new List<Formation>(oc.SelectedFormations);
+
+            // 定向进攻: "骑兵左队进攻弓箭手" => 该半队冲最近的敌方弓箭手(带目标),
+            // 而非简单冲锋最近的任意敌军。状态播报也带上打的是谁。
+            FormationClass tc;
+            if (order == "charge" && !string.IsNullOrEmpty(target) && target != "-"
+                && TryClass(target, out tc))
+            {
+                Formation enemy = null;
+                float bd = float.MaxValue;
+                foreach (var e in EnemyFormations())
+                {
+                    if (e.FormationIndex != tc) continue;
+                    var d = pick.CachedAveragePosition.Distance(e.CachedAveragePosition);
+                    if (d < bd) { bd = d; enemy = e; }
+                }
+                if (enemy != null)
+                {
+                    oc.ClearSelectedFormations();
+                    oc.SelectFormation(pick);
+                    oc.SetOrderWithFormation(OrderType.Charge, enemy);
+                    oc.ClearSelectedFormations();
+                    foreach (var f in backup) oc.SelectFormation(f);
+                    Notify(label + " → 进攻敌方" + Cn(tc)
+                           + "(" + enemy.CountOfUnits + "人)");
+                    return "ok target=" + tc + " units=" + pick.CountOfUnits;
+                }
+                // 场上没有该类敌军 => 退化为简单冲锋(往下走)
+            }
+
             OrderType ot;
             switch (order)
             {
@@ -579,8 +616,6 @@ namespace BannerlordVoiceLink
                 case "retreat": ot = OrderType.Retreat; break;
                 default: return "err bad_order";
             }
-            var oc = Mission.Current.PlayerTeam.PlayerOrderController;
-            var backup = new List<Formation>(oc.SelectedFormations);
             oc.ClearSelectedFormations();
             oc.SelectFormation(pick);
             oc.SetOrder(ot);
