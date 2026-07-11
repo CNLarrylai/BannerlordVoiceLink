@@ -21,6 +21,7 @@ namespace BannerlordVoiceLink
     ///   split <group>             -> "ok split=Cavalry a=20 b=20" (原生一分为二)
     ///   sideorder <group> <left|right> <order> -> "ok" (左=原队/右=新队,
     ///                     order=charge/advance/follow/halt/fallback/retreat)
+    ///   formorder <slot 1-8> <order> -> "ok" (按编队槽位号"第N队"指挥)
     ///   notify <中文文本>          -> "ok"  (顶部快讯横幅播报普通按键指令)
     ///     group : infantry|archers|cavalry|horse_archers|all
     ///     target: infantry|archers|cavalry|horse_archers|nearest
@@ -205,6 +206,10 @@ namespace BannerlordVoiceLink
                     return parts.Length < 4
                         ? "err usage: sideorder <group> <left|right> <order>"
                         : DoSideOrder(parts[1], parts[2], parts[3]);
+                case "formorder":
+                    return parts.Length < 3
+                        ? "err usage: formorder <slot 1-8> <order>"
+                        : DoFormOrder(parts[1], parts[2]);
                 default:
                     return "err unknown_cmd";
             }
@@ -504,7 +509,29 @@ namespace BannerlordVoiceLink
                 return "err not_split";     // 这个兵种还没分队 / 分的队没了
 
             var pick = (side == "left") ? pair[0] : pair[1];   // 左=原 右=新
+            return IssueToFormation(pick, order,
+                Cn(gc) + (side == "left" ? "左队" : "右队"));
+        }
 
+        private static readonly string[] CnNums =
+            { "一", "二", "三", "四", "五", "六", "七", "八" };
+
+        private string DoFormOrder(string slotStr, string order)
+        {
+            if (!InBattle())
+                return "err no_battle";
+            int n;
+            if (!int.TryParse(slotStr, out n) || n < 1 || n > 8)
+                return "err bad_slot";
+            var pick = Mission.Current.PlayerTeam.GetFormation((FormationClass)(n - 1));
+            if (pick == null || pick.CountOfUnits == 0)
+                return "err empty_formation";   // 这个槽位没兵(还没分队/无此队)
+            return IssueToFormation(pick, order, "第" + CnNums[n - 1] + "队");
+        }
+
+        /// <summary>选中某编队 -> 下派遣令 -> 恢复原选择 -> 播报。左右/第N队共用。</summary>
+        private string IssueToFormation(Formation pick, string order, string label)
+        {
             OrderType ot;
             switch (order)
             {
@@ -516,7 +543,6 @@ namespace BannerlordVoiceLink
                 case "retreat": ot = OrderType.Retreat; break;
                 default: return "err bad_order";
             }
-
             var oc = Mission.Current.PlayerTeam.PlayerOrderController;
             var backup = new List<Formation>(oc.SelectedFormations);
             oc.ClearSelectedFormations();
@@ -525,10 +551,8 @@ namespace BannerlordVoiceLink
             oc.ClearSelectedFormations();
             foreach (var f in backup)
                 oc.SelectFormation(f);
-
-            Notify(Cn(gc) + (side == "left" ? "左队" : "右队") + " → "
-                   + CnOrder(order) + "(" + pick.CountOfUnits + "人)");
-            return "ok side=" + side + " units=" + pick.CountOfUnits;
+            Notify(label + " → " + CnOrder(order) + "(" + pick.CountOfUnits + "人)");
+            return "ok units=" + pick.CountOfUnits;
         }
 
         private static string CnOrder(string order)

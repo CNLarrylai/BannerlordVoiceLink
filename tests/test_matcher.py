@@ -225,6 +225,14 @@ SPLIT_CASES = [
     ("骑射右队撤退", "horse_archers_right", "retreat"),
     # 复合不能污染光杆兵种: "骑兵冲锋" 仍是 cavalry, 不被 cavalry_left 抢
     ("骑兵冲锋", "cavalry", "charge"),
+    # 第N队按槽位号指挥(第五~八队=分队新队落的空槽)
+    ("第五队进攻", "form5", "charge"),
+    ("第六队跟我", "form6", "follow_me"),
+    ("第七队待命", "form7", "halt"),
+    ("八队撤退", "form8", "retreat"),
+    # 第一~四队仍是兵种别名(走按键), 不被 formN 抢
+    ("第一队冲锋", "infantry", "charge"),
+    ("第四队散开", "horse_archers", "loose"),
 ]
 for text, want_g, want_o in SPLIT_CASES:
     r = m.parse(text)

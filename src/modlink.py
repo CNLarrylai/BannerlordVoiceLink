@@ -56,3 +56,8 @@ class ModLink:
         group=兵种; side=left/right; order=charge/advance/follow/halt/fallback/
         retreat。返回模组回复("ok ..."/"err ...") 或 None。"""
         return self._send(f"sideorder {group} {side} {order}")
+
+    def formorder(self, slot, order):
+        """按编队槽位号"第N队"指挥(slot 1-8)。order 同 sideorder。
+        返回模组回复("ok ..."/"err ...") 或 None。"""
+        return self._send(f"formorder {slot} {order}")

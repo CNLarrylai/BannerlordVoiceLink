@@ -102,6 +102,13 @@ def test_sideorder_not_split_err():
     assert r == "err not_split", r
 
 
+def test_formorder_roundtrip():
+    port, got = _fake_mod("ok units=18")
+    r = ModLink(port=port).formorder(5, "charge")
+    assert r == "ok units=18", r
+    assert got[0] == "formorder 5 charge", got[0]
+
+
 if __name__ == "__main__":
     for _s in (sys.stdout, sys.stderr):
         try:

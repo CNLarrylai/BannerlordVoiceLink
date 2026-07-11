@@ -2,7 +2,7 @@
 
 APP_NAME = "骑砍语音指挥"
 APP_EN = "Bannerlord Voice Commander"
-APP_VERSION = "0.8.1"   # 0.8.1: 分队左右改固定身份(左=原队/右=新队)+强制兵种前缀
+APP_VERSION = "0.8.2"   # 0.8.2: 第五~八队按槽位号指挥(formorder), 分队新队可编号号令
 
 # dev / free / pro —— 打包分发时可改; 现在都当全功能
 BUILD_CHANNEL = "dev"

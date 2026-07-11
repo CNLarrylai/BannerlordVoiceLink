@@ -304,6 +304,14 @@ class App:
                 self._set(t("⚙ 分队要指定兵种"), t("例：骑兵分队"), "#ffb37f")
                 return
             r = self.modlink.split(g_key)
+        elif g_key.startswith("form"):        # 第N队 (form5..form8)
+            tok = self._SIDE_ORDERS.get(o_key)
+            if not tok:
+                print(f"    ⚙ 第N队暂不支持「{o_key}」(仅冲锋/前进/跟随/待命/后退/撤退)")
+                self._set(t("⚙ 左右队暂不支持这条"),
+                          t("仅：冲锋/前进/跟随/待命/后退/撤退"), "#ffb37f")
+                return
+            r = self.modlink.formorder(int(g_key[4:]), tok)
         else:  # g_key 形如 cavalry_left / archers_right
             side = "left" if g_key.endswith("_left") else "right"
             cls = g_key[:-5] if side == "left" else g_key[:-6]
@@ -321,6 +329,8 @@ class App:
         elif r:
             reason = {"not_split": "还没分队(先喊'骑兵分队')",
                       "too_few": "这队人太少, 分不了",
+                      "empty_formation": "这个队现在没兵(先分队或换个队号)",
+                      "bad_slot": "队号要在 1-8 之间",
                       "no_battle": "不在战斗中"}.get(r.replace("err ", ""), r)
             print(f"    ⚙ 分队未执行: {reason}")
             self._set(t("⚙ 分队未执行"), reason, "#ffb37f")
@@ -548,10 +558,11 @@ class App:
             return
         if boost_why:
             print(f"    🔁 {boost_why}")
-        # 分队 / 左右半队指挥: 纯模组指令(原生 Formation.Split), 单独路由
+        # 分队 / 左右半队 / 第N队: 纯模组指令(原生 Formation.Split), 单独路由
         is_side = bool(g_key) and (g_key.endswith("_left")
                                    or g_key.endswith("_right"))
-        if o_key == "split" or is_side:
+        is_form = bool(g_key) and g_key.startswith("form") and g_key[4:].isdigit()
+        if o_key == "split" or is_side or is_form:
             self._do_formation_cmd(g_key, o_key, desc, text, t_stt, engine)
             self.retry.note_exec(g_key, o_key)
             self._idle()
