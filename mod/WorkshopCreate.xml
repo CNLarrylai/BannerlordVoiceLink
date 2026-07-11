@@ -2,12 +2,12 @@
     <CreateItem/>
     <UpdateItem>
         <ModuleFolder Value="C:\SteamLibraryforstream\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\BannerlordVoiceLink"/>
-        <ItemDescription Value="Voice-command your army (Chinese + English). Say 'cavalry, attack the nearest' / '骑兵打最近的' and it happens: local speech recognition (offline Whisper), fuzzy matching, streaming overlay, and true formation targeting via the game API. Subscribe = everything included; the voice panel auto-starts with the game. 语音指挥你的军队: 本地识别/模糊匹配/直播浮层/真·锁定敌方编队, 订阅即用。"/>
+        <ItemDescription Value="[BETA] Command your army by voice (Chinese, partial English). Speak orders and the game obeys — 'cavalry charge', 'archers shield wall', 'cavalry attack their archers', 'split the cavalry / left group charge'. Offline speech recognition (no internet), battle-tuned fuzzy matching, a streaming overlay, plus true formation targeting AND splitting via the game API. Subscribe = everything included; the voice panel auto-starts with the game. Two prompts on launch are expected (unverified-code + UAC, needed to send keypresses). Feedback very welcome. 语音指挥你的军队(测试版): 说出指令就执行 —— 冲锋/盾墙/骑兵打他们弓箭手/骑兵分队左队进攻。本地离线识别、直播浮层、真·锁定敌方编队与一分为二左右包抄。订阅即用,语音面板随游戏自启(启动时两个弹窗是正常的:未验证代码 + UAC 提权,发按键需要)。欢迎反馈问题。"/>
         <Tags>
             <Tag Value="Utility"/>
             <Tag Value="Native"/>
             <Tag Value="Singleplayer"/>
-            <Tag Value="v1.4.6"/>
+            <Tag Value="v1.4.7"/>
         </Tags>
         <Image Value="C:\Users\Victoria\bannerlord-voice\assets\workshop_preview.png"/>
         <Visibility Value="Public"/>
