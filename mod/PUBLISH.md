@@ -68,3 +68,18 @@ TaleWorlds.MountAndBlade.SteamWorkshop.exe "C:\Users\Victoria\bannerlord-voice\m
 ## 参考
 
 - 官方上传文档: https://moddocs.bannerlord.com/steam-workshop/uploading_updating_mod/
+
+## ⚠ 本机实测: TaleWorlds 上传工具不可用, 用 SteamCMD
+
+TaleWorlds.MountAndBlade.SteamWorkshop.exe 在本机稳定复现
+"Timeout uploading manifest"(换区/重启/多次重试均无效), 已改用 SteamCMD
+(独立连接栈, 2026-08-02 实测成功, ItemId 3775571491):
+
+```
+cd C:\Users\Victoria\bannerlord-voice\tools\steamcmd
+.\steamcmd.exe +login <用户名> +workshop_build_item "C:\Users\Victoria\bannerlord-voice\tools\steamcmd\item.vdf" +quit
+```
+
+- 以后每次更新: 先 build_workshop.py 打包, 再跑上面命令(改 item.vdf 的 changenote)
+- 登录要输密码+Steam Guard(本人操作)
+- 元数据(简介/图片/可见性)在工坊网页上改即可, 不必走命令行

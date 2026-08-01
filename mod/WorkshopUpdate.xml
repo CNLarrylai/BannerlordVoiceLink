@@ -1,15 +1,15 @@
 <Tasks>
     <GetItem>
-        <ItemId Value="FILL_IN_YOUR_ITEM_ID"/>
+        <ItemId Value="3775571491"/>
     </GetItem>
     <UpdateItem>
         <ModuleFolder Value="C:\SteamLibraryforstream\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\BannerlordVoiceLink"/>
-        <ChangeNotes Value="Update: see change log."/>
+        <ChangeNotes Value="v0.8.7.73 first content upload."/>
         <Tags>
             <Tag Value="Utility"/>
             <Tag Value="Native"/>
             <Tag Value="Singleplayer"/>
-            <Tag Value="v1.4.6"/>
+            <Tag Value="v1.4.7"/>
         </Tags>
     </UpdateItem>
 </Tasks>

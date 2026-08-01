@@ -39,3 +39,7 @@ kws/results/recordings*/
 
 # 个人词典(每台机器本地的发音适配层, 不同步)
 config/user_aliases.yaml
+
+# SteamCMD 本体/日志/缓存不入库 (上传配置 item.vdf 保留)
+tools/steamcmd/*
+!tools/steamcmd/item.vdf
