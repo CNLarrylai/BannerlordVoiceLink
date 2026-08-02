@@ -1,38 +1,30 @@
-# 创意工坊页面描述 (Steam BBCode, 直接整段粘贴进"编辑描述")
+# 创意工坊页面描述 (粘贴就绪版 —— 每个 [*] 独占一行, 不许折行!)
+# 用法: 从 [h1] 那行开始整段复制, 粘进"编辑标题与描述"的描述框, 保存。
 
 [h1]🎙 骑砍语音指挥 — 用嘴指挥你的军队 [BETA][/h1]
 
-对着麦克风喊「骑兵冲锋」,军队立刻执行。本地离线识别(不联网、不上传语音),
-命令约 0.1 秒响应,订阅即用 —— 语音面板随游戏自动启动。
+对着麦克风喊「骑兵冲锋」,军队立刻执行。本地离线识别(不联网、不上传语音),命令约 0.1 秒响应,订阅即用 —— 语音面板随游戏自动启动。
 
 [h2]✨ 核心功能[/h2]
 [list]
-[*][b]全指令语音化[/b]:冲锋 / 前进 / 撤退 / 盾墙 / 散开 / 圆阵方阵三角阵 /
-自由射击 / 停止射击 / 上马下马 / 交给AI……口语随便喊(「开干」「怼上去」
-「龟起来」都认识)
-[*][b]定向进攻[/b]:「骑兵,进攻弓箭手!」—— 我方骑兵真·锁定敌方弓箭手编队
-扑上去(游戏 API 级锁定,不是模拟准星)
+[*][b]全指令语音化[/b]:冲锋 / 前进 / 撤退 / 盾墙 / 散开 / 圆阵方阵三角阵 / 自由射击 / 停止射击 / 上马下马 / 交给AI……口语随便喊,「开干」「怼上去」「龟起来」都认识
+[*][b]定向进攻[/b]:「骑兵,进攻弓箭手!」我方骑兵真·锁定敌方弓箭手编队扑上去(游戏 API 级锁定,不是模拟准星)
 [*][b]看哪打哪[/b]:混战中喊「打他们!」,集火你眼前最近的那支敌军
-[*][b]一分为二[/b]:「骑兵分队」把骑兵劈成两半,然后「骑兵左队进攻弓箭手」
-「第五队跟我」分别指挥,左右包抄一气呵成
-[*][b]战场播报[/b]:每条指令在屏幕顶部快讯横幅 + 左下战斗记录双通道回执,
-谁在打谁一目了然
+[*][b]一分为二[/b]:「骑兵分队」把骑兵劈成两半,然后「骑兵左队进攻弓箭手」「第五队跟我」分别指挥,左右包抄一气呵成
+[*][b]战场播报[/b]:每条指令在屏幕顶部快讯横幅 + 左下战斗记录双通道回执,谁在打谁一目了然
 [/list]
 
 [h2]🧠 它会越用越懂你[/h2]
 [list]
 [*][b]上手校准[/b]:跟读一轮指令,你的口音错听自动学进个人词典
-[*][b]指令复盘 (F11)[/b]:逐条查看"每句话听成了什么、触发了什么",错配当场
-纠正并学习 —— 下次就对了
-[*][b]整活词典[/b]:自定义猎奇指令包(比如把「爸爸打我」映射成全军冲锋),
-一个配置文件热切换,直播整活神器
+[*][b]指令复盘 (F11)[/b]:逐条查看"每句话听成了什么、触发了什么",错配当场纠正并学习 —— 下次就对了
+[*][b]整活词典[/b]:自定义猎奇指令包,一个配置文件热切换,直播整活神器
 [/list]
 
 [h2]🚀 快速上手[/h2]
 [list]
 [*]订阅 → 启动器 Mods 页勾选 BannerlordVoiceLink → 开始游戏
-[*]启动时会有[b]两个弹窗[/b]:「未验证代码」(模组用了本机通信端口)和
-「UAC 管理员授权」(模拟按键需要)—— [b]都点允许,这是正常的[/b]
+[*]启动时会有[b]两个弹窗[/b]:「未验证代码」(模组用了本机通信端口)和「UAC 管理员授权」(模拟按键需要)—— [b]都点允许,这是正常的[/b]
 [*]主菜单出现语音面板后:选好麦克风 → 进战斗开喊
 [*]直播/聊天时按 [b]F12[/b] 暂停识别,防止聊天误触发
 [/list]
@@ -40,74 +32,22 @@
 [h2]💻 配置要求[/h2]
 [list]
 [*]Windows 10/11,任意麦克风
-[*]无显卡也能玩(CPU 模式);有 N 卡可在音频设置里一键下载 CUDA 加速包,
-识别更快更准
+[*]无显卡也能玩(CPU 模式);有 N 卡可在音频设置里一键下载 CUDA 加速包,识别更快更准
 [*]中文指令为主,部分英文指令可用(完整英文支持在路上)
 [/list]
 
 [h2]🔒 隐私[/h2]
-语音识别完全在你本机进行,[b]不联网、不上传任何声音[/b]。
-「语音数据共建」是可选功能(默认关闭):自愿留存自己的指令片段并手动导出
-上传,帮助训练更准的识别模型 —— 开不开完全由你。
+语音识别完全在你本机进行,[b]不联网、不上传任何声音[/b]。「语音数据共建」是可选功能(默认关闭):自愿留存自己的指令片段并手动导出上传,帮助训练更准的识别模型 —— 开不开完全由你。
 
 [h2]🐞 已知事项 (BETA)[/h2]
 [list]
-[*]部分杀毒软件可能对语音程序误报(PyInstaller 打包的通病)—— 项目无恶意
-代码,介意可等后续代码签名版本
+[*]部分杀毒软件可能对语音程序误报(PyInstaller 打包的通病)—— 项目无恶意代码,介意可等后续代码签名版本
 [*]嘈杂环境/重口音下个别指令可能听岔 —— 用 F11 复盘纠错,几次之后明显改善
-[*]遇到问题欢迎评论区反馈,日志在 %LOCALAPPDATA%\BannerlordVoice\logs,
-贴出 app.log 最后一段能极大加速排查
+[*]遇到问题欢迎评论区反馈,日志在 %LOCALAPPDATA%\BannerlordVoice\logs,贴出 app.log 最后一段能极大加速排查
 [/list]
 
 [h2]English[/h2]
-Voice-command your army: fully local speech recognition (offline, ~0.1s),
-true formation targeting ("cavalry, attack their archers"), focus-fire on
-whatever you're looking at ("attack them!"), and troop splitting with
-independent left/right control. Chinese commands are fully supported;
-English command set is partial and improving. Two prompts on launch
-(unverified-code + UAC) are expected — the mod uses a local socket and
-simulated keypresses.
+Voice-command your army: fully local speech recognition (offline, ~0.1s), true formation targeting ("cavalry, attack their archers"), focus-fire on whatever you're looking at, and troop splitting with independent left/right control. Chinese commands are fully supported; English command set is partial and improving. Two prompts on launch (unverified-code + UAC) are expected.
 
 ---
-由主播 [b]巴黎流浪汉赖拉里[/b] 与 AI 结对开发。想看它是怎么被做出来的?
-B 站搜「骑砍2 语音操作」。
-
----
-# 保底版 (万一 h 标签不渲染时用: 只用 [b]+[list], 全平台通吃)
-
-[b]🎙 骑砍语音指挥 — 用嘴指挥你的军队 [BETA][/b]
-
-对着麦克风喊「骑兵冲锋」,军队立刻执行。本地离线识别(不联网、不上传语音),命令约 0.1 秒响应,订阅即用 —— 语音面板随游戏自动启动。
-
-[b]━━ 核心功能 ━━[/b]
-[list]
-[*]全指令语音化:冲锋/前进/撤退/盾墙/散开/各种阵型/自由射击/上马下马/交给AI,口语随便喊(「开干」「怼上去」「龟起来」都认识)
-[*]定向进攻:「骑兵,进攻弓箭手!」真·锁定敌方编队(游戏 API 级,不是模拟准星)
-[*]看哪打哪:混战喊「打他们!」集火你眼前最近的敌军
-[*]一分为二:「骑兵分队」→「骑兵左队进攻弓箭手」「第五队跟我」左右包抄
-[*]战场播报:每条指令顶部横幅+战斗记录双回执,谁在打谁一目了然
-[/list]
-
-[b]━━ 越用越懂你 ━━[/b]
-[list]
-[*]上手校准:跟读一轮,你的口音错听自动学进个人词典
-[*]指令复盘(F11):逐条看"听成了什么、触发了什么",错配当场纠正学习
-[*]整活词典:自定义猎奇指令包(观众打赏解锁新口令),配置热切换
-[/list]
-
-[b]━━ 快速上手 ━━[/b]
-[list]
-[*]订阅 → 启动器 Mods 勾选 BannerlordVoiceLink → 开始游戏
-[*]启动时两个弹窗(未验证代码 + UAC 管理员)都点允许 —— 正常现象,模拟按键需要
-[*]主菜单弹出语音面板 → 选麦克风 → 进战斗开喊;聊天时按 F12 暂停识别
-[/list]
-
-[b]━━ 配置与隐私 ━━[/b]
-[list]
-[*]Windows 10/11 + 任意麦克风;无显卡可玩(CPU 模式),N 卡可选一键下载 CUDA 加速
-[*]识别完全本机进行,不联网不上传;「语音数据共建」默认关闭、完全自愿
-[*]中文为主,部分英文可用;杀软可能误报(打包工具通病,无恶意代码)
-[*]反馈请评论区,日志在 %LOCALAPPDATA%\BannerlordVoice\logs
-[/list]
-
-Voice-command your army: fully local speech recognition (offline, ~0.1s), true formation targeting, focus-fire, troop splitting with left/right control. Chinese fully supported; English partial. Two launch prompts (unverified-code + UAC) are expected.
+由主播 [b]巴黎流浪汉赖拉里[/b] 与 AI 结对开发。想看它是怎么被做出来的?B 站搜「骑砍2 语音操作」。
