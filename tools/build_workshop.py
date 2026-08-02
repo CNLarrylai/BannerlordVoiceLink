@@ -86,17 +86,27 @@ def _running_count():
         return 0
 
 
-def stamped_submodule_xml(ver):
-    """读仓库 SubModule.xml, 把 Version 换成构建版本号, 返回文本。"""
+def stamped_submodule_xml(ver, release=False):
+    """读仓库 SubModule.xml, 盖版本戳; 非 release 再给名字盖 [DEV] 戳。
+
+    Modules 目录既是开发部署地也是工坊上传源 —— 默认按开发处理(名字带
+    [DEV], launcher 里和工坊订阅版一眼区分); 上传工坊前必须用 --release
+    重新组装一次, 出干净名字(流程见 PUBLISH.md)。模组 Id 不动(存档兼容)。
+    """
     p = os.path.join(ROOT, "mod", "BannerlordVoiceLink", "SubModule.xml")
     with open(p, encoding="utf-8") as f:
         content = f.read()
-    return re.sub(r'<Version value="[^"]*"',
-                  f'<Version value="{ver}"', content, count=1)
+    content = re.sub(r'<Version value="[^"]*"',
+                     f'<Version value="{ver}"', content, count=1)
+    if not release:
+        content = re.sub(r'<Name value="([^"]*)"',
+                         r'<Name value="\1 [DEV]"', content, count=1)
+    return content
 
 
 def main():
     skip_exe = "--skip-exe" in sys.argv
+    release = "--release" in sys.argv
     ver = mod_version()
 
     # —— 预检: 运行中的打包版会锁 VoiceApp/DLL, 部分部署会留下"号新内容旧"的
@@ -186,9 +196,12 @@ def main():
     # —— 最后一步才写版本戳: 只有 DLL + VoiceApp + 体检全过, 版本号才更新。
     #    这样"launcher 显示的版本"永远等于"真正部署进去的内容", 绝不说谎。
     with open(os.path.join(MOD_DST, "SubModule.xml"), "w", encoding="utf-8") as f:
-        f.write(stamped_submodule_xml(ver))
-    print(f"\n✓ 工坊整包就绪: {MOD_DST}")
+        f.write(stamped_submodule_xml(ver, release))
+    tag = "RELEASE(干净名字, 可上传工坊)" if release else "[DEV] 开发版名字"
+    print(f"\n✓ 整包就绪: {MOD_DST}  ({tag})")
     print(f"  模组版本: {ver}  ← 开游戏前在 launcher Mods 页核对这个号")
+    if not release:
+        print("  ⚠ 上传工坊前先跑: build_workshop.py --release (去掉[DEV]名字)")
     print("  上传方式见 mod/PUBLISH.md")
 
 

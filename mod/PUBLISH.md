@@ -83,3 +83,10 @@ cd C:\Users\Victoria\bannerlord-voice\tools\steamcmd
 - 以后每次更新: 先 build_workshop.py 打包, 再跑上面命令(改 item.vdf 的 changenote)
 - 登录要输密码+Steam Guard(本人操作)
 - 元数据(简介/图片/可见性)在工坊网页上改即可, 不必走命令行
+
+## 开发版/工坊版命名区分 (2026-08-02 起)
+
+- 默认构建给模组名字盖 [DEV] 戳: launcher 里显示 "Bannerlord Voice Link [DEV]",
+  与工坊订阅版一眼区分, 防止勾错。
+- **上传工坊前必须**: `build_workshop.py --release` 重新组装(干净名字), 再跑
+  SteamCMD 上传; 传完想继续开发, 再跑一次不带 --release 的构建即可。
