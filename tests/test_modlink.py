@@ -117,6 +117,13 @@ def test_formorder_roundtrip():
     assert got[0] == "formorder 5 charge -", got[0]
 
 
+def test_tactic_roundtrip():
+    port, got = _fake_mod("ok tactic=flank n=1")
+    r = ModLink(port=port).tactic("cavalry", "flank")
+    assert r == "ok tactic=flank n=1", r
+    assert got[0] == "tactic cavalry flank", got[0]
+
+
 if __name__ == "__main__":
     for _s in (sys.stdout, sys.stderr):
         try:

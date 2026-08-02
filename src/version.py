@@ -2,7 +2,7 @@
 
 APP_NAME = "骑砍语音指挥"
 APP_EN = "Bannerlord Voice Commander"
-APP_VERSION = "0.8.7"   # 0.8.7: 移除光杆左右队; 左右/第N队支持定向进攻+目标同步; 修回音误伤
+APP_VERSION = "0.8.8"   # 0.8.8: 战术层指令(绕后=BehaviorFlank交AI, 听令=收回), 键盘摸不到的FormationAI层
 
 # dev / free / pro —— 打包分发时可改; 现在都当全功能
 BUILD_CHANNEL = "dev"

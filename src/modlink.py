@@ -61,3 +61,7 @@ class ModLink:
     def formorder(self, slot, order, target=""):
         """按编队槽位号"第N队"指挥(slot 1-8)。order/target 同 sideorder。"""
         return self._send(f"formorder {slot} {order} {target or '-'}")
+
+    def tactic(self, group, verb):
+        """战术层(FormationAI): group=兵种/all; verb=flank(交AI绕后)/manual(收回)。"""
+        return self._send(f"tactic {group} {verb}")

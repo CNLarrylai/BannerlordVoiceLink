@@ -236,6 +236,12 @@ SPLIT_CASES = [
     # 第一~四队仍是兵种别名(走按键), 不被 formN 抢
     ("第一队冲锋", "infantry", "charge"),
     ("第四队散开", "horse_archers", "loose"),
+    # 战术层(FormationAI): 绕后=交AI包抄, 听令=收回指挥权
+    ("骑兵绕后", "cavalry", "flank"),
+    ("骑兵绕到背后", "cavalry", "flank"),
+    ("骑射迂回包抄", "horse_archers", "flank"),
+    ("全军听令", "all", "reclaim"),
+    ("骑兵听令", "cavalry", "reclaim"),
 ]
 for text, want_g, want_o in SPLIT_CASES:
     r = m.parse(text)

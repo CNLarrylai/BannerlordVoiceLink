@@ -22,6 +22,8 @@ namespace BannerlordVoiceLink
     ///   sideorder <group> <left|right> <order> -> "ok" (左=原队/右=新队,
     ///                     order=charge/advance/follow/halt/fallback/retreat)
     ///   formorder <slot 1-8> <order> -> "ok" (按编队槽位号"第N队"指挥)
+    ///   tactic <group|all> <flank|manual> -> "ok" (战术层: flank=交给AI绕后,
+    ///                     manual=收回指挥权; 键盘玩家摸不到的 FormationAI 层)
     ///   notify <中文文本>          -> "ok"  (顶部快讯横幅播报普通按键指令)
     ///     group : infantry|archers|cavalry|horse_archers|all
     ///     target: infantry|archers|cavalry|horse_archers|nearest
@@ -212,6 +214,10 @@ namespace BannerlordVoiceLink
                         ? "err usage: formorder <slot 1-8> <order> [target]"
                         : DoFormOrder(parts[1], parts[2],
                                       parts.Length > 3 ? parts[3] : "-");
+                case "tactic":
+                    return parts.Length < 3
+                        ? "err usage: tactic <group|all> <flank|manual>"
+                        : DoTactic(parts[1], parts[2]);
                 default:
                     return "err unknown_cmd";
             }
@@ -426,6 +432,8 @@ namespace BannerlordVoiceLink
                 }
                 if (best == null)
                     continue;
+                if (g.IsAIControlled)
+                    g.SetControlledByAI(false);  // 直接指令打断战术托管
                 oc.ClearSelectedFormations();
                 oc.SelectFormation(g);
                 oc.SetOrderWithFormation(OrderType.Charge, best);
@@ -574,6 +582,8 @@ namespace BannerlordVoiceLink
         private string IssueToFormation(Formation pick, string order, string label,
                                         string target)
         {
+            if (pick.IsAIControlled)
+                pick.SetControlledByAI(false);   // 直接指令自然打断战术托管(绕后等)
             var oc = Mission.Current.PlayerTeam.PlayerOrderController;
             var backup = new List<Formation>(oc.SelectedFormations);
 
@@ -624,6 +634,59 @@ namespace BannerlordVoiceLink
                 oc.SelectFormation(f);
             Notify(label + " → " + CnOrder(order) + "(" + pick.CountOfUnits + "人)");
             return "ok units=" + pick.CountOfUnits;
+        }
+
+        // ---------- 战术层 (FormationAI, 键盘玩家摸不到的那层) ----------
+
+        private string DoTactic(string groupName, string verb)
+        {
+            if (!InBattle())
+                return "err no_battle";
+            var player = Mission.Current.PlayerTeam;
+            var targets = new List<Formation>();
+            if (groupName == "all")
+            {
+                foreach (var f in OwnNonEmpty())
+                    targets.Add(f);
+            }
+            else
+            {
+                FormationClass gc;
+                if (!TryClass(groupName, out gc))
+                    return "err bad_group";
+                var f = player.GetFormation(gc);
+                if (f == null || f.CountOfUnits == 0)
+                    return "err group_empty";
+                targets.Add(f);
+            }
+
+            var label = (groupName == "all") ? "全军" : CnGroup(groupName);
+            switch (verb)
+            {
+                case "flank":
+                    foreach (var f in targets)
+                    {
+                        // 交给 AI + 插入"特殊行为"绕后(压过常规权重竞争)。
+                        // WeightFactor 拉高确保它赢; purgePrevious 清掉旧特殊行为。
+                        f.SetControlledByAI(true);
+                        var b = new BehaviorFlank(f) { WeightFactor = 10f };
+                        f.AI.AddSpecialBehavior(b, true);
+                        Beacon("tactic flank " + f.FormationIndex
+                               + " units=" + f.CountOfUnits);
+                    }
+                    Notify(label + " → 绕后包抄(AI自主执行, 喊\"听令\"收回)");
+                    return "ok tactic=flank n=" + targets.Count;
+                case "manual":
+                    foreach (var f in targets)
+                    {
+                        f.SetControlledByAI(false);
+                        Beacon("tactic manual " + f.FormationIndex);
+                    }
+                    Notify(label + " → 已收回指挥权, 听你号令");
+                    return "ok tactic=manual n=" + targets.Count;
+                default:
+                    return "err bad_tactic";
+            }
         }
 
         private static string CnOrder(string order)

@@ -143,6 +143,18 @@ orders:
     aliases: [分队, 一分为二, 分成两队, 分兵, 分成两拨, 一分为二分队, 拆成两队,
               分作两队, 分兵两路]
     en: [split, divide, split in two, split up, divide in two]
+  flank:
+    # 需伴侣模组: 战术层指令 —— 该编队交给 AI 执行原生 BehaviorFlank(绕后包抄),
+    # 键盘玩家摸不到的 FormationAI 层。喊"听令"或任何直接指令即收回。
+    keys: []
+    aliases: [绕后, 绕后包抄, 绕到后面, 绕到背后, 抄后路, 迂回包抄, 绕背偷袭,
+              绕后袭扰, 去绕后]
+    en: [flank, flank them, go around, flank attack]
+  reclaim:
+    # 战术托管的收回: "骑兵听令"=骑兵收回指挥权回到手动。全军听令=全收。
+    keys: []
+    aliases: [听令, 听我指挥, 收回指挥, 回来听令, 听候号令]
+    en: [on me, back to my command, manual control, await orders]
   focus_target:
     # 需伴侣模组: 集火离玩家最近的那支敌军(混战里"打这只军队/打他打他"最本能,
     # 多半就指玩家眼前那支)。所有被下令编队集火同一支。模组不可用退化为

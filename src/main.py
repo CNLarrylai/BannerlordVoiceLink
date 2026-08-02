@@ -300,7 +300,15 @@ class App:
             self._set(t("⚙ 需要模组"), t("游戏没开或模组没启用"), "#ffb37f")
             return False
         desc2 = desc     # 定向进攻时下面会补上目标, 让浮层/横幅显示"打谁"
-        if o_key == "split":
+        if o_key in ("flank", "reclaim"):
+            # 战术层: 兵种或全军("骑兵绕后"/"全军听令"); 左右半队/第N队暂不支持
+            cls = g_key if g_key in self._SPLIT_CLASSES + ("all",) else None
+            if not cls:
+                print("    ⚙ 战术指令要指定兵种或全军, 例:「骑兵绕后」「全军听令」")
+                self._set(t("⚙ 要指定兵种或全军"), t("例：骑兵绕后"), "#ffb37f")
+                return False
+            r = self.modlink.tactic(cls, "flank" if o_key == "flank" else "manual")
+        elif o_key == "split":
             if g_key not in self._SPLIT_CLASSES:
                 print("    ⚙ 分队要指定具体兵种, 例:「骑兵分队」")
                 self._set(t("⚙ 分队要指定兵种"), t("例：骑兵分队"), "#ffb37f")
@@ -575,11 +583,11 @@ class App:
             return
         if boost_why:
             print(f"    🔁 {boost_why}")
-        # 分队 / 左右半队 / 第N队: 纯模组指令(原生 Formation.Split), 单独路由
+        # 分队 / 左右半队 / 第N队 / 战术层(绕后/听令): 纯模组指令, 单独路由
         is_side = bool(g_key) and (g_key.endswith("_left")
                                    or g_key.endswith("_right"))
         is_form = bool(g_key) and g_key.startswith("form") and g_key[4:].isdigit()
-        if o_key == "split" or is_side or is_form:
+        if o_key in ("split", "flank", "reclaim") or is_side or is_form:
             t_key = parsed["target"]["name"] if parsed.get("target") else ""
             ok = self._do_formation_cmd(g_key, o_key, desc, text, t_stt,
                                         engine, t_key)
