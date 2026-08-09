@@ -161,11 +161,51 @@ def shot_split():
     print("示意图2:", p)
 
 
+def promo_4x3():
+    """4:3 宣传图 1024x768 (Steam 工坊主视觉推荐比例)。"""
+    W, H = 1024, 768
+    img = Image.new("RGB", (W, H), BG)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, W, 12], fill=GOLD)
+    d.rectangle([0, H - 12, W, H], fill=GOLD)
+
+    mic_icon(d, W / 2, 118, 104, GOLD)
+    center(d, W / 2, 190, "骑砍语音指挥", font("msyhbd.ttc", 72), GOLD)
+    center(d, W / 2, 284, "用嘴指挥你的军队 · 本地离线识别",
+           font("msyh.ttc", 30), FG)
+
+    # 三张能力卡
+    cards = [("说出指令", "军队立刻执行", "0.1秒响应"),
+             ("点名进攻", "「骑兵打弓箭手」", "真·锁定编队"),
+             ("一分为二", "「骑兵分队」", "左右包抄")]
+    cw, gap = 300, 22
+    x = (W - (cw * 3 + gap * 2)) / 2
+    f_t = font("msyhbd.ttc", 30)
+    f_s = font("msyh.ttc", 23)
+    f_g = font("msyhbd.ttc", 22)
+    for title, sub, tag in cards:
+        d.rounded_rectangle([x, 360, x + cw, 560], radius=16, fill=CARD)
+        center(d, x + cw / 2, 392, title, f_t, FG)
+        center(d, x + cw / 2, 446, sub, f_s, DIM)
+        center(d, x + cw / 2, 500, tag, f_g, GREEN)
+        x += cw + gap
+
+    center(d, W / 2, 610, "订阅即用 · 语音面板随游戏自启",
+           font("msyh.ttc", 26), FG)
+    center(d, W / 2, 660, "支持中文口语 · 直播浮层 · 指令复盘学习",
+           font("msyh.ttc", 22), DIM)
+    center(d, W / 2, 706, "BETA — 欢迎反馈", font("msyhbd.ttc", 22), GOLD)
+    p = os.path.join(ART, "promo_4x3.png")
+    img.save(p)
+    print("4:3 宣传图:", p)
+
+
 def main():
     os.makedirs(ART, exist_ok=True)
     cover()
     shot_commands()
     shot_split()
+    promo_4x3()
 
 
 if __name__ == "__main__":
