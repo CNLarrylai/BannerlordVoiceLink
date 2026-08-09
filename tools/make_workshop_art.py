@@ -162,42 +162,75 @@ def shot_split():
 
 
 def promo_4x3():
-    """4:3 宣传图 1024x768 (Steam 工坊主视觉推荐比例)。"""
+    """4:3 主视觉 1024x768 —— 纯图形叙事, 文案只留六个大字。
+
+    构图: 上方暮色天光渐变, 中央声波自麦克风扩散, 下方军阵剪影(长矛列)
+    正随声波推进 —— "声音驱动军队"一眼可读, 不靠一句说明文字。
+    """
     W, H = 1024, 768
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, W, 12], fill=GOLD)
-    d.rectangle([0, H - 12, W, H], fill=GOLD)
 
-    mic_icon(d, W / 2, 118, 104, GOLD)
-    center(d, W / 2, 190, "骑砍语音指挥", font("msyhbd.ttc", 72), GOLD)
-    center(d, W / 2, 284, "用嘴指挥你的军队 · 本地离线识别",
-           font("msyh.ttc", 30), FG)
+    horizon = 452          # 地平线
+    title_y = 568          # 标题基线区(军阵不许越过)
 
-    # 三张能力卡
-    cards = [("说出指令", "军队立刻执行", "0.1秒响应"),
-             ("点名进攻", "「骑兵打弓箭手」", "真·锁定编队"),
-             ("一分为二", "「骑兵分队」", "左右包抄")]
-    cw, gap = 300, 22
-    x = (W - (cw * 3 + gap * 2)) / 2
-    f_t = font("msyhbd.ttc", 30)
-    f_s = font("msyh.ttc", 23)
-    f_g = font("msyhbd.ttc", 22)
-    for title, sub, tag in cards:
-        d.rounded_rectangle([x, 360, x + cw, 560], radius=16, fill=CARD)
-        center(d, x + cw / 2, 392, title, f_t, FG)
-        center(d, x + cw / 2, 446, sub, f_s, DIM)
-        center(d, x + cw / 2, 500, tag, f_g, GREEN)
-        x += cw + gap
+    # 天光: 顶部深蓝紫 -> 地平线暖金
+    top, warm = (17, 21, 33), (92, 66, 40)
+    for y in range(horizon):
+        t = (y / horizon) ** 2.4
+        d.line([0, y, W, y],
+               fill=tuple(int(top[i] + (warm[i] - top[i]) * t) for i in range(3)))
+    for y in range(horizon, H):     # 地面向下压暗, 给标题让出对比
+        t = (y - horizon) / (H - horizon)
+        v = int(24 - 16 * t)
+        d.line([0, y, W, y], fill=(v, v + 2, v + 5))
 
-    center(d, W / 2, 610, "订阅即用 · 语音面板随游戏自启",
-           font("msyh.ttc", 26), FG)
-    center(d, W / 2, 660, "支持中文口语 · 直播浮层 · 指令复盘学习",
-           font("msyh.ttc", 22), DIM)
-    center(d, W / 2, 706, "BETA — 欢迎反馈", font("msyhbd.ttc", 22), GOLD)
+    cx, cy = W / 2, 232
+
+    # 声波: 麦克风向下方军阵扩散的同心弧(越远越淡)
+    for i, r in enumerate(range(100, 372, 52)):
+        fade = 1 - i / 7.2
+        col = tuple(int(BG[j] + (GOLD[j] - BG[j]) * fade * 0.8) for j in range(3))
+        d.arc([cx - r, cy - r, cx + r, cy + r], start=212, end=328,
+              fill=col, width=max(2, int(6 * fade)))
+
+    mic_icon(d, cx, cy, 118, GOLD)
+
+    # 军阵剪影: 两排长矛兵贴着地平线, 近大远小
+    def rank(y, n, scale, col):
+        span = W * (0.60 + 0.36 * scale)
+        step = span / (n - 1)
+        for k in range(n):
+            x = cx - span / 2 + step * k
+            bw, bh = 11 * scale, 34 * scale
+            d.rectangle([x - bw / 2, y - bh, x + bw / 2, y], fill=col)
+            d.ellipse([x - bw * 0.6, y - bh - bw * 1.1,
+                       x + bw * 0.6, y - bh + bw * 0.1], fill=col)
+            sp = 64 * scale
+            d.line([x + bw * 0.5, y - bh * 0.6,
+                    x + bw * 0.5 + sp * 0.24, y - bh * 0.6 - sp],
+                   fill=col, width=max(1, int(2.4 * scale)))
+
+    rank(horizon + 16, 30, 0.58, (34, 38, 46))
+    rank(horizon + 66, 21, 0.82, (22, 26, 32))
+
+    # 六个大字(自适应字号, 保证两侧留白) + 上下细金线
+    target = int(W * 0.72)
+    size = 108
+    while size > 60:
+        f = font("msyhbd.ttc", size)
+        b = d.textbbox((0, 0), "骑砍语音指挥", font=f)
+        if b[2] - b[0] <= target:
+            break
+        size -= 4
+    tw, th = b[2] - b[0], b[3] - b[1]
+    d.text((cx - tw / 2, title_y), "骑砍语音指挥", font=f, fill=GOLD)
+    ly = title_y + th + 42
+    d.line([cx - tw / 2, ly, cx + tw / 2, ly], fill=GOLD, width=3)
+
     p = os.path.join(ART, "promo_4x3.png")
     img.save(p)
-    print("4:3 宣传图:", p)
+    print("4:3 主视觉:", p)
 
 
 def main():
