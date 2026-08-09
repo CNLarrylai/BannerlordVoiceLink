@@ -1,7 +1,7 @@
 <Tasks>
     <CreateItem/>
     <UpdateItem>
-        <ModuleFolder Value="C:\SteamLibraryforstream\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\BannerlordVoiceLink"/>
+        <ModuleFolder Value="C:\Program Files (x86)\Steam\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\BannerlordVoiceLink"/>
         <ItemDescription Value="[BETA] Command your army by voice (Chinese, partial English). Speak orders and the game obeys — 'cavalry charge', 'archers shield wall', 'cavalry attack their archers', 'split the cavalry / left group charge'. Offline speech recognition (no internet), battle-tuned fuzzy matching, a streaming overlay, plus true formation targeting AND splitting via the game API. Subscribe = everything included; the voice panel auto-starts with the game. Two prompts on launch are expected (unverified-code + UAC, needed to send keypresses). Feedback very welcome. 语音指挥你的军队(测试版): 说出指令就执行 —— 冲锋/盾墙/骑兵打他们弓箭手/骑兵分队左队进攻。本地离线识别、直播浮层、真·锁定敌方编队与一分为二左右包抄。订阅即用,语音面板随游戏自启(启动时两个弹窗是正常的:未验证代码 + UAC 提权,发按键需要)。欢迎反馈问题。"/>
         <Tags>
             <Tag Value="Utility"/>

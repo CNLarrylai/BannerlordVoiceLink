@@ -69,7 +69,18 @@ _EN = {
     "📖\n指令词典": "📖\nCommands",
     "看/加说法\n改键位": "View/add phrases,\nedit keybinds",
     "📋 查看日志": "📋 View Log",
-    "📁 打开日志文件夹": "📁 Open Log Folder",
+    "📦 打包日志 (报障用)": "📦 Pack Logs (for bug reports)",
+    "打包日志": "Pack logs",
+    "还没有日志 (先运行一次语音指挥)":
+        "No logs yet — run Voice Command once first",
+    ("日志已打包(不含任何录音):\n{p}\n\n"
+     "文件夹已打开并高亮它 —— 把这个文件发给作者即可。"):
+        ("Logs packed (no audio included):\n{p}\n\n"
+         "The folder is open with the file highlighted — just send it to the author."),
+    "✓ 日志已打包, 把高亮的文件发给作者":
+        "✓ Logs packed — send the highlighted file to the author",
+    "出问题？点「打包日志」，把生成的文件发给作者":
+        "Problems? Click Pack Logs and send the file to the author",
     "🛑 全部停止": "🛑 Stop All",
     "🛑 已停止 {n} 个语音进程": "🛑 Stopped {n} voice process(es)",
     "没有其它语音进程在跑 (已是干净状态)": "No other voice processes running (clean)",
@@ -86,8 +97,6 @@ _EN = {
         "✓ Log opened (send it to the author if something is wrong)",
     "日志还是空的 —— 先运行一次语音指挥再看":
         "Log is still empty — run Voice Command once first",
-    "✓ 已打开日志文件夹 (把 app.log 发给作者即可)":
-        "✓ Log folder opened (just send app.log to the author)",
     "切换失败: {e}": "Switch failed: {e}",
     "✓ 已切到 {name} · 重启语音指挥生效 (Restart to apply)":
         "✓ Switched to {name} · restart Voice Command to apply",

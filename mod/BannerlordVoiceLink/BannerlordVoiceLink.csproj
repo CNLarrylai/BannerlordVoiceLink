@@ -12,8 +12,12 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <DebugType>none</DebugType>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <!-- 可用 -p:BannerlordDir=... 覆盖 -->
-    <BannerlordDir Condition="'$(BannerlordDir)' == ''">C:\SteamLibraryforstream\steamapps\common\Mount &amp; Blade II Bannerlord</BannerlordDir>
+    <!-- 游戏路径按 Steam 库依次探测(用户移过库, 别写死); 也可用环境变量
+         BANNERLORD_DIR 或 -p:BannerlordDir=... 覆盖 -->
+    <BannerlordDir Condition="'$(BannerlordDir)' == '' AND '$(BANNERLORD_DIR)' != ''">$(BANNERLORD_DIR)</BannerlordDir>
+    <BannerlordDir Condition="'$(BannerlordDir)' == '' AND Exists('C:\Program Files (x86)\Steam\steamapps\common\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.dll')">C:\Program Files (x86)\Steam\steamapps\common\Mount &amp; Blade II Bannerlord</BannerlordDir>
+    <BannerlordDir Condition="'$(BannerlordDir)' == '' AND Exists('C:\SteamLibraryforstream\steamapps\common\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.dll')">C:\SteamLibraryforstream\steamapps\common\Mount &amp; Blade II Bannerlord</BannerlordDir>
+    <BannerlordDir Condition="'$(BannerlordDir)' == '' AND Exists('D:\Steam\steamapps\common\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client\TaleWorlds.MountAndBlade.dll')">D:\Steam\steamapps\common\Mount &amp; Blade II Bannerlord</BannerlordDir>
     <GameBin>$(BannerlordDir)\bin\Win64_Shipping_Client</GameBin>
   </PropertyGroup>
 

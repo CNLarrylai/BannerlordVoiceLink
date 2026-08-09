@@ -37,7 +37,7 @@ Modules/BannerlordVoiceLink/            (~397 MB, 工坊对大模组很宽容)
 3. 命令行进入游戏 bin 目录并执行:
 
 ```
-cd "C:\SteamLibraryforstream\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client"
+cd "C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client"
 TaleWorlds.MountAndBlade.SteamWorkshop.exe "C:\Users\Victoria\bannerlord-voice\mod\WorkshopCreate.xml"
 ```
 

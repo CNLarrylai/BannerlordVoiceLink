@@ -59,7 +59,7 @@
 
 - **Windows 台式机 = 游戏机**: 打包(PyInstaller app.spec)、部署
   (tools/build_workshop.py → 游戏 Modules, 预检要求游戏/语音程序全关)、
-  模组编译(dotnet build, 引用 C:\SteamLibraryforstream 下游戏DLL)只能在这做。
+  模组编译(dotnet build, 引用 C:\Program Files (x86)\Steam 下游戏DLL)只能在这做。
 - **Mac = 纯开发**: matcher/词典/测试(纯逻辑部分)/文档可改; keyboard/
   pydirectinput/模组编译不可用; 改完推回来在 Windows 机验证+部署。
 - 用户数据在 %LOCALAPPDATA%\BannerlordVoice\(个人词典/usage/共建录音/日志),

@@ -177,7 +177,7 @@ class Launcher:
                   font=("Microsoft YaHei", 10), bg="#2a323a", fg=FG,
                   activebackground="#3a444e", relief="flat", padx=12, pady=3).pack(
             side="left", padx=5)
-        tk.Button(foot, text=t("📁 打开日志文件夹"), command=self.open_log_folder,
+        tk.Button(foot, text=t("📦 打包日志 (报障用)"), command=self.pack_logs,
                   font=("Microsoft YaHei", 10), bg="#2a323a", fg=FG,
                   activebackground="#3a444e", relief="flat", padx=12, pady=3).pack(
             side="left", padx=5)
@@ -187,7 +187,7 @@ class Launcher:
             side="left", padx=5)
 
         self.status = tk.Label(self.root,
-                               text=t("出问题？点「查看日志」，或发日志给作者排查"),
+                               text=t("出问题？点「打包日志」，把生成的文件发给作者"),
                                fg=DIM, bg=BG, font=("Microsoft YaHei", 9))
         self.status.pack(pady=(6, 16))
         self._refresh_start_btn()
@@ -256,6 +256,46 @@ class Launcher:
     def open_review(self):
         _spawn("review", console=False, job=self.job)
         self._set(t("✓ 已打开指令复盘 (游戏里也可按 F11 呼出)"))
+
+    def pack_logs(self):
+        """一键把日志打包成 zip —— 报障时用户直接把这个文件发给作者。
+
+        小白找不到 %LOCALAPPDATA% 那串路径, 与其教路径不如给个按钮。
+        只收诊断必需的三件: app.log(语音程序全过程) / mod.log(模组心跳) /
+        usage.csv(每条指令一行, 最适合分析错配)。不含任何录音。
+        """
+        import zipfile
+        from datetime import datetime
+        from tkinter import messagebox
+        from paths import log_dir
+        from version import APP_VERSION
+
+        d = log_dir()
+        wanted = ["app.log", "mod.log", "usage.csv"]
+        found = [f for f in wanted if os.path.exists(os.path.join(d, f))]
+        if not found:
+            self._set(t("还没有日志 (先运行一次语音指挥)"), DIM)
+            return
+        out = os.path.join(os.path.dirname(d),
+                           f"日志-{APP_VERSION}-"
+                           f"{datetime.now():%Y%m%d-%H%M}.zip")
+        try:
+            with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+                for f in found:
+                    z.write(os.path.join(d, f), f)
+                z.writestr("_版本.txt", f"APP_VERSION={APP_VERSION}\n")
+        except Exception as e:
+            self._set(t("导出失败: {e}").format(e=e), RED)
+            return
+        try:
+            subprocess.Popen(["explorer", "/select,", out])
+        except Exception:
+            pass
+        messagebox.showinfo(
+            t("打包日志"),
+            t("日志已打包(不含任何录音):\n{p}\n\n"
+              "文件夹已打开并高亮它 —— 把这个文件发给作者即可。").format(p=out))
+        self._set(t("✓ 日志已打包, 把高亮的文件发给作者"))
 
     # ---------- 语音数据共建 ----------
 
@@ -349,11 +389,6 @@ class Launcher:
             self._set(t("✓ 已打开日志 (出问题可把它发给作者)"))
         else:
             self._set(t("日志还是空的 —— 先运行一次语音指挥再看"), GOLD)
-
-    def open_log_folder(self):
-        from paths import log_dir
-        os.startfile(log_dir())
-        self._set(t("✓ 已打开日志文件夹 (把 app.log 发给作者即可)"))
 
     def _refresh_start_btn(self):
         running = self.voice_proc and self.voice_proc.poll() is None

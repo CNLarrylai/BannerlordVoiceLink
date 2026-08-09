@@ -20,7 +20,33 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-GAME = r"C:\SteamLibraryforstream\steamapps\common\Mount & Blade II Bannerlord"
+
+
+def find_game():
+    """定位骑砍安装目录 —— 别写死路径(2026-08 用户移过一次库, 全链路崩)。
+
+    顺序: 环境变量 BANNERLORD_DIR > 各 Steam 库常见位置 > 报错提示。
+    判据是 bin 下的 TaleWorlds.MountAndBlade.dll 真实存在。
+    """
+    cands = []
+    env = os.environ.get("BANNERLORD_DIR")
+    if env:
+        cands.append(env)
+    for base in (r"C:\Program Files (x86)\Steam", r"C:\SteamLibraryforstream",
+                 r"D:\Steam", r"E:\SteamLibrary", r"F:\SteamLibrary",
+                 r"D:\SteamLibrary", r"C:\Steam"):
+        cands.append(os.path.join(base, "steamapps", "common",
+                                  "Mount & Blade II Bannerlord"))
+    for c in cands:
+        if os.path.exists(os.path.join(c, "bin", "Win64_Shipping_Client",
+                                       "TaleWorlds.MountAndBlade.dll")):
+            return c
+    print("!! 找不到骑砍安装目录。请设环境变量 BANNERLORD_DIR 指向游戏根目录,")
+    print("   例: setx BANNERLORD_DIR \"D:\\Steam\\steamapps\\common\\Mount & Blade II Bannerlord\"")
+    sys.exit(1)
+
+
+GAME = find_game()
 MOD_DST = os.path.join(GAME, "Modules", "BannerlordVoiceLink")
 SETTINGS = os.path.join(ROOT, "config", "settings.yaml")
 PY = sys.executable

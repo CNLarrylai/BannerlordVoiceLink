@@ -3,7 +3,7 @@
         <ItemId Value="3775571491"/>
     </GetItem>
     <UpdateItem>
-        <ModuleFolder Value="C:\SteamLibraryforstream\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\BannerlordVoiceLink"/>
+        <ModuleFolder Value="C:\Program Files (x86)\Steam\steamapps\common\Mount &amp; Blade II Bannerlord\Modules\BannerlordVoiceLink"/>
         <ChangeNotes Value="v0.8.7.73 first content upload."/>
         <Tags>
             <Tag Value="Utility"/>
