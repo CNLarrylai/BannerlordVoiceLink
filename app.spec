@@ -28,6 +28,7 @@ hiddenimports = [
     # 后加的模块(多为函数内 import, 静态分析易漏)
     "i18n", "models", "retry", "modlink", "dictionary", "usage",
     "procman", "order_tree", "calibrate", "cuda_libs", "stream_asr", "review",
+    "gpu_setup",
     "donation",
     "yaml", "rapidfuzz", "pydirectinput", "keyboard", "numpy",
 ]

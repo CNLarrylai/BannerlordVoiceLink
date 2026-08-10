@@ -2,7 +2,7 @@
 
 audio:
   # 麦克风设备 (null = 系统默认输入设备)。运行 `py -m sounddevice` 可列出所有设备和编号。
-  device: "麦克风 (NVIDIA Broadcast)"
+  device: null
   samplerate: 16000
   # 音量门控: 整段音频的 RMS 低于此值视为静音/没说话, 直接跳过识别。
   # 可防止 Whisper 对静音"脑补"出字幕话术。麦克风太灵敏可调低, 总误触可调高。
@@ -17,7 +17,7 @@ stt:
   # 否则→small。纯CPU实测(int8, 24条): base 0.56s/92% | small 1.70s/100% |
   # medium 5.0s | turbo 6.2s —— turbo 在 CPU 上会让人以为卡死, 故不当无卡默认。
   # 机器特别弱嫌慢: 手动写 base。想让 turbo 生效: 音频设置里下载 CUDA 运行库。
-  model: large-v3-turbo
+  model: auto
   # auto = 有 N 卡自动用 cuda, 没有自动用 cpu (方便分享给无显卡的粉丝)
   device: auto
   # auto = cuda 用 float16, cpu 用 int8 (实测 GPU 上 int8 反而更慢, 故不默认量化)

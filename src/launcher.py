@@ -104,6 +104,9 @@ class Launcher:
         self.root.resizable(False, False)
         self._build_ui()
         self.root.after(1000, self._poll_voice)
+        # 首次启动: 有 N 卡却没装 CUDA 库 -> 主动引导下载(只问一次)。
+        # 延后 600ms 让主窗口先画出来, 弹窗才有归属感。
+        self.root.after(600, self._offer_gpu)
 
     def _build_ui(self):
         """整体构建界面 (切语言时清空重建, 所有文案立即换语言)。"""
@@ -256,6 +259,15 @@ class Launcher:
     def open_review(self):
         _spawn("review", console=False, job=self.job)
         self._set(t("✓ 已打开指令复盘 (游戏里也可按 F11 呼出)"))
+
+    def _offer_gpu(self):
+        """首次启动的 GPU 加速引导 (条件不满足则静默跳过, 绝不挡启动)。"""
+        try:
+            import gpu_setup
+            if gpu_setup.offer_if_needed(self.root):
+                self._set(t("检测到可用显卡 —— 见弹窗"), GOLD)
+        except Exception:
+            pass
 
     def pack_logs(self):
         """一键把日志打包成 zip —— 报障时用户直接把这个文件发给作者。

@@ -68,6 +68,31 @@ _EN = {
     "选麦克风\n看音量条": "Pick your mic,\nsee levels",
     "📖\n指令词典": "📖\nCommands",
     "看/加说法\n改键位": "View/add phrases,\nedit keybinds",
+    # ---------- 首次 GPU 加速引导 gpu_setup ----------
+    "发现你的显卡可以加速": "Your GPU can speed this up",
+    "🚀 检测到 NVIDIA 显卡": "🚀 NVIDIA GPU detected",
+    ("你的显卡可以让语音识别又快又准, 但还缺一个 GPU 加速库\n"
+     "({size}, 一次性下载)。\n\n"
+     "下载后: 识别更准, 疑难指令的兜底速度从约 1.7 秒降到 0.2 秒。\n"
+     "不下载也完全能用 —— 现在走 CPU 档, 一样能指挥。"):
+        ("Your GPU can make recognition faster and more accurate, but the GPU\n"
+         "acceleration library is missing ({size}, one-time download).\n\n"
+         "After installing: better accuracy, and the fallback for tricky commands\n"
+         "drops from ~1.7s to ~0.2s. It works fine without it too (CPU mode)."),
+    "⬇ 下载并启用 GPU 加速": "⬇ Download & enable GPU acceleration",
+    "以后再说": "Maybe later",
+    "正在下载… 可以先去玩, 下完会提示":
+        "Downloading… feel free to play; you'll be notified when it's done",
+    "下载中 {pct}%  ({d} / {t} MB)": "Downloading {pct}%  ({d} / {t} MB)",
+    "✓ 已启用 GPU 加速, 识别模型已切到最强档":
+        "✓ GPU acceleration enabled — switched to the best model",
+    "✓ 下载完成 (模型档位请在音频设置里选)":
+        "✓ Download complete (pick the model in Audio Setup)",
+    "下载失败: {e} (可稍后在音频设置里重试)":
+        "Download failed: {e} (retry later in Audio Setup)",
+    "完成": "Done",
+    "检测到可用显卡 —— 见弹窗": "GPU detected — see the dialog",
+
     "📋 查看日志": "📋 View Log",
     "📦 打包日志 (报障用)": "📦 Pack Logs (for bug reports)",
     "打包日志": "Pack logs",

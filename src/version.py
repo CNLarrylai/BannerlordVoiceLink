@@ -2,7 +2,7 @@
 
 APP_NAME = "骑砍语音指挥"
 APP_EN = "Bannerlord Voice Commander"
-APP_VERSION = "0.9.0"   # 0.9: 默认模型按算力分档(有CUDA→turbo, 否则→small; 内置small+base)
+APP_VERSION = "0.9.1"   # 0.9.1: 首次启动GPU加速引导(有N卡缺CUDA库主动问, 下完自动切turbo)
 
 # dev / free / pro —— 打包分发时可改; 现在都当全功能
 BUILD_CHANNEL = "dev"
