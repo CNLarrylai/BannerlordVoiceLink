@@ -12,11 +12,11 @@ stt:
   # 识别引擎: hybrid = 流式ASR快路(~0.1s直出)+Whisper兜底(真人实测更快更准);
   #           whisper = 纯 Whisper。快路模型/库缺失时自动退回 whisper, 不会崩。
   engine: hybrid
-  # Whisper 模型: auto / tiny / base / small / medium / large-v3
-  # 实测(4090, 短指令, 命中率): base 183ms 7/8 | small 363ms 7/8 | tiny 153ms 4/8(太差)
-  # base 命中率≈small 但快一倍, CPU 上也才 0.5s -> 默认 base (甜蜜点)。
-  #   想更准: 换 small / medium ;  卡特别弱且嫌慢: 可试 tiny(会漏指令, 不推荐)。
-  # auto = 让程序按硬件自动选(有N卡→base, 无N卡→base+CPU)。
+  # Whisper 兜底模型(快路解不出时才跑): auto / tiny / base / small / medium /
+  # large-v3-turbo。auto = 按算力分档: 有CUDA运行库→large-v3-turbo(GPU~0.2s最准),
+  # 否则→small。纯CPU实测(int8, 24条): base 0.56s/92% | small 1.70s/100% |
+  # medium 5.0s | turbo 6.2s —— turbo 在 CPU 上会让人以为卡死, 故不当无卡默认。
+  # 机器特别弱嫌慢: 手动写 base。想让 turbo 生效: 音频设置里下载 CUDA 运行库。
   model: large-v3-turbo
   # auto = 有 N 卡自动用 cuda, 没有自动用 cpu (方便分享给无显卡的粉丝)
   device: auto

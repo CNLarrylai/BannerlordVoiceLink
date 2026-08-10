@@ -202,7 +202,10 @@ def main():
                               "streaming-zipformer-zh-en",
                               "encoder-epoch-99-avg-1.int8.onnx"),
                  os.path.join("VoiceApp", "_internal", "models",
-                              "streaming-zipformer-zh-en", "tokens.txt")):
+                              "streaming-zipformer-zh-en", "tokens.txt"),
+                 # 无显卡玩家的 Whisper 兜底默认(缺了会静默退回 base=92%)
+                 os.path.join("VoiceApp", "_internal", "models",
+                              "faster-whisper-small", "model.bin")):
         ok = os.path.exists(os.path.join(MOD_DST, must))
         print(f"  {'✓' if ok else '✗✗✗ 缺'} {must}")
         if not ok:

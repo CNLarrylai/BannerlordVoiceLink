@@ -88,7 +88,12 @@ def resolve_stt_config(s: dict):
         compute = "float16" if device == "cuda" else "int8"
     model = s.get("model") or "auto"
     if model == "auto":
-        model = "base"
+        # 按实际算力分档(2026-08 实测, 纯CPU/int8, TTS语料24条):
+        #   base 0.56s 92% | small 1.70s 100% | medium 5.0s | turbo 6.2s
+        # 有 CUDA(且运行库齐) -> turbo: GPU上~0.2s, 最准的兜底。
+        # 无 CUDA -> small: 命中拉满且 1.7s 可接受(兜底才走, 日常是快路0.1s);
+        #   turbo 在 CPU 上 6 秒, 粉丝会以为卡死 —— 绝不能当默认。
+        model = "large-v3-turbo" if device == "cuda" else "small"
     return model, device, compute, hw
 
 
@@ -96,8 +101,8 @@ def bundled_model_path(model: str) -> str:
     """解析模型引用。
 
     源码: 直接返回模型名, faster-whisper 自己找缓存/联网下载。
-    打包: 优先内置目录; 其次本机已下载的缓存; 都没有则退回内置 base ——
-          这样粉丝(CPU包)误选了 large-v3 又下不动时不会崩, 自动用 base。
+    打包: 优先内置目录; 其次本机已下载的缓存; 都没有则退回内置的
+          small -> base —— 粉丝选了 large-v3 又下不动时不会崩。
     """
     base = getattr(sys, "_MEIPASS", None)
     if not base:
@@ -109,10 +114,11 @@ def bundled_model_path(model: str) -> str:
         f"~/.cache/huggingface/hub/models--Systran--faster-whisper-{model}")
     if os.path.isdir(cache):
         return model  # 用户下过, faster-whisper 会用缓存
-    fb = os.path.join(base, "models", "faster-whisper-base")
-    if os.path.isdir(fb):
-        print(f"[STT] 模型 {model} 未内置且未下载, 退回内置 base。")
-        return fb
+    for fb_name in ("small", "base"):   # 兜底顺序: 好的优先
+        fb = os.path.join(base, "models", f"faster-whisper-{fb_name}")
+        if os.path.isdir(fb):
+            print(f"[STT] 模型 {model} 未内置且未下载, 退回内置 {fb_name}。")
+            return fb
     return model
 
 

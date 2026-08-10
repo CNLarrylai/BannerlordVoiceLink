@@ -2,7 +2,7 @@
 
 APP_NAME = "骑砍语音指挥"
 APP_EN = "Bannerlord Voice Commander"
-APP_VERSION = "0.8.9"   # 0.8.9: 一键打包日志(报障用, 三件套zip不含录音)
+APP_VERSION = "0.9.0"   # 0.9: 默认模型按算力分档(有CUDA→turbo, 否则→small; 内置small+base)
 
 # dev / free / pro —— 打包分发时可改; 现在都当全功能
 BUILD_CHANNEL = "dev"

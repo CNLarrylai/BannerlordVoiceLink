@@ -44,14 +44,20 @@ for f in ("encoder-epoch-99-avg-1.int8.onnx", "decoder-epoch-99-avg-1.onnx",
     else:
         print(f"[spec] ⚠ 流式模型缺 {f}, 打出的包只有纯 Whisper")
 
-# 内置 base 模型 (免联网; 国内 HuggingFace 首次下载常失败)
-_snaps = glob.glob(os.path.expanduser(
-    "~/.cache/huggingface/hub/models--Systran--faster-whisper-base/snapshots/*"))
-if _snaps:
+# 内置 Whisper 兜底模型 (免联网; 国内 HuggingFace 首次下载常失败)。
+#   small = 无显卡时的默认(CPU 1.7s/命中100%, base 只有92%);
+#   base  = 保底(极弱机器手动选, 0.56s)。turbo 不内置: CPU上要6秒不能当默认,
+#   有卡玩家下载 CUDA 库后由 faster-whisper 自行拉取(或手动选)。
+for _m in ("small", "base"):
+    _snaps = glob.glob(os.path.expanduser(
+        f"~/.cache/huggingface/hub/models--Systran--faster-whisper-{_m}/snapshots/*"))
+    if not _snaps:
+        print(f"[spec] ⚠ 本机缺 faster-whisper-{_m} 缓存, 包内不含它")
+        continue
     for f in os.listdir(_snaps[0]):
         fp = os.path.join(_snaps[0], f)
         if os.path.isfile(fp):
-            datas.append((fp, "models/faster-whisper-base"))
+            datas.append((fp, f"models/faster-whisper-{_m}"))
 
 # 这些包 PyInstaller 静态分析抓不全, 用 collect_all 兜底
 for pkg in ("faster_whisper", "ctranslate2", "av", "sherpa_onnx",
