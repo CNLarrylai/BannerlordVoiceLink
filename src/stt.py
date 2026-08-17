@@ -104,6 +104,17 @@ def bundled_model_path(model: str) -> str:
     打包: 优先内置目录; 其次本机已下载的缓存; 都没有则退回内置的
           small -> base —— 粉丝选了 large-v3 又下不动时不会崩。
     """
+    # 手动放模型的简易目录(所有形态都先看这里): 教粉丝建
+    # %LOCALAPPDATA%\BannerlordVoice\models\<模型名>\ 比让他们手搓
+    # ~/.cache/huggingface/hub/models--Systran--faster-whisper-x/snapshots/y
+    # 那串路径靠谱得多 —— 目录名错一个字就前功尽弃(实测常见求助点)。
+    try:
+        from paths import user_data_dir
+        manual = os.path.join(user_data_dir(), "models", model)
+        if os.path.isfile(os.path.join(manual, "model.bin")):
+            return manual
+    except Exception:
+        pass
     base = getattr(sys, "_MEIPASS", None)
     if not base:
         return model

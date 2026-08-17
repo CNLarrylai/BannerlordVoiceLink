@@ -4,5 +4,5 @@
 	"publishedfileid"	"3775571491"
 	"contentfolder"		"C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord\Modules\BannerlordVoiceLink"
 	"previewfile"		"C:\Users\Victoria\bannerlord-voice\assets\workshop_preview.png"
-	"changenote"		"v0.8.7.73 + cover image"
+	"changenote"		"v0.9.3 国内下载修复 + 识别默认升级 + 分队/绕后战术 —— [识别] 默认模型按算力自动分档: 无显卡也有满命中(small内置, 免下载), 有N卡自动用最强档; 老用户的默认档位也会自动升级 [国内] 模型与GPU加速库改走国内镜像并支持断流自动换源, 不再需要梯子 [新功能] 分队(骑兵分队->骑兵左队进攻/第五队跟我)、绕后战术(骑兵绕后, 指挥到键盘摸不到的AI层)、定向进攻状态播报 [体验] N卡玩家首次启动会引导一键启用GPU加速; 新增一键打包日志(报障时直接发文件); 修复'全军出击'等口语误触发"
 }
