@@ -114,8 +114,18 @@ def refresh_config(d, src):
         f.write(APP_VERSION)
 
 
+# 历史默认值: 这些不是"用户的选择", 而是老版本播下来的默认。迁移时若发现
+# 用户的值正好等于某个历史默认, 说明他从没主动改过 -> 交还给新版默认(auto),
+# 否则老用户永远被钉在旧模型上, 后续的默认升级对他们完全无效(2026-08 实测:
+# 老配置 model: base 让 0.9.0 的分档逻辑形同虚设)。
+_STALE_DEFAULTS = {("stt", "model"): {"base", "auto"}}
+
+
 def _reapply_prefs(new_settings_path, old_text):
-    """把旧 settings.yaml 里的用户选择(白名单)写回新模板。"""
+    """把旧 settings.yaml 里的用户选择(白名单)写回新模板。
+
+    例外见 _STALE_DEFAULTS: 等于历史默认的值不算"用户选择", 不写回。
+    """
     import re
     prefs = {}
     section = None
@@ -124,7 +134,10 @@ def _reapply_prefs(new_settings_path, old_text):
             section = line.split(":")[0]
         m = re.match(r"^\s+(\w+)\s*:\s*(.+?)\s*$", line)
         if m and (section, m.group(1)) in _KEEP_PREFS:
-            prefs[(section, m.group(1))] = m.group(2)
+            key, val = (section, m.group(1)), m.group(2).strip()
+            if val.strip('"\'') in _STALE_DEFAULTS.get(key, ()):
+                continue      # 陈年默认值 -> 让新版默认接管
+            prefs[key] = m.group(2)
     if not prefs:
         return
     with open(new_settings_path, encoding="utf-8") as f:

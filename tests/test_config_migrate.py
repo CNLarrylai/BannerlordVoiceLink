@@ -58,11 +58,30 @@ def test_stale_config_refreshed_prefs_kept():
         st = open(os.path.join(d, "settings.yaml"), encoding="utf-8").read()
         assert 'device: "麦克风 (NVIDIA Broadcast)"' in st, "用户麦克风选择丢了"
         assert "language: en" in st, "用户语言选择丢了"
-        assert "model: base" in st, "用户模型选择丢了"
         assert "retry_boost" in st, "新配置项没进来"
+        # model: base 是老版本播下来的历史默认, 不是用户主动选的 -> 不写回,
+        # 让新模板的默认接管(打包版模板是 auto; 本机模板是开发者自己的值)。
+        # 否则老用户永远被钉在旧模型上, 后续默认升级形同虚设。
+        assert "model: base" not in st, "陈年默认 base 又被写回来了"
         # 旧文件有备份
         bdir = os.path.join(d, "backup", "old")
         assert os.path.exists(os.path.join(bdir, "commands.yaml"))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+def test_real_model_choice_is_kept():
+    """对照组: 用户主动选的非默认模型(medium)必须原样保留 —— 不能一刀切。"""
+    d = _fresh_dir(with_old=True)
+    try:
+        p = os.path.join(d, "settings.yaml")
+        txt = open(p, encoding="utf-8").read().replace("model: base",
+                                                       "model: medium")
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(txt)
+        refresh_config(d, SRC)
+        st = open(p, encoding="utf-8").read()
+        assert "model: medium" in st, "用户主动选的模型被覆盖了!"
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
