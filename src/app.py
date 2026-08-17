@@ -18,6 +18,11 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
+# HuggingFace 镜像: 必须在任何 HF/faster-whisper 导入之前设好, 否则不生效。
+# 粉丝主力在国内, hf.co 被墙 -> 不设的话手动切 medium/large 会直接下载失败。
+# setdefault: 用户自己设了(挂梯子想走官方)就尊重。
+os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+
 
 class _Tee:
     """同时写多个流 (控制台 + 日志文件)。源码版黑窗实时看, 文件留存供排错。"""

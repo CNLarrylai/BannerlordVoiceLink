@@ -152,16 +152,51 @@ def size_hint():
     return "≈ 1.2 GB"    # 语言中立, 中英 UI 直接嵌用
 
 
+# PyPI JSON 索引源: 国内镜像优先(pypi.org 在国内慢到下不完 1.2GB)。
+# 实测(2026-08): 清华镜像不提供 /pypi/<pkg>/<ver>/json 接口(404), 已剔除;
+# 阿里云可用。海外用户访问阿里云也通, 失败自动退到官方, 两边都不吃亏。
+_INDEXES = [
+    "https://mirrors.aliyun.com/pypi",          # 阿里云(国内快)
+    "https://pypi.org/pypi",                    # 官方(兜底)
+]
+
+# wheel 直链的镜像替换: 官方文件站 -> 国内文件镜像(路径结构一致)
+_FILE_MIRRORS = [
+    "https://mirrors.aliyun.com/pypi/web",
+    "https://pypi.tuna.tsinghua.edu.cn",
+]
+
+
+def _mirror_of(url, host):
+    """把 files.pythonhosted.org 直链换成某个国内文件镜像。"""
+    pref = "https://files.pythonhosted.org"
+    return host + url[len(pref):] if url.startswith(pref) else None
+
+
 def _wheel_url(pkg, ver):
+    """返回 [(候选下载URL, 大小)] —— 第一个是最快的源, 失败可依次退。"""
     import json
     import urllib.request
-    # 版本化接口返回 "urls"(该版本的文件列表), 不是 "releases"
-    d = json.load(urllib.request.urlopen(
-        f"https://pypi.org/pypi/{pkg}/{ver}/json", timeout=30))
-    for u in d.get("urls", []):
-        if "win_amd64" in u["filename"] and u["filename"].endswith(".whl"):
-            return u["url"], u["size"]
-    raise RuntimeError(f"{pkg} {ver} 没有 win_amd64 wheel")
+    last_err = None
+    for index in _INDEXES:
+        try:
+            # 版本化接口返回 "urls"(该版本的文件列表), 不是 "releases"
+            api = f"{index}/{pkg}/{ver}/json"
+            d = json.load(urllib.request.urlopen(api, timeout=15))
+            for u in d.get("urls", []):
+                if "win_amd64" in u["filename"] and u["filename"].endswith(".whl"):
+                    # 国内文件镜像优先, 官方直链兜底(某源断流就换下一个)
+                    cands = []
+                    for host in _FILE_MIRRORS:
+                        m = _mirror_of(u["url"], host)
+                        if m and m not in cands:
+                            cands.append(m)
+                    cands.append(u["url"])
+                    return cands, u["size"]
+        except Exception as e:
+            last_err = e
+            continue
+    raise RuntimeError(f"{pkg} {ver} 找不到 win_amd64 wheel: {last_err}")
 
 
 def download(progress_cb=None):
@@ -174,22 +209,35 @@ def download(progress_cb=None):
     plans = []
     total = 0
     for pkg, ver in _PKGS:
-        url, size = _wheel_url(pkg, ver)
-        plans.append((url, size))
+        cands, size = _wheel_url(pkg, ver)
+        plans.append((cands, size))
         total += size
 
     done = 0
-    for url, size in plans:
-        buf = io.BytesIO()
-        with urllib.request.urlopen(url, timeout=60) as r:
-            while True:
-                chunk = r.read(1 << 20)     # 1MB
-                if not chunk:
-                    break
-                buf.write(chunk)
-                done += len(chunk)
-                if progress_cb:
-                    progress_cb(done, total)
+    for cands, size in plans:
+        base_done = done
+        buf = None
+        last_err = None
+        for url in cands:          # 逐源尝试: 某个镜像断流就换下一个重下这一包
+            try:
+                done = base_done
+                buf = io.BytesIO()
+                with urllib.request.urlopen(url, timeout=60) as r:
+                    while True:
+                        chunk = r.read(1 << 20)     # 1MB
+                        if not chunk:
+                            break
+                        buf.write(chunk)
+                        done += len(chunk)
+                        if progress_cb:
+                            progress_cb(done, total)
+                break
+            except Exception as e:
+                last_err = e
+                buf = None
+                continue
+        if buf is None:
+            raise RuntimeError(f"所有下载源都失败了: {last_err}")
         # wheel 是 zip: 把里面所有 .dll 平铺解出到 cuda_dir
         buf.seek(0)
         with zipfile.ZipFile(buf) as z:

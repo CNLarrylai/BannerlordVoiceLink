@@ -10,6 +10,10 @@ import time
 
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+# HuggingFace 在中国大陆被墙 —— 国内玩家(粉丝主力)不挂梯子根本下不动模型。
+# hf-mirror.com 是公益全量镜像, HF 工具链认 HF_ENDPOINT 这个环境变量。
+# setdefault: 用户自己设了(比如挂了梯子想走官方)就尊重他的选择。
+os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 
 # 语言中立写法 (≈), 中英 UI 都能直接嵌用
 _SIZE = {

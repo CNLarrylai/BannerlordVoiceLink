@@ -2,7 +2,7 @@
 
 APP_NAME = "骑砍语音指挥"
 APP_EN = "Bannerlord Voice Commander"
-APP_VERSION = "0.9.1"   # 0.9.1: 首次启动GPU加速引导(有N卡缺CUDA库主动问, 下完自动切turbo)
+APP_VERSION = "0.9.2"   # 0.9.2: 国内下载修复(HF镜像+PyPI国内镜像+断流自动换源)
 
 # dev / free / pro —— 打包分发时可改; 现在都当全功能
 BUILD_CHANNEL = "dev"
