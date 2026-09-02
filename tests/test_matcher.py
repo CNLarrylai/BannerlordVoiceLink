@@ -251,9 +251,15 @@ SPLIT_CASES = [
     ("步兵稳步推进", "infantry", "cautious_advance"),    # 含"推进"但不被 advance 抢
     ("全军步步为营", "all", "cautious_advance"),
     ("骑兵保护弓箭手", "cavalry", "protect"),
+    ("骑兵保护左翼", "cavalry", "guard_left"),
+    ("骑兵守住右翼", "cavalry", "guard_right"),
+    ("骑射掩护右翼", "horse_archers", "guard_right"),   # "右翼"不能被"游击"抢
+    ("骑射游击", "horse_archers", "skirmish"),           # 反向也不能被"右翼"抢
     ("步兵掩护弓箭手", "infantry", "protect"),
     # 不能被新指令抢走的老指令
     ("弓箭手去那", "archers", "to_position"),           # 曾被"护住弓箭手"劫走
+    ("友谊", None, None),                               # youyi 曾满分蹭到"护右翼"
+    ("有时候有一些换听", None, None),
     ("步兵慢慢推进", "infantry", "advance"),
     ("骑兵攻击对方弓箭手", "cavalry", "charge"),          # 补"攻击"前解析成骑射手左队
 ]
@@ -293,6 +299,8 @@ EN_CASES = [
     ("Infantry, advance cautiously!", "infantry", "cautious_advance"),  # 实测漏收
     ("Archer, skimish!", "archers", "skirmish"),                        # 实测错听
     ("Cavalry, protect the archers", "cavalry", "protect"),
+    ("Cavalry, protect the left flank", "cavalry", "guard_left"),
+    ("Cavalry, guard the right flank", "cavalry", "guard_right"),
     ("Infantry, advance", "infantry", "advance"),
     ("Archers, spread out.", "archers", "loose"),
     # 一个没解释的词放行(≈中文 2 字余量)

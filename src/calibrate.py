@@ -60,6 +60,7 @@ CONTEXT_GROUP = {
     "split": "cavalry", "flank": "cavalry", "reclaim": "all",
     "hold_high_ground": "archers", "skirmish": "horse_archers",
     "cautious_advance": "infantry", "protect": "cavalry",
+    "guard_left": "cavalry", "guard_right": "cavalry",
     "focus_target": "cavalry",
 }
 TARGET_OF = {"protect": "archers"}          # 动词+目标 型指令的目标

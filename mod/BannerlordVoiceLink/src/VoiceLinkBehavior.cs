@@ -147,20 +147,26 @@ namespace BannerlordVoiceLink
             Beacon("drive " + verb + " " + f.FormationIndex + " units=" + f.CountOfUnits);
         }
 
-        /// <summary>护卫: 站在被护编队朝敌一侧 20m 处; 有敌军逼近被护编队(骑兵 70m /
-        /// 步兵 45m 内)就冲上去打, 敌人退开就回岗位。游戏没有"守住某编队"的现成
-        /// 行为(DefensiveRing 是步兵围圈, 骑兵不合理), 自己写一个, 走影子驱动。</summary>
+        /// <summary>护卫(用户设计): 站在被护编队的侧翼 —— 朝敌方向的左/右手边 25m,
+        /// 不挡射线; 有敌军逼近被护编队(骑兵 70m / 步兵 45m 内)就冲上去打, 退开就
+        /// 回岗位。side: -1 左翼 / +1 右翼 / 0 自动(激活时选离最近敌军近的那侧,
+        /// 之后不再换, 免得来回跑)。游戏没有"守住某编队"的现成行为, 自己写, 走影子驱动。</summary>
         private sealed class BehaviorGuard : BehaviorComponent
         {
             private readonly Formation _ward;
             private readonly Func<IEnumerable<Formation>> _enemies;
+            private int _side;
 
-            public BehaviorGuard(Formation f, Formation ward, Func<IEnumerable<Formation>> enemies)
+            public BehaviorGuard(Formation f, Formation ward, Func<IEnumerable<Formation>> enemies,
+                                 int side)
                 : base(f)
             {
                 _ward = ward;
                 _enemies = enemies;
+                _side = side;
             }
+
+            public int Side { get { return _side; } }
 
             protected override float GetAiWeight() { return 1f; }
 
@@ -196,8 +202,20 @@ namespace BannerlordVoiceLink
                 }
                 Vec2 dir = threat != null ? (threat.CachedMedianPosition.AsVec2 - w).Normalized()
                                           : _ward.Direction;
+                if (_side == 0)
+                {
+                    // 自动选侧: 哪边离最近的敌军更近就守哪边; 没敌军先守右翼
+                    if (threat == null) _side = 1;
+                    else
+                    {
+                        Vec2 t = threat.CachedMedianPosition.AsVec2;
+                        _side = (w + dir.LeftVec() * 25f).DistanceSquared(t)
+                                < (w + dir.RightVec() * 25f).DistanceSquared(t) ? -1 : 1;
+                    }
+                }
+                Vec2 lateral = _side < 0 ? dir.LeftVec() : dir.RightVec();
                 TaleWorlds.Engine.WorldPosition wp = _ward.CachedMedianPosition;   // 全名: Engine.Path 与 IO.Path 撞名, 不 using
-                wp.SetVec2(w + dir * 20f);
+                wp.SetVec2(w + lateral * 25f + dir * 5f);
                 CurrentOrder = MovementOrder.MovementOrderMove(wp);
                 CurrentFacingOrder = FacingOrder.FacingOrderLookAtDirection(dir);
             }
@@ -947,6 +965,8 @@ namespace BannerlordVoiceLink
                                      " → advancing carefully (auto; any direct order stops it)"));
                     return "ok tactic=cautious n=" + targets.Count;
                 case "protect":
+                case "guardleft":
+                case "guardright":
                     {
                         // 被护的是己方最大的弓箭手编队(主程序已限定目标=弓箭手)
                         var ward = OwnNonEmpty()
@@ -954,13 +974,22 @@ namespace BannerlordVoiceLink
                             .OrderByDescending(x => x.CountOfUnits).FirstOrDefault();
                         if (ward == null)
                             return "err no_archers";
+                        int side = verb == "guardleft" ? -1 : verb == "guardright" ? 1 : 0;
+                        int n = 0;
                         foreach (var f in targets)
-                            if (f != ward)
-                                Drive(f, new BehaviorGuard(f, ward, EnemyFormations), verb);
+                        {
+                            if (f == ward) continue;
+                            var g = new BehaviorGuard(f, ward, EnemyFormations, side);
+                            Drive(f, g, verb);
+                            side = g.Side;      // 自动选侧的结果拿来播报
+                            n++;
+                        }
+                        string sideCn = side < 0 ? "左翼" : "右翼";
+                        string sideEn = side < 0 ? "left" : "right";
+                        Notify(label + T(" → 守弓箭手" + sideCn + "(敌军逼近就打; 下任何指令即停)",
+                                         " → guarding the archers' " + sideEn + " flank (engages anything closing in; any direct order stops it)"));
+                        return "ok tactic=" + verb + " side=" + sideEn + " n=" + n;
                     }
-                    Notify(label + T(" → 护住弓箭手(挡在前面, 敌军靠近就打; 下任何指令即停)",
-                                     " → guarding the archers (screens them, engages anything closing in; any direct order stops it)"));
-                    return "ok tactic=protect n=" + targets.Count;
                 default:
                     return "err bad_tactic";
             }

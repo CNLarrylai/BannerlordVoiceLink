@@ -194,6 +194,19 @@ orders:
     takes_target: true
     aliases: [保护, 护住, 掩护, 护着, 守护, 护卫]
     en: [protect the, guard the, cover the, defend the, protect, guard]
+  guard_left:
+    # 护弓指定侧翼(用户设计): 骑兵不能挡在弓箭手和敌人之间碍射线, 该站侧翼。
+    # 左/右翼 = 弓箭手朝敌方向的左/右手边 25m; 敌军逼近弓箭手就冲, 退开归位。
+    keys: []
+    # 只收 4 字以上: 3 字的"护右翼"会被拼音对齐成裸"右翼"(youyi), "友谊/有一些"直接满分误触
+    aliases: [保护左翼, 掩护左翼, 保护左侧, 守住左翼, 左翼掩护]
+    en: [protect the left flank, guard the left flank, cover the left flank,
+         left flank guard, hold the left flank]
+  guard_right:
+    keys: []
+    aliases: [保护右翼, 掩护右翼, 保护右侧, 守住右翼, 右翼掩护]
+    en: [protect the right flank, guard the right flank, cover the right flank,
+         right flank guard, hold the right flank]
   reclaim:
     # 战术托管的收回: "骑兵听令"=骑兵收回指挥权回到手动。全军听令=全收。
     keys: []

@@ -295,7 +295,8 @@ class App:
     # 战术层(FormationAI, 需模组): 命令key -> 模组 tactic 动词
     _TACTICS = {"flank": "flank", "reclaim": "manual",
                 "hold_high_ground": "highground", "skirmish": "skirmish",
-                "cautious_advance": "cautious", "protect": "protect"}
+                "cautious_advance": "cautious", "protect": "protect",
+                "guard_left": "guardleft", "guard_right": "guardright"}
 
     def _do_formation_cmd(self, g_key, o_key, desc, text, t_stt, engine,
                           t_key=""):
