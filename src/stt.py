@@ -121,10 +121,16 @@ def bundled_model_path(model: str) -> str:
     p = os.path.join(base, "models", f"faster-whisper-{model}")
     if os.path.isdir(p):
         return p
-    cache = os.path.expanduser(
-        f"~/.cache/huggingface/hub/models--Systran--faster-whisper-{model}")
-    if os.path.isdir(cache):
-        return model  # 用户下过, faster-whisper 会用缓存
+    # 已下载到 HF 缓存的 => 交给 faster-whisper 按名字解析。仓库名必须走
+    # models.model_repo 的映射, 不能写死 Systran: large-v3-turbo 在
+    # mobiuslabsgmbh 下, 曾因此"永远找不到"而静默回退 small —— 打包版里
+    # 用户选 turbo / GPU 引导装完 turbo 都白选(2026-09-02 用户实测发现)。
+    try:
+        import models
+        if models.is_ready(model):
+            return model
+    except Exception:
+        pass
     for fb_name in ("small", "base"):   # 兜底顺序: 好的优先
         fb = os.path.join(base, "models", f"faster-whisper-{fb_name}")
         if os.path.isdir(fb):

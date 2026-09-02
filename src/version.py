@@ -2,7 +2,8 @@
 
 APP_NAME = "骑砍语音指挥"
 APP_EN = "Bannerlord Voice Commander"
-APP_VERSION = "0.9.5"   # 0.9.5: 英文识别加固(All->Or 口音容错/按词算占比/短噪音不误触)
+APP_VERSION = "0.9.6"   # 0.9.6: 修打包版选 turbo 静默回退 small(缓存仓库名写死 Systran)
+                        # 0.9.5: 英文识别加固(All->Or 口音容错/按词算占比/短噪音不误触)
                         # 0.9.4: 手动放模型支持简易目录 %LOCALAPPDATA%\BannerlordVoice\models\<名>
 
 # dev / free / pro —— 打包分发时可改; 现在都当全功能
