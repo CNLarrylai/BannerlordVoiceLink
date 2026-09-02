@@ -36,6 +36,32 @@ def test_merge_user_aliases(tmp_marker=None):
     assert "测试专用冲一个" not in base["orders"]["charge"]["aliases"]
 
 
+def test_full_drill_covers_every_order():
+    """完整题库: 词典里每条指令都出现且中英都能出题; 护弓带目标, 判定要看目标。"""
+    from calibrate import build_full_drill, load_drill
+    cmds = dictionary.load_commands()
+    drill = build_full_drill(cmds)
+    orders_in = {e[1] for e in drill if e[1]}
+    missing = set(cmds["orders"]) - orders_in
+    assert not missing, f"完整题库漏了指令: {missing}"
+    for lang in ("zh", "en"):
+        items = build_items(cmds, lang, drill)
+        assert len(items) >= len(cmds["orders"]) + 5, lang
+        assert all("?" not in i["say"] for i in items), lang
+    d2, src = load_drill(cmds, "zh", "full")
+    assert src == "full" and d2 == drill
+    # 护弓: 出题句自带目标, 念对目标才算过
+    zh = {(i["group"], i["order"]): i for i in build_items(cmds, "zh", drill)}
+    prot = zh[("cavalry", "protect")]
+    assert prot["target"] == "archers" and prot["say"] == "骑兵保护弓箭手", prot
+    with open(config_path("settings.yaml"), encoding="utf-8") as f:
+        m = Matcher.from_config(cmds, yaml.safe_load(f)["control"])
+    assert judge(m, prot, "骑兵保护弓箭手")
+    assert not judge(m, prot, "骑兵保护")
+    assert judge(m, zh[("horse_archers", "skirmish")], "骑射游击")
+    assert judge(m, zh[("cavalry_left", "charge")], "骑兵左队冲锋")
+
+
 def test_build_items_bilingual():
     _, cmds = _matcher()
     zh = build_items(cmds, "zh")
@@ -116,6 +142,7 @@ def test_usage_top_commands():
 
 
 def test_load_drill_sources():
+    """快速模式的三级题源(完整模式不读这些, 见 test_full_drill_covers_every_order)。"""
     import usage
     from calibrate import load_drill
     _, cmds = _matcher()
@@ -123,14 +150,14 @@ def test_load_drill_sources():
     # 无使用数据 -> 默认题库(calibration.yaml)
     usage.top_commands = lambda lang, n=20, min_rows=40: None
     try:
-        drill, src = load_drill(cmds, "zh")
+        drill, src = load_drill(cmds, "zh", "quick")
         assert src == "default" and len(drill) > 15
         assert ("all", "charge") in drill
         # 有使用数据 -> 你的 top 清单(过滤掉词典里不存在的键)
         usage.top_commands = lambda lang, n=20, min_rows=40: [
             (("cavalry", "advance"), 35), ((None, "halt"), 9),
             (("ghost_group", "charge"), 5)]
-        drill, src = load_drill(cmds, "zh")
+        drill, src = load_drill(cmds, "zh", "quick")
         assert src == "usage"
         assert drill == [("cavalry", "advance"), (None, "halt")]
     finally:

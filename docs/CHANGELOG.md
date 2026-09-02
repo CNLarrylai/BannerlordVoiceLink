@@ -8,11 +8,13 @@
 
 ### 中文
 - **战术层第二批**(需伴侣模组):占高地(弓箭手占高地)、游击(骑射游击/放风筝)、稳步推进(步兵稳步推进,盾墙贴着弓箭手射程走)、护弓(骑兵保护弓箭手,结圆阵护弓)。都是键盘摸不到的 AI 层,喊"听令"收回。
+- **上手校准升级**:默认「完整校准」按当前词典生成题库,把支持的全部指令(含分队、左右队、第N队、战术层)各念一遍,约 6 分钟;原来的常用指令模式保留为「快速校准」。每条录音附带标注(labels.csv),勾选"语音数据共建"后导出会一起带上。
 - **游戏内横幅跟随语言**:英文模式下定向进攻、分队、战术播报全部英文。
 - **英文就近集火**:"attack them / get them / kill them / attack the nearest enemy" 现在和中文"打他们"一样,让编队集火离你最近的那支敌军(需伴侣模组);"charge / attack / charge them" 仍是普通冲锋。
 
 ### English
 - **Tactics, batch two** (companion mod): hold the high ground, skirmish (horse archers kite them), advance carefully (shield wall, stays under archer cover), protect the archers (defensive ring). All reach the AI layer the keyboard cannot; say "manual control" to take back.
+- **Calibration upgraded**: the default "Full run" builds its drill from the current dictionary, so you read every supported command once (splits, halves, numbered groups and tactics included, ~6 min); the old common-commands mode stays as "Quick". Each recording is labelled (labels.csv) and travels with a voice-data donation export.
 - **In-game banners follow your language**: targeted attacks, splits and tactics are announced in English in English mode.
 - **Focus fire in English**: "attack them / get them / kill them / attack the nearest enemy" now behaves like the Chinese "打他们": the formation focuses the enemy formation nearest to you (companion mod required). "charge / attack / charge them" remain a plain charge.
 

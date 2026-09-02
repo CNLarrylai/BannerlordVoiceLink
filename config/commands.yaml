@@ -196,7 +196,8 @@ orders:
     # 战术托管的收回: "骑兵听令"=骑兵收回指挥权回到手动。全军听令=全收。
     keys: []
     aliases: [听令, 听我指挥, 收回指挥, 回来听令, 听候号令]
-    en: [on me, back to my command, manual control, await orders]
+    # "on me" 不能收: 已是 follow_me 的别名(跟我), 二义。首项与横幅提示一致。
+    en: [manual control, back to my command, await orders, take back control]
   focus_target:
     # 需伴侣模组: 集火离玩家最近的那支敌军(混战里"打这只军队/打他打他"最本能,
     # 多半就指玩家眼前那支)。所有被下令编队集火同一支。模组不可用退化为

@@ -74,9 +74,10 @@ def ingest_zip(path, seen, mf):
             mf.write(json.dumps(rec, ensure_ascii=False) + "\n")
             seen.add(key)
             added += 1
-        # 校准录音(无逐条标注, 文件名即题号): 原样收进 calibration 子目录
+        # 校准录音: 原样收进 calibration 子目录 (新版带 labels.csv 逐条标注;
+        # 旧版无标注, 文件名即题号)
         for n in names:
-            if n.startswith("calibration/") and n.endswith(".wav"):
+            if n.startswith("calibration/") and n.endswith((".wav", ".csv")):
                 cdir = os.path.join(spk_dir, "calibration")
                 os.makedirs(cdir, exist_ok=True)
                 dst = os.path.join(cdir, os.path.basename(n))

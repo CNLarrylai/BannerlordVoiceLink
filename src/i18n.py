@@ -227,7 +227,11 @@ _EN = {
     "点「开始」后跟着念": "Press Start, then read aloud",
     "▶ 开始": "▶ Start",
     "▶ 开始校准 (约3分钟)": "▶ Start calibration (~3 min)",
-    "跳过这条": "Skip this one",
+    "▶ 完整校准 (全部指令, 约6分钟)": "▶ Full run (~6 min)",
+    "快速校准 (常用指令)": "Quick run",
+    "题目来源: 完整指令库 (当前版本支持的全部指令各一遍, 共{n}条)":
+        "Source: full command set (every supported command once, {n} items)",
+    "跳过这条": "Skip",
     "流程一共 4 步:": "Four steps:",
     "先不学": "Not now",
     "· 本轮建议未采纳 (随时可再跑一轮)":

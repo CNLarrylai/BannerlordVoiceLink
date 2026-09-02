@@ -123,7 +123,7 @@ def export_zip():
         cal = os.path.join(os.path.dirname(d), "calibration")
         if os.path.isdir(cal):
             for f in os.listdir(cal):
-                if f.endswith(".wav"):
+                if f.endswith((".wav", ".csv")):    # labels.csv 一起带上
                     z.write(os.path.join(cal, f), f"calibration/{f}")
     return out
 

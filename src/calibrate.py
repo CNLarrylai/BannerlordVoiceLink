@@ -54,9 +54,43 @@ DRILL = [
 ]
 
 
-def load_drill(commands, lang):
-    """题目来源三级: ①usage.csv 攒够数据 -> 你的真实 top_n
+# 纯模组/需要语境的指令, 单念指令词没意义或根本不合法(护弓必须带目标) ——
+# 完整题库里给它们配一个最自然的兵种(和目标)。没列的指令按"光念指令词"出题。
+CONTEXT_GROUP = {
+    "split": "cavalry", "flank": "cavalry", "reclaim": "all",
+    "hold_high_ground": "archers", "skirmish": "horse_archers",
+    "cautious_advance": "infantry", "protect": "cavalry",
+    "focus_target": "cavalry",
+}
+TARGET_OF = {"protect": "archers"}          # 动词+目标 型指令的目标
+# 分队后的半队 / 第N队: 伪兵种, 配一条派遣令各念一次
+PSEUDO_GROUP_DRILL = [("cavalry_left", "charge"), ("archers_right", "follow_me"),
+                      ("form5", "charge")]
+
+
+def build_full_drill(commands):
+    """当前词典支持的全部指令各过一遍: 5 个基础兵种 + 每条指令(需要语境的配
+    兵种/目标) + 半队与第N队 + 两句组合。玩家完整念一轮 = 教学 + 语料全覆盖。"""
+    drill = [(g, None) for g in ("infantry", "archers", "cavalry",
+                                 "horse_archers", "all") if g in commands["groups"]]
+    for o in commands["orders"]:
+        g = CONTEXT_GROUP.get(o)
+        tgt = TARGET_OF.get(o)
+        drill.append((g, o, tgt) if tgt else (g, o))
+    drill += [(g, o) for g, o in PSEUDO_GROUP_DRILL
+              if g in commands["groups"] and o in commands["orders"]]
+    drill += [("all", "charge"),
+              ("cavalry", "charge", "archers",            # 定向进攻: 指定念法
+               {"zh": "骑兵进攻弓箭手", "en": "cavalry attack the archers"})]
+    return drill
+
+
+def load_drill(commands, lang, mode="full"):
+    """mode=full: 完整题库(当前词典全部指令各一遍, 默认)。
+    mode=quick: 三级来源 ①usage.csv 攒够数据 -> 你的真实 top_n
     ②config/calibration.yaml 默认题库 ③内置 DRILL。返回 (清单, 来源说明key)。"""
+    if mode == "full":
+        return build_full_drill(commands), "full"
     cfg = {}
     try:
         with open(config_path("calibration.yaml"), encoding="utf-8") as f:
@@ -93,16 +127,24 @@ def primary(commands, sec, key, lang):
 
 
 def build_items(commands, lang, drill=None):
-    """练习单 -> [{say, group, order, combo}]。"""
+    """练习单 -> [{say, group, order, target, combo}]。drill 元素 (g, o) 或 (g, o, target)。"""
     items = []
     joiner = " " if lang == "en" else ""
-    for g, o in (drill if drill is not None else DRILL):
+    for entry in (drill if drill is not None else DRILL):
+        g, o = entry[0], entry[1]
+        tgt = entry[2] if len(entry) > 2 else None
+        override = entry[3] if len(entry) > 3 else None
         parts = []
         if g:
             parts.append(primary(commands, "groups", g, lang))
         if o:
             parts.append(primary(commands, "orders", o, lang))
-        items.append({"say": joiner.join(parts), "group": g, "order": o,
+        if tgt:
+            parts.append(primary(commands, "groups", tgt, lang))
+        say = (override or {}).get(lang) or joiner.join(parts)
+        if "?" in say:
+            continue        # 该语言没别名的条目不出题
+        items.append({"say": say, "group": g, "order": o, "target": tgt,
                       "combo": bool(g and o)})
     return items
 
@@ -118,7 +160,11 @@ def judge(matcher, item, heard):
     if item["order"]:
         o = tr.get("order")
         o_ok = bool(o and o["pass"] and o["name"] == item["order"])
-    return g_ok and o_ok
+    t_ok = True
+    if item.get("target"):
+        tg = tr.get("target")
+        t_ok = bool(tg and tg["name"] == item["target"])
+    return g_ok and o_ok and t_ok
 
 
 def suggest_aliases(attempts, matcher, lang):
@@ -165,7 +211,8 @@ class CalibrateGUI:
         self.commands = dictionary.load_commands()
         self.matcher = Matcher.from_config(self.commands, self.cfg["control"],
                                            lang=self.lang)
-        drill, self.drill_source = load_drill(self.commands, self.lang)
+        self.mode = "full"
+        drill, self.drill_source = load_drill(self.commands, self.lang, self.mode)
         self.items = build_items(self.commands, self.lang, drill)
         self.attempts = []
         self.rec_dir = os.path.join(os.path.dirname(log_dir()), "calibration")
@@ -192,11 +239,16 @@ class CalibrateGUI:
         #    后打包的控件, 按钮绝不能被挤出窗口(踩过: 高DPI矮窗口按钮消失)。
         btns = tk.Frame(self.root, bg=BG)
         btns.pack(side="bottom", pady=(6, 14))
-        self.start_btn = tk.Button(btns, text=t("▶ 开始校准 (约3分钟)"),
-                                   command=self.start,
+        self.start_btn = tk.Button(btns, text=t("▶ 完整校准 (全部指令, 约6分钟)"),
+                                   command=lambda: self.start("full"),
                                    font=("Microsoft YaHei", 12, "bold"), bg=GOLD,
                                    fg="#101418", relief="flat", padx=20, pady=6)
         self.start_btn.pack(side="left", padx=6)
+        self.quick_btn = tk.Button(btns, text=t("快速校准 (常用指令)"),
+                                   command=lambda: self.start("quick"),
+                                   font=("Microsoft YaHei", 11), bg="#2a323a",
+                                   fg=FG, relief="flat", padx=14, pady=6)
+        self.quick_btn.pack(side="left", padx=6)
         self.skip_btn = tk.Button(btns, text=t("跳过这条"), command=self.skip,
                                   font=("Microsoft YaHei", 11), bg="#2a323a",
                                   fg=FG, relief="flat", padx=14, pady=6,
@@ -229,7 +281,8 @@ class CalibrateGUI:
             self.log.tag_configure(tag, foreground=color)
 
         # 点开始前就把全流程讲清楚
-        src_txt = {"usage": t("题目来源: 你的使用记录 Top{n} (最常用优先)"),
+        src_txt = {"full": t("题目来源: 完整指令库 (当前版本支持的全部指令各一遍, 共{n}条)"),
+                   "usage": t("题目来源: 你的使用记录 Top{n} (最常用优先)"),
                    "default": t("题目来源: 默认题库 (使用数据攒够后自动改用你的常用指令)"),
                    "builtin": t("题目来源: 内置题库")}[self.drill_source]
         self._append(src_txt.format(n=len(self.items)) + "\n", "gold")
@@ -247,11 +300,16 @@ class CalibrateGUI:
 
     # ---------- 流程控制 ----------
 
-    def start(self):
+    def start(self, mode="full"):
         if self.running:
             return
+        if mode != self.mode:
+            self.mode = mode
+            drill, self.drill_source = load_drill(self.commands, self.lang, mode)
+            self.items = build_items(self.commands, self.lang, drill)
         self.running = True
         self.start_btn.config(state="disabled")
+        self.quick_btn.config(state="disabled")
         self.skip_btn.config(state="normal")
         self.attempts = []
         self._skip_flag = False
@@ -290,15 +348,27 @@ class CalibrateGUI:
                     t0 = time.perf_counter()
                     heard = tr.transcribe(audio)
                     dt = time.perf_counter() - t0
-                    stamp = time.strftime("%H%M%S")
+                    stamp = time.strftime("%Y%m%d_%H%M%S")
+                    ok = bool(heard) and judge(self.matcher, item, heard)
+                    # 文件名 三段可解析(x=空) + labels.csv 逐条标注: 校准录音是
+                    # "已知答案"的朗读语料, 标好了才能进微调集(ingest 原样收)
+                    fname = (f"{stamp}_{item['group'] or 'x'}__{item['order'] or 'x'}"
+                             f"__{item.get('target') or 'x'}_{attempt}.wav")
                     try:
-                        sf.write(os.path.join(
-                            self.rec_dir,
-                            f"{stamp}_{item['group'] or ''}{item['order'] or ''}"
-                            f"_{attempt}.wav"), audio, 16000)
+                        sf.write(os.path.join(self.rec_dir, fname), audio, 16000)
+                        import csv
+                        lp = os.path.join(self.rec_dir, "labels.csv")
+                        new = not os.path.exists(lp)
+                        with open(lp, "a", encoding="utf-8", newline="") as lf:
+                            w = csv.writer(lf)
+                            if new:
+                                w.writerow(["file", "lang", "group", "order", "target",
+                                            "say", "heard", "ok", "sec"])
+                            w.writerow([fname, self.lang, item["group"] or "",
+                                        item["order"] or "", item.get("target") or "",
+                                        item["say"], heard, int(ok), f"{dt:.2f}"])
                     except Exception:
                         pass
-                    ok = bool(heard) and judge(self.matcher, item, heard)
                     self.attempts.append({**item, "heard": heard, "ok": ok,
                                           "sec": dt})
                     self._push("verdict", ok, heard, dt, attempt)
