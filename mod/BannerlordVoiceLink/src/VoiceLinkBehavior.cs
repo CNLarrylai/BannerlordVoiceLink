@@ -245,8 +245,62 @@ namespace BannerlordVoiceLink
         // 模组下的定向指令不走游戏原生的下令 UI 反馈, 玩家看不到"谁在打谁";
         // 用战斗记录区(左下角)的金色消息把指令说清楚。
 
+        // ---------- 语言: 跟随语音程序当前语言 ----------
+        // 语音程序启动时把 zh/en 写到 %LOCALAPPDATA%\BannerlordVoice\lang.txt
+        // (源码/打包两种形态都写这里); 模组每 2 秒最多读一次, 不走协议 —— 服务器
+        // 只在战斗中监听, 用协议同步会有"谁先启动"的时序问题, 文件没有。
+        private static string _lang = "zh";
+        private static DateTime _langRead = DateTime.MinValue;
+
+        private static bool En
+        {
+            get
+            {
+                if ((DateTime.UtcNow - _langRead).TotalSeconds >= 2)
+                {
+                    _langRead = DateTime.UtcNow;
+                    try
+                    {
+                        var p = Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                            "BannerlordVoice", "lang.txt");
+                        if (File.Exists(p))
+                            _lang = File.ReadAllText(p).Trim().ToLowerInvariant()
+                                        .StartsWith("en") ? "en" : "zh";
+                    }
+                    catch { /* 读不到就沿用上次 */ }
+                }
+                return _lang == "en";
+            }
+        }
+
+        private static string T(string zh, string en) { return En ? en : zh; }
+
+        /// <summary>"(12人)" / " (12)"</summary>
+        private static string Units(int n)
+        {
+            return En ? " (" + n + ")" : "(" + n + "人)";
+        }
+
+        /// <summary>第N队 / Group N</summary>
+        private static string FormLabel(int n)
+        {
+            return En ? "Group " + n : "第" + CnNums[n - 1] + "队";
+        }
+
         private static string Cn(FormationClass fc)
         {
+            if (En)
+            {
+                switch (fc)
+                {
+                    case FormationClass.Infantry: return "Infantry";
+                    case FormationClass.Ranged: return "Archers";
+                    case FormationClass.Cavalry: return "Cavalry";
+                    case FormationClass.HorseArcher: return "Horse Archers";
+                    default: return fc.ToString();
+                }
+            }
             switch (fc)
             {
                 case FormationClass.Infantry: return "步兵";
@@ -259,6 +313,18 @@ namespace BannerlordVoiceLink
 
         private static string CnGroup(string name)
         {
+            if (En)
+            {
+                switch (name)
+                {
+                    case "infantry": return "Infantry";
+                    case "archers": return "Archers";
+                    case "cavalry": return "Cavalry";
+                    case "horse_archers": return "Horse Archers";
+                    case "all": return "All units";
+                    default: return name;
+                }
+            }
             switch (name)
             {
                 case "infantry": return "步兵";
@@ -277,7 +343,7 @@ namespace BannerlordVoiceLink
             try
             {
                 MBInformationManager.AddQuickInformation(
-                    new TaleWorlds.Localization.TextObject("【语音】" + text));
+                    new TaleWorlds.Localization.TextObject(T("【语音】", "[Voice] ") + text));
             }
             catch
             {
@@ -287,7 +353,7 @@ namespace BannerlordVoiceLink
             {
                 TaleWorlds.Library.InformationManager.DisplayMessage(
                     new TaleWorlds.Library.InformationMessage(
-                        "【语音】" + text,
+                        T("【语音】", "[Voice] ") + text,
                         TaleWorlds.Library.Color.FromUint(0xFFD4AF37)));   // 金色
             }
             catch
@@ -441,13 +507,12 @@ namespace BannerlordVoiceLink
                 lastDesc = best.FormationIndex + ":" + best.CountOfUnits;
                 // 按兵种模式各队目标不同, 逐队报; 集火模式统一在循环外报一条
                 if (fixedTarget == null)
-                    Notify(Cn(g.FormationIndex) + " → 进攻敌方" + Cn(best.FormationIndex)
-                           + "(" + best.CountOfUnits + "人)");
+                    Notify(Cn(g.FormationIndex) + T(" → 进攻敌方", " → attacking enemy ")
+                           + Cn(best.FormationIndex) + Units(best.CountOfUnits));
             }
             if (fixedTarget != null && done > 0)
-                Notify(CnGroup(groupName) + " → 集火最近敌军: "
-                       + Cn(fixedTarget.FormationIndex)
-                       + "(" + fixedTarget.CountOfUnits + "人)");
+                Notify(CnGroup(groupName) + T(" → 集火最近敌军: ", " → focus nearest enemy: ")
+                       + Cn(fixedTarget.FormationIndex) + Units(fixedTarget.CountOfUnits));
 
             // put the player's own UI selection back the way it was
             oc.ClearSelectedFormations();
@@ -527,7 +592,9 @@ namespace BannerlordVoiceLink
             // 新半队落在哪个槽 => 第几队, 告诉玩家(槽号取决于分队顺序, 不显式
             // 说出来玩家没法用"第N队"指挥新队)
             int newNo = (int)target.FormationIndex + 1;
-            Notify(Cn(gc) + "已分两队：左队=原队, 右队=第" + CnNums[newNo - 1] + "队");
+            Notify(En
+                ? Cn(gc) + " split in two: Left = original, Right = " + FormLabel(newNo)
+                : Cn(gc) + "已分两队：左队=原队, 右队=" + FormLabel(newNo));
             return "ok split=" + gc + " a=" + src.CountOfUnits
                    + " b=" + target.CountOfUnits + " slot=" + newNo;
         }
@@ -556,7 +623,7 @@ namespace BannerlordVoiceLink
             Beacon("DoSideOrder " + gc + " " + side + " tgt=" + target
                    + " -> " + pick.CountOfUnits + "人");
             return IssueToFormation(pick, order,
-                Cn(gc) + (side == "left" ? "左队" : "右队"), target);
+                Cn(gc) + (side == "left" ? T("左队", " Left") : T("右队", " Right")), target);
         }
 
         private static readonly string[] CnNums =
@@ -574,7 +641,7 @@ namespace BannerlordVoiceLink
                    + (pick == null ? "null" : pick.CountOfUnits + "人"));
             if (pick == null || pick.CountOfUnits == 0)
                 return "err empty_formation";   // 这个槽位没兵(还没分队/无此队)
-            return IssueToFormation(pick, order, "第" + CnNums[n - 1] + "队", target);
+            return IssueToFormation(pick, order, FormLabel(n), target);
         }
 
         /// <summary>选中某编队 -> 下派遣令 -> 恢复原选择 -> 播报。左右/第N队共用。
@@ -608,8 +675,8 @@ namespace BannerlordVoiceLink
                     oc.SetOrderWithFormation(OrderType.Charge, enemy);
                     oc.ClearSelectedFormations();
                     foreach (var f in backup) oc.SelectFormation(f);
-                    Notify(label + " → 进攻敌方" + Cn(tc)
-                           + "(" + enemy.CountOfUnits + "人)");
+                    Notify(label + T(" → 进攻敌方", " → attacking enemy ") + Cn(tc)
+                           + Units(enemy.CountOfUnits));
                     return "ok target=" + tc + " units=" + pick.CountOfUnits;
                 }
                 // 场上没有该类敌军 => 退化为简单冲锋(往下走)
@@ -632,7 +699,7 @@ namespace BannerlordVoiceLink
             oc.ClearSelectedFormations();
             foreach (var f in backup)
                 oc.SelectFormation(f);
-            Notify(label + " → " + CnOrder(order) + "(" + pick.CountOfUnits + "人)");
+            Notify(label + " → " + CnOrder(order) + Units(pick.CountOfUnits));
             return "ok units=" + pick.CountOfUnits;
         }
 
@@ -660,7 +727,7 @@ namespace BannerlordVoiceLink
                 targets.Add(f);
             }
 
-            var label = (groupName == "all") ? "全军" : CnGroup(groupName);
+            var label = CnGroup(groupName);   // "all" 已在表里(全军 / All units)
             switch (verb)
             {
                 case "flank":
@@ -674,7 +741,8 @@ namespace BannerlordVoiceLink
                         Beacon("tactic flank " + f.FormationIndex
                                + " units=" + f.CountOfUnits);
                     }
-                    Notify(label + " → 绕后包抄(AI自主执行, 喊\"听令\"收回)");
+                    Notify(label + T(" → 绕后包抄(AI自主执行, 喊\"听令\"收回)",
+                                     " → flanking (AI-driven; say 'manual control' to take back)"));
                     return "ok tactic=flank n=" + targets.Count;
                 case "manual":
                     foreach (var f in targets)
@@ -682,7 +750,7 @@ namespace BannerlordVoiceLink
                         f.SetControlledByAI(false);
                         Beacon("tactic manual " + f.FormationIndex);
                     }
-                    Notify(label + " → 已收回指挥权, 听你号令");
+                    Notify(label + T(" → 已收回指挥权, 听你号令", " → back under your command"));
                     return "ok tactic=manual n=" + targets.Count;
                 default:
                     return "err bad_tactic";
@@ -691,6 +759,19 @@ namespace BannerlordVoiceLink
 
         private static string CnOrder(string order)
         {
+            if (En)
+            {
+                switch (order)
+                {
+                    case "charge": return "Charge";
+                    case "advance": return "Advance";
+                    case "follow": return "Follow me";
+                    case "halt": return "Hold position";
+                    case "fallback": return "Fall back";
+                    case "retreat": return "Retreat";
+                    default: return order;
+                }
+            }
             switch (order)
             {
                 case "charge": return "冲锋";

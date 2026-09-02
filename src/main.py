@@ -141,6 +141,7 @@ class App:
         self.commands = commands
         self.overlay = overlay
         self.lang = settings["stt"].get("language", "zh")
+        self._publish_lang()
         self.mode = c.get("mode", "continuous")
         self.ptt = c.get("push_to_talk_key", "caps lock")
         self.reload_key = c.get("reload_key") or ""
@@ -351,6 +352,17 @@ class App:
                      g_key, o_key, via, t_stt, text,
                      engine if self.fast else "", t_key)
         return ok
+
+    def _publish_lang(self):
+        """把当前语言写到 %LOCALAPPDATA%/BannerlordVoice/lang.txt, 游戏内模组据此
+        决定横幅/战斗记录用中文还是英文(源码/打包形态都写同一处, 模组只认这里)。"""
+        try:
+            from paths import log_dir
+            p = os.path.join(os.path.dirname(log_dir()), "lang.txt")
+            with open(p, "w", encoding="utf-8") as f:
+                f.write(self.lang)
+        except Exception as e:
+            print(f"    ⚙ 写 lang.txt 失败(模组横幅将保持中文): {e}")
 
     def _side_unsupported(self, o_key):
         """左右队/第N队收到不支持的指令(如定点移动去那儿) —— 提示并返回失败。"""
