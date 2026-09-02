@@ -358,7 +358,8 @@ class App:
                       "empty_formation": t("这个队现在没兵(先分队或换个队号)"),
                       "bad_slot": t("队号要在 1-8 之间"),
                       "no_empty_slot": t("编队槽满了(最多分出4支), 新战斗才清空"),
-                      "no_battle": t("不在战斗中")}.get(r.replace("err ", ""), r)
+                      "no_battle": t("不在战斗中"),
+                      "no_archers": t("场上没有弓箭手可护")}.get(r.replace("err ", ""), r)
             print(f"    ⚙ 分队未执行: {reason}")
             self._set(t("⚙ 分队未执行"), reason, "#ffb37f")
             via = "mod_err"
