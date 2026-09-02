@@ -147,6 +147,69 @@ namespace BannerlordVoiceLink
             Beacon("drive " + verb + " " + f.FormationIndex + " units=" + f.CountOfUnits);
         }
 
+        /// <summary>护卫: 站在被护编队朝敌一侧 20m 处; 有敌军逼近被护编队(骑兵 70m /
+        /// 步兵 45m 内)就冲上去打, 敌人退开就回岗位。游戏没有"守住某编队"的现成
+        /// 行为(DefensiveRing 是步兵围圈, 骑兵不合理), 自己写一个, 走影子驱动。</summary>
+        private sealed class BehaviorGuard : BehaviorComponent
+        {
+            private readonly Formation _ward;
+            private readonly Func<IEnumerable<Formation>> _enemies;
+
+            public BehaviorGuard(Formation f, Formation ward, Func<IEnumerable<Formation>> enemies)
+                : base(f)
+            {
+                _ward = ward;
+                _enemies = enemies;
+            }
+
+            protected override float GetAiWeight() { return 1f; }
+
+            protected override void OnBehaviorActivatedAux()
+            {
+                Formation.SetArrangementOrder(ArrangementOrder.ArrangementOrderLine);
+                Formation.SetFiringOrder(FiringOrder.FiringOrderFireAtWill);
+                Formation.SetFormOrder(FormOrder.FormOrderWide);
+                TickOccasionally();
+            }
+
+            protected override void CalculateCurrentOrder()
+            {
+                if (_ward == null || _ward.CountOfUnits == 0)
+                {
+                    CurrentOrder = MovementOrder.MovementOrderStop;
+                    return;
+                }
+                Vec2 w = _ward.CachedMedianPosition.AsVec2;
+                Formation threat = null;
+                float best = float.MaxValue;
+                foreach (var e in _enemies())
+                {
+                    float d = e.CachedMedianPosition.AsVec2.Distance(w);
+                    if (d < best) { best = d; threat = e; }
+                }
+                float engage = Formation.QuerySystem.IsCavalryFormation ? 70f : 45f;
+                if (threat != null && best <= engage)
+                {
+                    CurrentOrder = MovementOrder.MovementOrderChargeToTarget(threat);
+                    CurrentFacingOrder = FacingOrder.FacingOrderLookAtEnemy;
+                    return;
+                }
+                Vec2 dir = threat != null ? (threat.CachedMedianPosition.AsVec2 - w).Normalized()
+                                          : _ward.Direction;
+                WorldPosition wp = _ward.CachedMedianPosition;
+                wp.SetVec2(w + dir * 20f);
+                CurrentOrder = MovementOrder.MovementOrderMove(wp);
+                CurrentFacingOrder = FacingOrder.FacingOrderLookAtDirection(dir);
+            }
+
+            public override void TickOccasionally()
+            {
+                CalculateCurrentOrder();
+                Formation.SetMovementOrder(CurrentOrder);
+                Formation.SetFacingOrder(CurrentFacingOrder);
+            }
+        }
+
         private void StopDriving(Formation f)
         {
             if (_driven.Remove(f))
@@ -884,10 +947,19 @@ namespace BannerlordVoiceLink
                                      " → advancing carefully (auto; any direct order stops it)"));
                     return "ok tactic=cautious n=" + targets.Count;
                 case "protect":
-                    foreach (var f in targets)
-                        Drive(f, new BehaviorDefensiveRing(f), verb);
-                    Notify(label + T(" → 护住弓箭手(结圆阵护弓, 下任何指令即停)",
-                                     " → protecting the archers (auto; any direct order stops it)"));
+                    {
+                        // 被护的是己方最大的弓箭手编队(主程序已限定目标=弓箭手)
+                        var ward = OwnNonEmpty()
+                            .Where(x => x.QuerySystem.IsRangedFormation && !x.QuerySystem.IsRangedCavalryFormation)
+                            .OrderByDescending(x => x.CountOfUnits).FirstOrDefault();
+                        if (ward == null)
+                            return "err no_archers";
+                        foreach (var f in targets)
+                            if (f != ward)
+                                Drive(f, new BehaviorGuard(f, ward, EnemyFormations), verb);
+                    }
+                    Notify(label + T(" → 护住弓箭手(挡在前面, 敌军靠近就打; 下任何指令即停)",
+                                     " → guarding the archers (screens them, engages anything closing in; any direct order stops it)"));
                     return "ok tactic=protect n=" + targets.Count;
                 default:
                     return "err bad_tactic";

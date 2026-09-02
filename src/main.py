@@ -353,12 +353,12 @@ class App:
             print(f"    ✓ 听到「{text}」→ {desc2} · 模组直达 [{r}]")
             self._set(f"✓ {desc2}", t("听到: {t}").format(t=text), "#7dff9b")
         elif r:
-            reason = {"not_split": "还没分队(先喊'骑兵分队')",
-                      "too_few": "这队人太少, 分不了",
-                      "empty_formation": "这个队现在没兵(先分队或换个队号)",
-                      "bad_slot": "队号要在 1-8 之间",
-                      "no_empty_slot": "编队槽满了(最多分出4支), 新战斗才清空",
-                      "no_battle": "不在战斗中"}.get(r.replace("err ", ""), r)
+            reason = {"not_split": t("还没分队(先喊'骑兵分队')"),
+                      "too_few": t("这队人太少, 分不了"),
+                      "empty_formation": t("这个队现在没兵(先分队或换个队号)"),
+                      "bad_slot": t("队号要在 1-8 之间"),
+                      "no_empty_slot": t("编队槽满了(最多分出4支), 新战斗才清空"),
+                      "no_battle": t("不在战斗中")}.get(r.replace("err ", ""), r)
             print(f"    ⚙ 分队未执行: {reason}")
             self._set(t("⚙ 分队未执行"), reason, "#ffb37f")
             via = "mod_err"
@@ -552,7 +552,7 @@ class App:
 
         rms = float(np.sqrt(np.mean(audio ** 2)))
         if rms < self.silence_rms:
-            self._idle("(没听到声音)")
+            self._idle(t("(没听到声音)"))
             return
 
         self._set(t("识别中…"), "", "#c9a0ff")
@@ -675,7 +675,7 @@ class App:
                     self._idle()
         except Exception as e:
             print(f"\n[错误] {e}\n")
-            self._set("⚠ 麦克风打开失败", "请打开「音频设置」换一路设备", "#ff8a8a")
+            self._set(t("⚠ 麦克风打开失败"), t("请打开「音频设置」换一路设备"), "#ff8a8a")
 
     # ---------- 按住说话模式 ----------
     def loop_ptt(self):
@@ -686,13 +686,13 @@ class App:
             if not keyboard.is_pressed(self.ptt):
                 time.sleep(0.02)
                 continue
-            self._set("🎙 录音中…", "", "#ffd479")
+            self._set(t("🎙 录音中…"), "", "#ffd479")
             self.recorder.start()
             while keyboard.is_pressed(self.ptt) and self.running:
                 time.sleep(0.02)
             audio = self.recorder.stop()
             if audio.shape[0] < self.samplerate * 0.2:
-                self._idle("(太短)")
+                self._idle(t("(太短)"))
                 continue
             self._handle(audio)
             if self.running:
