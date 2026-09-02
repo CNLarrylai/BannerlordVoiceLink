@@ -9,7 +9,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using TaleWorlds.Core;
-using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
@@ -197,7 +196,7 @@ namespace BannerlordVoiceLink
                 }
                 Vec2 dir = threat != null ? (threat.CachedMedianPosition.AsVec2 - w).Normalized()
                                           : _ward.Direction;
-                WorldPosition wp = _ward.CachedMedianPosition;
+                TaleWorlds.Engine.WorldPosition wp = _ward.CachedMedianPosition;   // 全名: Engine.Path 与 IO.Path 撞名, 不 using
                 wp.SetVec2(w + dir * 20f);
                 CurrentOrder = MovementOrder.MovementOrderMove(wp);
                 CurrentFacingOrder = FacingOrder.FacingOrderLookAtDirection(dir);
