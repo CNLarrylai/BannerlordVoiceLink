@@ -289,13 +289,13 @@ class Launcher:
             self._set(t("还没有日志 (先运行一次语音指挥)"), DIM)
             return
         out = os.path.join(os.path.dirname(d),
-                           f"日志-{APP_VERSION}-"
+                           f"{t('日志')}-{APP_VERSION}-"
                            f"{datetime.now():%Y%m%d-%H%M}.zip")
         try:
             with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
                 for f in found:
                     z.write(os.path.join(d, f), f)
-                z.writestr("_版本.txt", f"APP_VERSION={APP_VERSION}\n")
+                z.writestr(f"{t('_版本')}.txt", f"APP_VERSION={APP_VERSION}\n")
         except Exception as e:
             self._set(t("导出失败: {e}").format(e=e), RED)
             return

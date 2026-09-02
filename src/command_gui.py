@@ -280,7 +280,7 @@ class CommandGUI:
                   font=("Microsoft YaHei", 11, "bold"), bg=GOLD, fg="#101418",
                   relief="flat", padx=16).grid(row=0, column=2)
 
-        self.status = tk.Label(right, text=t("提示: 聊天过滤词和填充词见控制台输出"),
+        self.status = tk.Label(right, text=t("提示: 在上面输入一句话, 看它会不会执行、为什么"),
                                fg=DIM, bg=BG, font=("Microsoft YaHei", 9))
         self.status.grid(row=5, column=0, sticky="w", pady=(6, 0))
 
@@ -314,14 +314,23 @@ class CommandGUI:
         gp = self.tree.insert("", "end", text=t("🛡 兵种 (编队)"), open=True)
         for k, d in self.commands.get("groups", {}).items():
             iid = self.tree.insert(gp, "end", text=self._name(d),
-                                   values=(t("按 {k}").format(k=d["key"]),
+                                   values=(self._keydesc("groups", d),
                                            sep.join(self._disp(d))))
             self.item_map[iid] = ("groups", k)
         op = self.tree.insert("", "end", text=t("⚔ 指令 (动作)"), open=True)
         for k, d in self.commands.get("orders", {}).items():
             iid = self.tree.insert(op, "end", text=self._name(d),
-                                   values=("+".join(d["keys"]), sep.join(self._disp(d))))
+                                   values=(self._keydesc("orders", d),
+                                           sep.join(self._disp(d))))
             self.item_map[iid] = ("orders", k)
+
+    def _keydesc(self, section, d):
+        """键位列文本: 兵种 "按 2" / 指令 "f1+f3" / 无按键(走模组) "模组直达"。"""
+        if section == "groups":
+            k = str(d.get("key", "") or "")
+            return t("按 {k}").format(k=k) if k else t("模组直达")
+        keys = d.get("keys") or []
+        return "+".join(keys) if keys else t("模组直达")
 
     def _set_detail(self, text, color=FG):
         self.detail.config(state="normal")
@@ -358,8 +367,7 @@ class CommandGUI:
         cur = [d["key"]] if section == "groups" else d["keys"]
         self.keys_entry.insert(0, " ".join(cur))
         kind = t("兵种") if section == "groups" else t("指令")
-        keydesc = (t("按 {k}").format(k=d["key"]) if section == "groups"
-                   else "+".join(d["keys"]))
+        keydesc = self._keydesc(section, d)
         sep = ", " if self.lang == "en" else "、"
         self._set_detail(
             t("【{kind} · {name}】 键位 {keys}\n{say}：{phrases}").format(

@@ -281,13 +281,9 @@ class CalibrateGUI:
             self.log.tag_configure(tag, foreground=color)
 
         # 点开始前就把全流程讲清楚
-        src_txt = {"full": t("题目来源: 完整指令库 (当前版本支持的全部指令各一遍, 共{n}条)"),
-                   "usage": t("题目来源: 你的使用记录 Top{n} (最常用优先)"),
-                   "default": t("题目来源: 默认题库 (使用数据攒够后自动改用你的常用指令)"),
-                   "builtin": t("题目来源: 内置题库")}[self.drill_source]
-        self._append(src_txt.format(n=len(self.items)) + "\n", "gold")
+        self._append(self._source_text() + "\n", "gold")
         self._append(t("流程一共 4 步:") + "\n", "gold")
-        self._append(t("  ① 点「开始校准」(首次会加载识别模型, 稍等)") + "\n", "dim")
+        self._append(t("  ① 点「完整校准」或「快速校准」(首次会加载识别模型, 稍等)") + "\n", "dim")
         self._append(t("  ② 屏幕大字出题, 共 {n} 条 —— 对着麦克风念出来即可; "
                        "没念对自动给第二次机会, 也可点「跳过这条」")
                      .format(n=len(self.items)) + "\n", "dim")
@@ -298,6 +294,14 @@ class CalibrateGUI:
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.after(80, self._poll)
 
+    def _source_text(self):
+        """当前题库来源的一句话说明 (开窗时和切换模式时都用)。"""
+        src_txt = {"full": t("题目来源: 完整指令库 (当前版本支持的全部指令各一遍, 共{n}条)"),
+                   "usage": t("题目来源: 你的使用记录 Top{n} (最常用优先)"),
+                   "default": t("题目来源: 默认题库 (使用数据攒够后自动改用你的常用指令)"),
+                   "builtin": t("题目来源: 内置题库")}[self.drill_source]
+        return src_txt.format(n=len(self.items))
+
     # ---------- 流程控制 ----------
 
     def start(self, mode="full"):
@@ -307,6 +311,10 @@ class CalibrateGUI:
             self.mode = mode
             drill, self.drill_source = load_drill(self.commands, self.lang, mode)
             self.items = build_items(self.commands, self.lang, drill)
+            src = self._source_text()
+            self._append("\n" + (t("已切到快速校准: {src}") if mode == "quick"
+                                 else t("已切到完整校准: {src}")).format(src=src)
+                         + "\n", "gold")
         self.running = True
         self.start_btn.config(state="disabled")
         self.quick_btn.config(state="disabled")
@@ -406,7 +414,7 @@ class CalibrateGUI:
                         self.verdict.config(text=t("✓ 很好！({s}s)").format(
                             s=f"{dt:.1f}"), fg=GREEN)
                         self._append(f"✓ {self.prompt.cget('text')}"
-                                     f"  ← 「{heard}」\n", "ok")
+                                     f"  ← {self._q(heard)}\n", "ok")
                     else:
                         more = t(" · 再念一次试试") if attempt == 1 else ""
                         self.verdict.config(
@@ -414,13 +422,17 @@ class CalibrateGUI:
                                 h=heard or "…", more=more), fg=RED)
                         if attempt == 2:
                             self._append(f"✗ {self.prompt.cget('text')}"
-                                         f"  ← 「{heard}」\n", "bad")
+                                         f"  ← {self._q(heard)}\n", "bad")
                 elif kind == "report":
                     self._show_report()
         except queue.Empty:
             pass
         if self.running or True:
             self.root.after(80, self._poll)
+
+    def _q(self, s):
+        """按语言加引号: 中文「…」, 英文 "…"。"""
+        return f'"{s}"' if self.lang == "en" else f"「{s}」"
 
     def _append(self, text, tag):
         self.log.config(state="normal")
@@ -456,8 +468,8 @@ class CalibrateGUI:
             self._append(t("发现你的稳定说法/错听, 建议学进个人词典:") + "\n",
                          "gold")
             for s in self.sugs:
-                self._append(f"  「{s['say']}」→ 你的说法「{s['alias']}」\n",
-                             "dim")
+                self._append(t("  「{say}」→ 你的说法「{alias}」").format(
+                    say=s["say"], alias=s["alias"]) + "\n", "dim")
             self.start_btn.config(text=t("✍ 学进我的个人词典"),
                                   command=self.apply_sugs, state="normal")
             # 学不学是用户的选择 —— 必须给"不学"的路
