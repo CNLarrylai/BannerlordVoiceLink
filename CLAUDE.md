@@ -93,6 +93,21 @@ v0.8.0(游戏1.4.7): 混合识别/指令复盘(F11)/语音数据共建/整活词
 待办: 分队左右实测; 创意工坊上传(差用户跑上传命令+宣传图); B站第一期视频
 (脚本 docs/video-ep1-script.md); 英文快路热词; 语料攒够后微调小模型。
 
+## 多会话并行 (git worktree, 2026-09 起)
+
+```
+C:\Users\Victoria\bannerlord-voice              main       集成 / 识别链路 / 部署 / 发版 (唯一有权写 Modules 与上传工坊)
+C:\Users\Victoria\bannerlord-voice-wt\matcher   wt/matcher 词典 + matcher + 回归用例
+C:\Users\Victoria\bannerlord-voice-wt\mod       wt/mod     C# 模组 (dotnet build 独立编译)
+```
+- 每个 worktree 开自己的 Claude 会话; 新增: `git worktree add ../bannerlord-voice-wt/<名> -b wt/<名>`。
+- worktree 里没有 .venv 和 kws/models(gitignore): 跑测试用主目录的解释器
+  `C:\Users\Victoria\bannerlord-voice\.venv\Scripts\python.exe tests\run_all.py --skip-bench`;
+  需要麦克风/GPU/快路/部署的活只在 main 做。
+- 合并门槛(谁改谁跑): run_all --skip-bench 全过 + 涉及窗口的 ui_audit.py 无截断 +
+  涉及模组的 dotnet build 过 + 改词典的跑三方向冲突检索。过了才 merge 进 main。
+- 跨会话共识写这里, 不写某个会话的记忆。
+
 ## GitHub (跨机器同步)
 
 私有仓库 github.com/CNLarrylai/BannerlordVoiceLink, origin/main。
