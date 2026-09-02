@@ -242,6 +242,20 @@ SPLIT_CASES = [
     ("骑射迂回包抄", "horse_archers", "flank"),
     ("全军听令", "all", "reclaim"),
     ("骑兵听令", "cavalry", "reclaim"),
+    # 战术层第二批: 占高地/游击/稳步推进/护弓 (2026-09 三方向冲突检索后定稿)
+    ("弓箭手占高地", "archers", "hold_high_ground"),
+    ("步兵上高地", "infantry", "hold_high_ground"),      # 曾被拼音蹭成上马
+    ("全军抢占高地", "all", "hold_high_ground"),          # 曾被蹭成盾墙
+    ("骑射游击", "horse_archers", "skirmish"),           # 曾被蹭成骑射右队冲锋
+    ("骑兵放风筝", "cavalry", "skirmish"),
+    ("步兵稳步推进", "infantry", "cautious_advance"),    # 含"推进"但不被 advance 抢
+    ("全军步步为营", "all", "cautious_advance"),
+    ("骑兵保护弓箭手", "cavalry", "protect"),
+    ("步兵掩护弓箭手", "infantry", "protect"),
+    # 不能被新指令抢走的老指令
+    ("弓箭手去那", "archers", "to_position"),           # 曾被"护住弓箭手"劫走
+    ("步兵慢慢推进", "infantry", "advance"),
+    ("骑兵攻击对方弓箭手", "cavalry", "charge"),          # 补"攻击"前解析成骑射手左队
 ]
 for text, want_g, want_o in SPLIT_CASES:
     r = m.parse(text)
@@ -271,6 +285,13 @@ EN_CASES = [
     ("Cavalry, flank them.", "cavalry", "flank"),
     ("Infantry, advance.", "infantry", "advance"),
     ("Cavalry, split!", "cavalry", "split"),
+    ("Archers, hold the high ground", "archers", "hold_high_ground"),  # 曾被蹭成 halt
+    ("All units, take the high ground", "all", "hold_high_ground"),   # 曾被蹭成 flank
+    ("Horse archers, skirmish", "horse_archers", "skirmish"),
+    ("Horse archers, kite them", "horse_archers", "skirmish"),        # 曾被蹭成集火
+    ("Infantry, advance carefully", "infantry", "cautious_advance"),
+    ("Cavalry, protect the archers", "cavalry", "protect"),
+    ("Infantry, advance", "infantry", "advance"),
     ("Archers, spread out.", "archers", "loose"),
     # 一个没解释的词放行(≈中文 2 字余量)
     ("Okay cavalry charge", "cavalry", "charge"),

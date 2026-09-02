@@ -63,5 +63,6 @@ class ModLink:
         return self._send(f"formorder {slot} {order} {target or '-'}")
 
     def tactic(self, group, verb):
-        """战术层(FormationAI): group=兵种/all; verb=flank(交AI绕后)/manual(收回)。"""
+        """战术层(FormationAI): group=兵种/all; verb=flank(绕后)/highground(占高地)/
+        skirmish(游击)/cautious(稳步推进)/protect(护弓)/manual(收回)。"""
         return self._send(f"tactic {group} {verb}")

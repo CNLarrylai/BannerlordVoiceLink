@@ -49,38 +49,39 @@ groups:
   # 分队后的左/右半队(需模组): key 名 = <兵种>_<left|right>, 是"伪兵种",
   # 只用来解析"哪个兵种的哪半队", 由 main 拆出兵种+左右路由给模组 sideorder。
   # 左=原队, 右=新分出的队(固定身份, 不看位置); 必须带兵种前缀防混淆
+  # 不收裸的"骑射右"两字形: 右/游/由/又 同音, "骑射游击"会被它抢成右队(实测)
   # (骑兵分左右 与 弓箭手分左右 各记一套)。别名首项=浮层显示名。
   infantry_left:
     key: ""
-    aliases: [步兵左队, 步兵左, 左路步兵, 左边步兵, 步兵左路, 步兵左半]
+    aliases: [步兵左队, 左路步兵, 左边步兵, 步兵左路, 步兵左半]
     en: [infantry left, left infantry]
   infantry_right:
     key: ""
-    aliases: [步兵右队, 步兵右, 右路步兵, 右边步兵, 步兵右路, 步兵右半]
+    aliases: [步兵右队, 右路步兵, 右边步兵, 步兵右路, 步兵右半]
     en: [infantry right, right infantry]
   archers_left:
     key: ""
-    aliases: [弓箭手左队, 弓箭手左, 弓兵左队, 左路弓箭手, 左边弓箭手, 弓兵左]
+    aliases: [弓箭手左队, 弓兵左队, 左路弓箭手, 左边弓箭手, 弓兵左]
     en: [archers left, left archers]
   archers_right:
     key: ""
-    aliases: [弓箭手右队, 弓箭手右, 弓兵右队, 右路弓箭手, 右边弓箭手, 弓兵右]
+    aliases: [弓箭手右队, 弓兵右队, 右路弓箭手, 右边弓箭手, 弓兵右]
     en: [archers right, right archers]
   cavalry_left:
     key: ""
-    aliases: [骑兵左队, 骑兵左, 左路骑兵, 左边骑兵, 骑兵左路, 骑兵左半]
+    aliases: [骑兵左队, 左路骑兵, 左边骑兵, 骑兵左路, 骑兵左半]
     en: [cavalry left, left cavalry]
   cavalry_right:
     key: ""
-    aliases: [骑兵右队, 骑兵右, 右路骑兵, 右边骑兵, 骑兵右路, 骑兵右半]
+    aliases: [骑兵右队, 右路骑兵, 右边骑兵, 骑兵右路, 骑兵右半]
     en: [cavalry right, right cavalry]
   horse_archers_left:
     key: ""
-    aliases: [骑射左队, 骑射左, 左路骑射, 左边骑射, 骑射左路, 骑射手左队]
+    aliases: [骑射左队, 左路骑射, 左边骑射, 骑射左路, 骑射手左队]
     en: [horse archers left, left horse archers]
   horse_archers_right:
     key: ""
-    aliases: [骑射右队, 骑射右, 右路骑射, 右边骑射, 骑射右路, 骑射手右队]
+    aliases: [骑射右队, 右路骑射, 右边骑射, 骑射右路, 骑射手右队]
     en: [horse archers right, right horse archers]
   # 按编队槽位号直接指挥(需模组): 第五~八队是分队后新队落的空槽(第一~四队
   # 已是步/弓/骑/骑射的别名, 走按键)。key 名 form<N> 由 main 拆出槽位号路由。
@@ -127,7 +128,11 @@ orders:
     # charge 泛指冲锋保留"冲他们/攻击他们"等。
     # "出击"必须显式收录: 不在词典时, "全军出击"会被"护驾"(hujia)拼音蹭到89分
     # 错路由成跟随我(2026-07-09 实战日志钓出, 连错三次)。
-    aliases: [冲锋, 冲, 进攻, 突击, 出击, 杀, 给我冲, 冲上去, 冲啊, 冲呀, 冲鸭,
+    # "攻击对方/敌方"显式收录: 不在词典时"骑兵攻击对方弓箭手"走拼音模糊, 目标重扫
+    # 跑偏成骑射手左队(2026-09 钓出)。但裸"攻击"绝不能收: gongji 藏在"弓箭"
+    # gongjian 的拼音里, 带弓箭手的句子全会中冲锋("弓箭手去那"→冲锋, 实测)。
+    aliases: [冲锋, 冲, 进攻, 攻击对方, 攻击敌方, 攻击敌人, 突击, 出击, 杀, 给我冲,
+              冲上去, 冲啊, 冲呀, 冲鸭,
               给我上, 上啊, 冲过去, 杀过去, 干他们, 打过去, 给我杀, 杀啊,
               往上冲, 压上去打, 冲他们, 攻击他们, 灭了他们, 开干, 开团, 怼上去]
     # 英文与中文对齐: "attack them / kill them / get them" = 中文"打他们",
@@ -157,6 +162,36 @@ orders:
     aliases: [绕后, 绕后包抄, 绕到后面, 绕到背后, 抄后路, 迂回包抄, 绕背偷袭,
               绕后袭扰, 去绕后]
     en: [flank, flank them, go around, flank attack]
+  # ---- 战术层第二批(2026-09, 全部过了三方向冲突检索: 现词典误路由 / 加入后
+  # 741 条真实句零变化 / 新句路由零错)。都是纯模组指令, 喊"听令"收回。----
+  hold_high_ground:
+    # BehaviorHoldHighGround: 找预判战场附近的高地站住, 线阵纵深自由射击;
+    # 有己方弓箭手时按其射程留距离。没收录时"上高地"会被拼音蹭成上马(实测)。
+    keys: []
+    aliases: [占高地, 抢高地, 占领高地, 上高地, 守高地, 占据高地, 抢占高地, 去高处]
+    en: [hold the high ground, take the high ground, seize the high ground, high ground]
+  skirmish:
+    # 游击: 模组按兵种选实现(骑射 HorseArcherSkirmish / 步弓 Skirmish / 骑兵
+    # MountedSkirmish), 对外一条指令。"拉扯""风筝"太短太泛(误听"下车"会蹭到), 不收。
+    keys: []
+    aliases: [游击, 游走射击, 放风筝, 骚扰, 游走, 游击战术, 游斗]
+    en: [skirmish, harass them, kite them, hit and run]
+  cautious_advance:
+    # BehaviorCautiousAdvance: 有盾结盾墙/无盾散阵, 贴着己方弓箭手射程推进, 挨射
+    # 就顿 —— 与"前进"(F1F4 直走)的区别。含"推进/前进"的别名不会被 advance 抢:
+    # 同分时更长整词赢(回归锁定)。
+    keys: []
+    aliases: [稳步推进, 缓慢推进, 稳住推进, 步步为营, 稳扎稳打, 稳步前进, 小心推进]
+    en: [advance carefully, cautious advance, slow advance, advance slowly]
+  protect:
+    # 护弓: BehaviorDefensiveRing 围着最大的弓箭手编队结圆阵。别名只放动词,
+    # "弓箭手"作为动词后的目标解析(takes_target) —— 别名里含兵种名会让所有带
+    # "弓箭手"的句子都被它蹭到(实测抢走"弓箭手去那")。没目标或目标不是弓箭手
+    # => 主程序拒绝并提示。
+    keys: []
+    takes_target: true
+    aliases: [保护, 护住, 掩护, 护着, 守护, 护卫]
+    en: [protect the, guard the, cover the, defend the, protect, guard]
   reclaim:
     # 战术托管的收回: "骑兵听令"=骑兵收回指挥权回到手动。全军听令=全收。
     keys: []

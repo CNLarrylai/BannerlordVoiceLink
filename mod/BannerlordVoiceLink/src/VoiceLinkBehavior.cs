@@ -752,9 +752,54 @@ namespace BannerlordVoiceLink
                     }
                     Notify(label + T(" → 已收回指挥权, 听你号令", " → back under your command"));
                     return "ok tactic=manual n=" + targets.Count;
+                // ---- 第二批(2026-09): 与 flank 同一机制, 只是换行为类 ----
+                case "highground":
+                    foreach (var f in targets)
+                        Hand(f, new BehaviorHoldHighGround(f), verb);
+                    Notify(label + T(" → 占据高地(AI自主执行, 喊\"听令\"收回)",
+                                     " → holding the high ground (AI-driven; 'manual control' to take back)"));
+                    return "ok tactic=highground n=" + targets.Count;
+                case "skirmish":
+                    foreach (var f in targets)
+                    {
+                        // 按兵种挑游击实现: 骑射专用 / 步弓散阵拉距离 / 骑兵机动游击
+                        BehaviorComponent b;
+                        switch (f.FormationIndex)
+                        {
+                            case FormationClass.HorseArcher: b = new BehaviorHorseArcherSkirmish(f); break;
+                            case FormationClass.Cavalry: b = new BehaviorMountedSkirmish(f); break;
+                            default: b = new BehaviorSkirmish(f); break;
+                        }
+                        Hand(f, b, verb);
+                    }
+                    Notify(label + T(" → 游击骚扰(AI自主执行, 喊\"听令\"收回)",
+                                     " → skirmishing (AI-driven; 'manual control' to take back)"));
+                    return "ok tactic=skirmish n=" + targets.Count;
+                case "cautious":
+                    foreach (var f in targets)
+                        Hand(f, new BehaviorCautiousAdvance(f), verb);
+                    Notify(label + T(" → 稳步推进(盾墙/贴弓箭手射程, 喊\"听令\"收回)",
+                                     " → advancing carefully (AI-driven; 'manual control' to take back)"));
+                    return "ok tactic=cautious n=" + targets.Count;
+                case "protect":
+                    foreach (var f in targets)
+                        Hand(f, new BehaviorDefensiveRing(f), verb);
+                    Notify(label + T(" → 护住弓箭手(结圆阵护弓, 喊\"听令\"收回)",
+                                     " → protecting the archers (AI-driven; 'manual control' to take back)"));
+                    return "ok tactic=protect n=" + targets.Count;
                 default:
                     return "err bad_tactic";
             }
+        }
+
+        /// <summary>把编队交给 AI 并插入指定特殊行为(权重拉高压过常规竞争,
+        /// purgePrevious 清掉上一个特殊行为)。flank/highground/skirmish/... 共用。</summary>
+        private static void Hand(Formation f, BehaviorComponent b, string verb)
+        {
+            f.SetControlledByAI(true);
+            b.WeightFactor = 10f;
+            f.AI.AddSpecialBehavior(b, true);
+            Beacon("tactic " + verb + " " + f.FormationIndex + " units=" + f.CountOfUnits);
         }
 
         private static string CnOrder(string order)

@@ -129,8 +129,11 @@ def describe(parsed, commands, lang="zh"):
     desc = " · ".join(parts) if parts else "?"
     if parsed.get("target"):
         tgt = _disp(commands["groups"][parsed["target"]["name"]], lang)
-        aim = "target (aim at them!)" if lang == "en" else "目标(需准星锁定)"
-        desc += f" → {tgt} [{aim}]"
+        if parsed.get("order") and parsed["order"]["name"] == "protect":
+            desc += f" → {tgt}"        # 护的是自己人, 不需要准星
+        else:
+            aim = "target (aim at them!)" if lang == "en" else "目标(需准星锁定)"
+            desc += f" → {tgt} [{aim}]"
     return desc
 
 
@@ -289,6 +292,10 @@ class App:
                     "follow_me": "follow", "halt": "halt",
                     "fall_back": "fallback", "retreat": "retreat"}
     _SPLIT_CLASSES = ("infantry", "archers", "cavalry", "horse_archers")
+    # 战术层(FormationAI, 需模组): 命令key -> 模组 tactic 动词
+    _TACTICS = {"flank": "flank", "reclaim": "manual",
+                "hold_high_ground": "highground", "skirmish": "skirmish",
+                "cautious_advance": "cautious", "protect": "protect"}
 
     def _do_formation_cmd(self, g_key, o_key, desc, text, t_stt, engine,
                           t_key=""):
@@ -301,14 +308,25 @@ class App:
             self._set(t("⚙ 需要模组"), t("游戏没开或模组没启用"), "#ffb37f")
             return False
         desc2 = desc     # 定向进攻时下面会补上目标, 让浮层/横幅显示"打谁"
-        if o_key in ("flank", "reclaim"):
+        if o_key in self._TACTICS:
             # 战术层: 兵种或全军("骑兵绕后"/"全军听令"); 左右半队/第N队暂不支持
             cls = g_key if g_key in self._SPLIT_CLASSES + ("all",) else None
             if not cls:
                 print("    ⚙ 战术指令要指定兵种或全军, 例:「骑兵绕后」「全军听令」")
                 self._set(t("⚙ 要指定兵种或全军"), t("例：骑兵绕后"), "#ffb37f")
                 return False
-            r = self.modlink.tactic(cls, "flank" if o_key == "flank" else "manual")
+            if o_key == "protect":
+                # 护弓只认"弓箭手"目标: 没目标多半是噪音蹭到"保护"(如"招呼"),
+                # 目标是别的兵种游戏里没有对应行为 —— 都不执行, 免得乱交 AI。
+                if t_key != "archers":
+                    print("    ⚙ 护卫指令只支持护弓箭手, 例:「骑兵保护弓箭手」")
+                    self._set(t("⚙ 只支持护弓箭手"), t("例：骑兵保护弓箭手"), "#ffb37f")
+                    return False
+                if cls == "archers":
+                    print("    ⚙ 弓箭手不能护自己, 换个兵种:「步兵保护弓箭手」")
+                    self._set(t("⚙ 弓箭手不能护自己"), t("例：步兵保护弓箭手"), "#ffb37f")
+                    return False
+            r = self.modlink.tactic(cls, self._TACTICS[o_key])
         elif o_key == "split":
             if g_key not in self._SPLIT_CLASSES:
                 print("    ⚙ 分队要指定具体兵种, 例:「骑兵分队」")
@@ -599,7 +617,7 @@ class App:
         is_side = bool(g_key) and (g_key.endswith("_left")
                                    or g_key.endswith("_right"))
         is_form = bool(g_key) and g_key.startswith("form") and g_key[4:].isdigit()
-        if o_key in ("split", "flank", "reclaim") or is_side or is_form:
+        if o_key == "split" or o_key in self._TACTICS or is_side or is_form:
             t_key = parsed["target"]["name"] if parsed.get("target") else ""
             ok = self._do_formation_cmd(g_key, o_key, desc, text, t_stt,
                                         engine, t_key)
