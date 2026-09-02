@@ -4,6 +4,14 @@
 > 创意工坊的 Change Notes(写进 tools/steamcmd/item.vdf), 发版前跑一下即可。
 > 写给玩家看的: 说"你会感受到什么", 不说"改了哪个函数"。
 
+## 0.9.7 — 未发布
+
+### 中文
+- **英文就近集火**:"attack them / get them / kill them / attack the nearest enemy" 现在和中文"打他们"一样,让编队集火离你最近的那支敌军(需伴侣模组);"charge / attack / charge them" 仍是普通冲锋。
+
+### English
+- **Focus fire in English**: "attack them / get them / kill them / attack the nearest enemy" now behaves like the Chinese "打他们": the formation focuses the enemy formation nearest to you (companion mod required). "charge / attack / charge them" remain a plain charge.
+
 ## 0.9.6 — 2026-09-02
 
 ### 中文

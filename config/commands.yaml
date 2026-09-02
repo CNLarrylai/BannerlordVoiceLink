@@ -130,8 +130,10 @@ orders:
     aliases: [冲锋, 冲, 进攻, 突击, 出击, 杀, 给我冲, 冲上去, 冲啊, 冲呀, 冲鸭,
               给我上, 上啊, 冲过去, 杀过去, 干他们, 打过去, 给我杀, 杀啊,
               往上冲, 压上去打, 冲他们, 攻击他们, 灭了他们, 开干, 开团, 怼上去]
-    en: [charge, attack, engage, charge them, attack them, go get them,
-         take them out, focus them, kill them]
+    # 英文与中文对齐: "attack them / kill them / get them" = 中文"打他们",
+    # 归 focus_target(就近集火); 这里只留泛指冲锋的说法(2026-09 用户反馈
+    # "attack them" 被当普通冲锋, 就近攻击在英文下触发不了)。
+    en: [charge, attack, engage, charge them, charge in, go go go]
   # 注: 曾有独立的 attack_nearest("打最近的"), 已删 —— 游戏原生冲锋(charge)
   # 本就让编队去打最近的敌人, 单列冗余。模组的独特价值是"定向按兵种攻击"
   # (骑兵专打敌弓箭手), 走 charge 的 takes_target, 不需要单独指令。
@@ -170,7 +172,9 @@ orders:
     aliases: [打这只, 打这只军队, 打那只, 打那只军队, 就打这只, 集火这只,
               集火这只军队, 打这一只, 打面前这只, 灭了这只, 打眼前这只,
               打他们, 打他, 打他打他, 秒他, 搞他, 盯着这只打, 集火, 集火他]
-    en: [get that one, focus that, attack that one, hit that one, focus fire]
+    en: [attack them, get them, go get them, kill them, take them out, hit them,
+         focus them, attack that one, get that one, focus that, hit that one,
+         focus fire, attack the nearest, attack nearest, nearest enemy]
   fall_back:
     keys: [f1, f5]
     # "回来"显式收录: 实战高频说法(骑兵回来/弓箭手回来), 曾只靠"退回来"模糊80分接

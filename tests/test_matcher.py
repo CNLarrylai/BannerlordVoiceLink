@@ -284,6 +284,18 @@ EN_CASES = [
     ("Hmm", None, None),
     # 光喊兵种不执行
     ("Archers.", None, None),
+    # 就近集火与中文"打他们"对齐: attack them / get them / kill them -> focus_target;
+    # 泛指冲锋 charge/attack/charge them 不变; 带目标的 "attack the archers" 仍是
+    # 定向冲锋(不许被 "attack them" 模糊蹭走)
+    ("Cavalry, attack them!", "cavalry", "focus_target"),
+    ("Attack them", None, "focus_target"),
+    ("Get them!", None, "focus_target"),
+    ("Kill them", None, "focus_target"),
+    ("Attack the nearest enemy", None, "focus_target"),
+    ("Cavalry, charge them", "cavalry", "charge"),
+    ("Cavalry, attack!", "cavalry", "charge"),
+    ("Cavalry attack their archers", "cavalry", "charge"),
+    ("Infantry attack the archers", "infantry", "charge"),
 ]
 for text, want_g, want_o in EN_CASES:
     r = m_en.parse(text)
