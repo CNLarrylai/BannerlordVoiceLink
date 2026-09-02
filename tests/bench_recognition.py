@@ -49,14 +49,25 @@ def main():
     ap.add_argument("--device")
     ap.add_argument("--compute")
     ap.add_argument("--note", default="")
+    ap.add_argument("--lang", default="zh", choices=("zh", "en"),
+                    help="en = 跑 corpus_en.yaml (Zira+David 两声音), 英文提示词+英文词典")
     args = ap.parse_args()
+    en = args.lang == "en"
+    # 英文语料每句有两个声音的版本; 中文只有一份(标签为空)
+    tags = ("en_zira", "en_david") if en else ("",)
+
+    def wav_name(tag, kind, i):
+        return f"{tag}_{kind}_{i:02d}.wav" if tag else f"{kind}_{i:02d}.wav"
 
     with open(os.path.join(ROOT, "config", "settings.yaml"), encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     with open(os.path.join(ROOT, "config", "commands.yaml"), encoding="utf-8") as f:
         commands = yaml.safe_load(f)
-    with open(os.path.join(HERE, "corpus.yaml"), encoding="utf-8") as f:
+    with open(os.path.join(HERE, "corpus_en.yaml" if en else "corpus.yaml"),
+              encoding="utf-8") as f:
         corpus = yaml.safe_load(f)
+    if en:
+        cfg["stt"]["language"] = "en"
 
     if args.model:
         cfg["stt"]["model"] = args.model
@@ -67,7 +78,7 @@ def main():
 
     tr = Transcriber(cfg)
     m = Matcher(commands, cfg["control"]["match_threshold"],
-                cfg["control"].get("chat_filter", True))
+                cfg["control"].get("chat_filter", True), lang=args.lang)
     audio_dir = os.path.join(HERE, "audio")
 
     def load(name):
@@ -79,11 +90,12 @@ def main():
     # ---- 命令 (正样本) ----
     print("\n=== 命令识别 ===")
     lat, hits, cmd_misses = [], 0, []
-    cmds = corpus.get("commands", [])
-    for i, item in enumerate(cmds):
-        wav = f"cmd_{i:02d}.wav"
+    cmds = [(tag, it) for tag in tags for it in corpus.get("commands", [])]
+    per = len(cmds) // len(tags)
+    for i, (tag, item) in enumerate(cmds):
+        wav = wav_name(tag, "cmd", i % per)
         if not os.path.exists(os.path.join(audio_dir, wav)):
-            print(f"  ⚠ 缺 {wav}, 先跑 gen_corpus.py")
+            print(f"  ⚠ 缺 {wav}, 先跑 gen_corpus.py" + (" --lang en" if en else ""))
             continue
         t0 = time.perf_counter()
         text = tr.transcribe(load(wav))
@@ -101,9 +113,10 @@ def main():
     # ---- 聊天 (负样本) ----
     print("\n=== 聊天误触 ===")
     false_trig = []
-    chats = corpus.get("chat", [])
-    for i, item in enumerate(chats):
-        wav = f"chat_{i:02d}.wav"
+    chats = [(tag, it) for tag in tags for it in corpus.get("chat", [])]
+    per_c = max(1, len(chats) // len(tags))
+    for i, (tag, item) in enumerate(chats):
+        wav = wav_name(tag, "chat", i % per_c)
         if not os.path.exists(os.path.join(audio_dir, wav)):
             continue
         text = tr.transcribe(load(wav))
@@ -114,14 +127,14 @@ def main():
         print(f"  {'✗ 误触!' if triggered else '✓ 忽略'} 「{item['text']}」 听到「{text}」")
 
     # ---- 汇总 ----
-    n_cmd = len([1 for i in range(len(cmds))
-                 if os.path.exists(os.path.join(audio_dir, f"cmd_{i:02d}.wav"))])
-    n_chat = len([1 for i in range(len(chats))
-                  if os.path.exists(os.path.join(audio_dir, f"chat_{i:02d}.wav"))])
+    n_cmd = len([1 for i, (tag, _) in enumerate(cmds) if os.path.exists(
+        os.path.join(audio_dir, wav_name(tag, "cmd", i % per)))])
+    n_chat = len([1 for i, (tag, _) in enumerate(chats) if os.path.exists(
+        os.path.join(audio_dir, wav_name(tag, "chat", i % per_c)))])
     acc = hits / n_cmd * 100 if n_cmd else 0
     s = cfg["stt"]
     print("\n" + "=" * 52)
-    print(f"模型={s['model']} 设备={s['device']} 量化={s['compute_type']}")
+    print(f"语言={args.lang} 模型={s['model']} 设备={s['device']} 量化={s['compute_type']}")
     print(f"命令命中: {hits}/{n_cmd} = {acc:.1f}%   聊天误触: {len(false_trig)}/{n_chat}")
     print(f"延迟(ms): 平均 {sum(lat)/len(lat):.0f} | p50 {pct(lat,0.5):.0f} | "
           f"p95 {pct(lat,0.95):.0f}")
@@ -143,7 +156,7 @@ def main():
         f.write(f"{datetime.now():%Y-%m-%d %H:%M},{s['model']},{s['device']},"
                 f"{s['compute_type']},{n_cmd},{hits},{acc:.1f},{n_chat},"
                 f"{len(false_trig)},{sum(lat)/len(lat):.0f},{pct(lat,0.5):.0f},"
-                f"{pct(lat,0.95):.0f},{args.note}\n")
+                f"{pct(lat,0.95):.0f},{('[en] ' if en else '') + args.note}\n")
     print(f"\n已记入历史: {hist}")
 
 

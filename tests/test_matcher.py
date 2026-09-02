@@ -251,7 +251,49 @@ for text, want_g, want_o in SPLIT_CASES:
     fails += not ok
     print(f"  {'✓' if ok else '✗✗✗'} 「{text}」 -> {gg}/{oo} (期望 {want_g}/{want_o})")
 
+print("\n=== 英文模式 (口音容错 / 按词占比 / 短噪音) ===")
+m_en = Matcher(commands, settings["control"]["match_threshold"],
+               settings["control"].get("chat_filter", True), lang="en")
+# (句子, 期望兵种或None, 期望指令或None); 指令 None = 应忽略
+EN_CASES = [
+    # 2026-09-02 真实日志: 非母语 "All" 尾音吞掉, Whisper 写成 Or/Oh
+    ("Or unit charge.", "all", "charge"),
+    ("Or unit, follow me.", "all", "follow_me"),
+    ("Oh units charge", "all", "charge"),
+    ("All units charge.", "all", "charge"),
+    ("Everyone, everyone, follow me.", "all", "follow_me"),
+    ("Units, charge!", "all", "charge"),
+    ("All troops, hold position.", "all", "halt"),
+    ("Infantry, shield wall!", "infantry", "shield_wall"),
+    ("Archers, fire at will.", "archers", "fire_at_will"),
+    ("Cavalry, charge now!", "cavalry", "charge"),
+    ("Horse archers, fall back.", "horse_archers", "fall_back"),
+    ("Cavalry, flank them.", "cavalry", "flank"),
+    ("Infantry, advance.", "infantry", "advance"),
+    ("Cavalry, split!", "cavalry", "split"),
+    ("Archers, spread out.", "archers", "loose"),
+    # 一个没解释的词放行(≈中文 2 字余量)
+    ("Okay cavalry charge", "cavalry", "charge"),
+    # 聊天: 杂词多 -> 忽略
+    ("I think the cavalry should charge", None, None),
+    ("Did you see how the archers were shooting", None, None),
+    # 噪音短句: 不许蹭到任何指令
+    ("Or.", None, None),
+    ("Oh.", None, None),
+    ("So", None, None),
+    ("Hmm", None, None),
+    # 光喊兵种不执行
+    ("Archers.", None, None),
+]
+for text, want_g, want_o in EN_CASES:
+    r = m_en.parse(text)
+    gg = r["group"]["name"] if r and r["group"] else None
+    oo = r["order"]["name"] if r and r["order"] else None
+    ok = gg == want_g and oo == want_o
+    fails += not ok
+    print(f"  {'✓' if ok else '✗✗✗'} 「{text}」 -> {gg}/{oo} (期望 {want_g}/{want_o})")
+
 total = (len(SAMPLES) + len(GROUP_CASES) + len(KEY_CASES) + len(TARGET_CASES)
-         + len(NAME_CASES) + len(SPLIT_CASES))
+         + len(NAME_CASES) + len(SPLIT_CASES) + len(EN_CASES))
 print(f"\n{total - fails}/{total} 通过")
 sys.exit(1 if fails else 0)

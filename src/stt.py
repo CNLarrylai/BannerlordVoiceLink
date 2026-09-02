@@ -140,12 +140,15 @@ class Transcriber:
         self.beam_size = s.get("beam_size", 1)
         if self.language == "en":
             # 英文用英文提示词偏置 (中文提示词会干扰英文识别)
+            # 写成"前文转写"的样子(短句+叹号)比罗列词表偏置更强: Whisper 把
+            # prompt 当上一段字幕, 会模仿其句式/用词。重点铺 "All units, ..."
+            # —— 非母语口音下 All 常被听成 Or/Oh, 靠这里把它拉回来。
             self.initial_prompt = s.get("initial_prompt_en") or (
-                "Commanding an army in battle. Troops: infantry, archers, "
-                "cavalry, horse archers. Orders: charge, advance, retreat, halt, "
-                "follow me, shield wall, form a line, fire at will, hold fire, "
-                "attack the nearest enemy, attack the archers, "
-                "charge their cavalry, stay here.")
+                "All units, charge! All units, follow me! All units, hold "
+                "position! Infantry, shield wall! Infantry, advance! Archers, "
+                "fire at will! Archers, hold fire! Cavalry, charge! Cavalry, "
+                "flank them! Horse archers, fall back! Everyone, retreat! "
+                "Infantry, form a line! Cavalry, split! Archers, spread out!")
         else:
             self.initial_prompt = s.get("initial_prompt") or None
         self.temperature = s.get("temperature", 0)

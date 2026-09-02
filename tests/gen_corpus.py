@@ -24,15 +24,19 @@ os.makedirs(AUDIO, exist_ok=True)
 SSFM_CREATE_FOR_WRITE = 3
 
 
-def make_voice():
+# 英文用两个母语声音各合成一份 (文件名带声音标签), 语料白拿翻倍
+EN_VOICES = ("Zira", "David")
+
+
+def make_voice(want=("Huihui", "Chinese")):
     v = comtypes.client.CreateObject("SAPI.SpVoice")
     for voice in v.GetVoices():
         d = voice.GetDescription()
-        if "Huihui" in d or "Chinese" in d:
+        if any(w in d for w in want):
             v.Voice = voice
-            print(f"[TTS] 中文声音: {d}")
+            print(f"[TTS] 声音: {d}")
             return v
-    print("[TTS] ⚠ 没找到中文声音, 结果可能不准")
+    print(f"[TTS] ⚠ 没找到声音 {want}, 结果可能不准")
     return v
 
 
@@ -45,17 +49,23 @@ def speak_to_wav(voice, text, path):
 
 
 def main():
-    with open(os.path.join(HERE, "corpus.yaml"), encoding="utf-8") as f:
+    lang = "en" if "--lang" in sys.argv and sys.argv[sys.argv.index("--lang") + 1] == "en" else "zh"
+    corpus_file = "corpus_en.yaml" if lang == "en" else "corpus.yaml"
+    with open(os.path.join(HERE, corpus_file), encoding="utf-8") as f:
         corpus = yaml.safe_load(f)
-    voice = make_voice()
+    # (文件名标签, 声音) 列表: 中文一份, 英文每个声音一份
+    voices = ([(f"en_{v.lower()}", make_voice((v,))) for v in EN_VOICES]
+              if lang == "en" else [("", make_voice())])
     n = 0
-    for kind, key in (("cmd", "commands"), ("chat", "chat")):
-        for i, item in enumerate(corpus.get(key, [])):
-            path = os.path.join(AUDIO, f"{kind}_{i:02d}.wav")
-            speak_to_wav(voice, item["text"], path)
-            ok = os.path.exists(path) and os.path.getsize(path) > 1000
-            print(f"  {'✓' if ok else '✗'} {kind}_{i:02d}  「{item['text']}」")
-            n += ok
+    for tag, voice in voices:
+        for kind, key in (("cmd", "commands"), ("chat", "chat")):
+            for i, item in enumerate(corpus.get(key, [])):
+                name = f"{tag}_{kind}_{i:02d}.wav" if tag else f"{kind}_{i:02d}.wav"
+                path = os.path.join(AUDIO, name)
+                speak_to_wav(voice, item["text"], path)
+                ok = os.path.exists(path) and os.path.getsize(path) > 1000
+                print(f"  {'✓' if ok else '✗'} {name}  「{item['text']}」")
+                n += ok
     print(f"\n生成完成: {n} 个语音 -> {AUDIO}")
 
 

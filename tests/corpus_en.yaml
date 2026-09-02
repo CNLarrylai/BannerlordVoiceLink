@@ -1,0 +1,35 @@
+# ============================================================
+#  英文测试语料 —— 与 corpus.yaml 同结构, 由 gen_corpus.py --lang en 合成
+#  (Windows SAPI Zira + David 两个母语声音, 每句两份)。
+#  母语 TTS 不会复现中式口音(All->Or), 那类问题靠 test_matcher 的 EN_CASES;
+#  这里量化的是: 提示词/词典改动后 Whisper 英文整体命中率有没有退步。
+# ============================================================
+
+commands:
+  - {text: "All units, charge!",            group: all,           order: charge}
+  - {text: "All units, follow me.",         group: all,           order: follow_me}
+  - {text: "Everyone, hold position.",      group: all,           order: halt}
+  - {text: "All troops, retreat!",          group: all,           order: retreat}
+  - {text: "Infantry, shield wall!",        group: infantry,      order: shield_wall}
+  - {text: "Infantry, advance.",            group: infantry,      order: advance}
+  - {text: "Infantry, form a line.",        group: infantry,      order: line}
+  - {text: "Infantry, fall back.",          group: infantry,      order: fall_back}
+  - {text: "Archers, fire at will!",        group: archers,       order: fire_at_will}
+  - {text: "Archers, hold fire.",           group: archers,       order: hold_fire}
+  - {text: "Archers, spread out.",          group: archers,       order: loose}
+  - {text: "Archers, move here.",           group: archers,       order: to_position}
+  - {text: "Cavalry, charge!",              group: cavalry,       order: charge}
+  - {text: "Cavalry, flank them.",          group: cavalry,       order: flank}
+  - {text: "Cavalry, split!",               group: cavalry,       order: split}
+  - {text: "Cavalry, form a wedge.",        group: cavalry,       order: skein}
+  - {text: "Horse archers, fall back.",     group: horse_archers, order: fall_back}
+  - {text: "Horse archers, circle formation.", group: horse_archers, order: circle}
+  - {text: "Everyone, mount up!",           group: all,           order: mount_toggle}
+  - {text: "Infantry, square formation.",   group: infantry,      order: square}
+
+chat:
+  - {text: "I think the cavalry should have charged earlier."}
+  - {text: "Did you see how the archers were shooting?"}
+  - {text: "Let me check the settings before we start."}
+  - {text: "This battle is going to be a long one."}
+  - {text: "Oh."}

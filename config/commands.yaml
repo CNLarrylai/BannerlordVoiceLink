@@ -38,7 +38,12 @@ groups:
     key: "0"
     aliases: [全军, 全体, 所有人, 所有队伍, 大家, 大伙, 大伙儿, 士兵, 士兵们,
               全部队伍, 全部人, 全员, 儿郎们, 众将士, 全军将士, 各队, 各位]
-    en: [everyone, all troops, all units, everybody, whole army, all of you, all]
+    # 英文口音容错: 非母语者 "All" 的尾音 L 常吞掉, Whisper 会写成 or/oh
+    # (2026-09-02 实测 "All units charge" 三连听成 "Or unit charge")。
+    # 只收 "or/oh + units/unit/troops" 这种固定搭配, 不收裸 or/oh。
+    en: [everyone, all troops, all units, all unit, everybody, whole army,
+         all of you, all, or units, or unit, oh units, oh unit, or troops,
+         oh troops, all the units, all the troops]
   # 左右半队必须带兵种前缀(骑兵左队/弓箭手右队): 光喊"左队"太危险 —— 一旦
   # "左队"被漏听就退化成对当前选中编队冲锋(可能是全军), 用户实测后要求去掉。
   # 分队后的左/右半队(需模组): key 名 = <兵种>_<left|right>, 是"伪兵种",
@@ -213,7 +218,9 @@ orders:
   skein:
     keys: [f2, f6]
     aliases: [三角阵, 尖阵, 尖头阵, 楔阵, 楔形, 楔形阵, 锥形阵, 锥子阵, 结楔阵, 尖刀阵]
-    en: [wedge, triangle, form a wedge, wedge formation, spearhead]
+    # "form a witch": wedge 被 Whisper/流式引擎一致听成 witch (2026-09 TTS 基准),
+    # 没人会真喊这句, 收进来零风险
+    en: [wedge, triangle, form a wedge, wedge formation, spearhead, form a witch]
   column:
     keys: [f2, f7]
     aliases: [排成一列, 竖排, 竖着排, 排成竖排, 排成一竖排, 纵队, 纵列, 排纵队,

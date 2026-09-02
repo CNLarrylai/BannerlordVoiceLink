@@ -71,11 +71,16 @@ MAX_FREE_LEFTOVER = 2
 # 剔除填充词后的句长上限, 再长就当聊天
 MAX_EFFECTIVE_LEN = 16
 
-# 英文模式: 填充词(比对时都是去空格小写形式) + 更长的句长上限(英文字符多)
-EN_FILLERS = ["please", "now", "just", "lets", "okay", "alright", "come", "on",
-              "go", "right", "hey", "guys", "and", "the", "your"]
+# 英文模式: 占比/杂字/句长全部按"词"算, 不按字母 —— 中文一个字≈一个音节,
+# 英文一个词才是同量级单位。曾按字母算: "or unit charge"(All 被听成 or)
+# 剩 "orunit" 6 个字母被当 6 个汉字的闲聊, 连听对的 charge 都一起丢了。
+EN_FILLERS = {"please", "now", "just", "lets", "let", "us", "okay", "ok",
+              "alright", "come", "on", "go", "right", "hey", "guys", "and",
+              "the", "your", "you", "all", "men", "boys", "soldiers"}
 EN_CHAT_MARKERS = []          # 英文暂不做讨论词黑名单, 靠占比过滤
-EN_MAX_EFFECTIVE_LEN = 42
+EN_MAX_WORDS = 9              # 去掉填充词后超过这么多词 => 当聊天
+EN_MAX_FREE_LEFTOVER = 1      # 剩 1 个没解释的词直接放行(≈中文的 2 个字)
+EN_MAX_EFFECTIVE_LEN = 42     # 仅作兜底(字符), 主判定看词数
 
 
 # 否定字: 别名以这些字开头且对齐时把它们丢掉 => 匹到的是反义(别开火→开火)
@@ -183,6 +188,11 @@ class Matcher:
                     a = fuzz.partial_ratio_alignment(ca, text)
                     score, span = a.score, (a.dest_start, a.dest_end)
                     neg_drop = bool(NEG_PREFIX & set(ca[:a.src_start]))
+                    # 英文: 整句比别名短时 partial_ratio 是"短串滑进长串", 天然
+                    # 虚高 —— 噪音吐出的 "Or." 在 scatter formation 里能蹭 100。
+                    # 按长度比打折: or(2)/scatterformation(16) -> 12 分。
+                    if self.lang == "en" and len(text) < len(ca):
+                        score = score * len(text) / len(ca)
                 # 谐音兜底(仅中文): 别名>=2字时比拼音, 取更高分。
                 # 不设"汉字分低才比"的门槛 —— 曾因门槛(<70)把"三角镇"vs"三角阵"
                 # (汉字80, 拼音100)关在门外, 反让"交战"(汉字低→进兜底, 拼音87.5)
@@ -263,8 +273,48 @@ class Matcher:
             text = text.replace(f, "")
         return text
 
-    def _coverage(self, clean: str, spans: list) -> dict:
+    def _coverage_en(self, words: list, spans: list) -> dict:
+        """英文版第2+3层: 按词算。词被任一命中区间覆盖 >=50% 字母即算解释了。"""
+        starts, off = [], 0
+        for w in words:
+            starts.append(off)
+            off += len(w)
+        matched, leftover = 0, []
+        for w, st in zip(words, starts):
+            ed = st + len(w)
+            ov = max((max(0, min(ed, e) - max(st, s)) for s, e in spans),
+                     default=0)
+            if ov * 2 >= len(w):
+                matched += 1
+            elif w not in EN_FILLERS:
+                leftover.append(w)
+        info = {
+            "matched_len": matched,
+            "leftover": " ".join(leftover),
+            "coverage": matched / max(1, matched + len(leftover)),
+            "is_chat": False,
+            "why": "",
+        }
+        total = matched + len(leftover)
+        if total > EN_MAX_WORDS:
+            info["is_chat"] = True
+            info["why"] = f"剔除填充词后仍有 {total} 个词 (> {EN_MAX_WORDS}), 按聊天处理"
+        elif len(leftover) <= EN_MAX_FREE_LEFTOVER:
+            info["why"] = f"剩余杂词仅 {len(leftover)} 个, 放行"
+        elif info["coverage"] < MIN_COVERAGE:
+            info["is_chat"] = True
+            info["why"] = (
+                f"指令占比 {info['coverage']:.0%} < {MIN_COVERAGE:.0%} "
+                f"(剩余杂词「{info['leftover']}」太多), 按聊天处理"
+            )
+        else:
+            info["why"] = f"指令占比 {info['coverage']:.0%} ≥ {MIN_COVERAGE:.0%}, 放行"
+        return info
+
+    def _coverage(self, clean: str, spans: list, words=None) -> dict:
         """第2+3层: 指令占比 + 句长。返回判定细节 (给测试台展示用)。"""
+        if words is not None:
+            return self._coverage_en(words, spans)
         mask = [False] * len(clean)
         for s, e in spans:
             for i in range(s, min(e, len(clean))):
@@ -314,6 +364,8 @@ class Matcher:
         if not clean:
             trace["reason"] = "只有标点/空白"
             return trace
+        # 英文: 记住词边界(clean 恰是这些词无缝拼接), 占比判定按词算
+        words = re.findall(r"[a-z0-9]+", text.lower()) if self.lang == "en" else None
 
         # 第1层: 聊天特征词
         if self.chat_filter:
@@ -433,7 +485,7 @@ class Matcher:
 
         # 第2+3层: 指令占比 + 句长
         if self.chat_filter:
-            cov = self._coverage(clean, spans)
+            cov = self._coverage(clean, spans, words)
             trace["coverage"] = cov
             if cov["is_chat"]:
                 trace["reason"] = cov["why"]

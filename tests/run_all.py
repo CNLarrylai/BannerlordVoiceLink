@@ -73,6 +73,7 @@ def main():
         print("\n✓ 匹配回归通过 (已跳过识别基准)。")
         return
     run("识别基准 (真实引擎, 命中率+延迟)", "bench_recognition.py")
+    run("识别基准·英文 (真实引擎, Zira+David)", "bench_recognition.py", ["--lang", "en"])
     print("\n✓ 全部完成。识别历史见 tests/results/history.csv")
 
 
