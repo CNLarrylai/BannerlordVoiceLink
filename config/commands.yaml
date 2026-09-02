@@ -175,14 +175,16 @@ orders:
     # MountedSkirmish), 对外一条指令。"拉扯""风筝"太短太泛(误听"下车"会蹭到), 不收。
     keys: []
     aliases: [游击, 游走射击, 放风筝, 骚扰, 游走, 游击战术, 游斗]
-    en: [skirmish, harass them, kite them, hit and run]
+    # skimish/scumish: 2026-09-02 实测 Whisper 对 skirmish 的两种错听
+    en: [skirmish, harass them, kite them, hit and run, skimish, scumish, skirmish them]
   cautious_advance:
     # BehaviorCautiousAdvance: 有盾结盾墙/无盾散阵, 贴着己方弓箭手射程推进, 挨射
     # 就顿 —— 与"前进"(F1F4 直走)的区别。含"推进/前进"的别名不会被 advance 抢:
     # 同分时更长整词赢(回归锁定)。
     keys: []
     aliases: [稳步推进, 缓慢推进, 稳住推进, 步步为营, 稳扎稳打, 稳步前进, 小心推进]
-    en: [advance carefully, cautious advance, slow advance, advance slowly]
+    en: [advance carefully, advance cautiously, cautious advance, slow advance,
+         advance slowly, careful advance]
   protect:
     # 护弓: BehaviorDefensiveRing 围着最大的弓箭手编队结圆阵。别名只放动词,
     # "弓箭手"作为动词后的目标解析(takes_target) —— 别名里含兵种名会让所有带

@@ -50,6 +50,16 @@
   takes_target。加新指令前必跑三方向冲突检索(现词典误路由 / usage.csv 真实句
   加入前后 group+order+target 全比 / 新句带各兵种前缀路由), 只比指令不比兵种会漏。
 
+## 战术层(FormationAI)铁律 (2026-09-02 实战血案)
+
+- **绝不 SetControlledByAI(true)**: 一交 AI, 团队 AI 的战术层就接管该编队 —— 合并
+  步弓成一队、圆阵套方阵(TacticDefensiveRing)、给骑兵派 ProtectFlank, 挂的特殊
+  行为赢不了权重竞争, 玩家还改不回来。"全军占高地"把 8 个队全交出去, 整军被重组。
+- 正解=影子驱动(VoiceLinkBehavior.Drive/DriveTick): 反射调 OnBehaviorActivatedAux
+  激活一次 + 每 0.5s 替行为 TickOccasionally(行为自己下移动/朝向令), 编队全程
+  留在玩家手里; 玩家任何直接指令(OrderController.OnOrderIssued 事件)即停驱动。
+- 挑行为类前反编译看 OnBehaviorActivatedAux/TickOccasionally 干了什么, 别按名字猜。
+
 ## 识别引擎共识 (数据在 kws/results 与记忆中)
 
 - 快路=sherpa-onnx 流式 zipformer 双语(~70M)+热词+matcher, 真人实测

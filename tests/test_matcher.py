@@ -290,6 +290,8 @@ EN_CASES = [
     ("Horse archers, skirmish", "horse_archers", "skirmish"),
     ("Horse archers, kite them", "horse_archers", "skirmish"),        # 曾被蹭成集火
     ("Infantry, advance carefully", "infantry", "cautious_advance"),
+    ("Infantry, advance cautiously!", "infantry", "cautious_advance"),  # 实测漏收
+    ("Archer, skimish!", "archers", "skirmish"),                        # 实测错听
     ("Cavalry, protect the archers", "cavalry", "protect"),
     ("Infantry, advance", "infantry", "advance"),
     ("Archers, spread out.", "archers", "loose"),

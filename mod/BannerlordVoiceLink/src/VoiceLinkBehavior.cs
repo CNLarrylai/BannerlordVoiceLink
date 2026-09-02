@@ -2,11 +2,14 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
 namespace BannerlordVoiceLink
@@ -87,6 +90,98 @@ namespace BannerlordVoiceLink
         {
             base.AfterStart();
             StartServer("AfterStart");
+            HookPlayerOrders();
+        }
+
+        // ---------- 影子驱动 (战术行为不交 AI) ----------
+        // 教训(2026-09-02 实测): SetControlledByAI(true) 之后团队 AI 的战术层会
+        // 接管这个编队 —— 合并步弓、圆阵套方阵(TacticDefensiveRing)、给骑兵派
+        // ProtectFlank, 我挂的行为根本赢不了权重竞争, 玩家还改不回来。
+        // 游戏只对 AI 控制的编队跑行为树(FormationAI.TickOccasionally 写死),
+        // 所以改成模组自己驱动: 激活钩子反射调一次 + 每半秒替它 TickOccasionally
+        // (行为在里面自己下移动令/朝向令)。编队全程留在玩家手里; 玩家对它下任何
+        // 指令(F键/语音, 走 OrderController) => 事件里自动停掉驱动。
+        private sealed class Driven
+        {
+            public BehaviorComponent B;
+            public string Verb;
+            public float Next;
+        }
+
+        private readonly Dictionary<Formation, Driven> _driven = new Dictionary<Formation, Driven>();
+        private static readonly MethodInfo _activateAux = typeof(BehaviorComponent).GetMethod(
+            "OnBehaviorActivatedAux", BindingFlags.NonPublic | BindingFlags.Instance);
+        private OrderController _hookedOc;
+
+        private void HookPlayerOrders()
+        {
+            try
+            {
+                var oc = Mission.Current?.PlayerTeam?.PlayerOrderController;
+                if (oc == null || _hookedOc == oc) return;
+                oc.OnOrderIssued += OnPlayerOrderIssued;
+                _hookedOc = oc;
+            }
+            catch (Exception e) { Beacon("hook orders err " + e.Message); }
+        }
+
+        private void OnPlayerOrderIssued(OrderType orderType, MBReadOnlyList<Formation> formations,
+                                         OrderController oc, params object[] delegateParams)
+        {
+            if (_driven.Count == 0 || formations == null) return;
+            foreach (var f in formations)
+                if (_driven.Remove(f))
+                    Beacon("drive stop " + f.FormationIndex + " (player order " + orderType + ")");
+        }
+
+        private void Drive(Formation f, BehaviorComponent b, string verb)
+        {
+            if (f.IsAIControlled)
+                f.SetControlledByAI(false);       // 绝不交 AI(见上)
+            try
+            {
+                _activateAux?.Invoke(b, null);   // 行为自己设阵型/射击令并下第一条移动令
+            }
+            catch (Exception e) { Beacon("drive activate err " + e.Message); }
+            _driven[f] = new Driven { B = b, Verb = verb, Next = 0f };
+            Beacon("drive " + verb + " " + f.FormationIndex + " units=" + f.CountOfUnits);
+        }
+
+        private void StopDriving(Formation f)
+        {
+            if (_driven.Remove(f))
+                Beacon("drive stop " + f.FormationIndex + " (manual)");
+        }
+
+        private void DriveTick()
+        {
+            if (_driven.Count == 0 || Mission.Current == null) return;
+            float now = Mission.Current.CurrentTime;
+            foreach (var kv in _driven.ToList())
+            {
+                var f = kv.Key; var d = kv.Value;
+                if (f.CountOfUnits == 0 || f.IsAIControlled)   // 没兵了 / 玩家 F6 交了 AI
+                {
+                    _driven.Remove(f);
+                    continue;
+                }
+                if (now < d.Next) continue;
+                d.Next = now + 0.5f;
+                try
+                {
+                    d.B.TickOccasionally();
+                    if (d.B.IsCurrentOrderChanged)
+                    {
+                        f.SetMovementOrder(d.B.CurrentOrder);
+                        d.B.IsCurrentOrderChanged = false;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Beacon("drive tick err " + d.Verb + " " + e.Message);
+                    _driven.Remove(f);
+                }
+            }
         }
 
         private void StartServer(string via)
@@ -103,6 +198,9 @@ namespace BannerlordVoiceLink
         public override void OnRemoveBehavior()
         {
             Beacon("战斗结束, 关闭监听");
+            _driven.Clear();
+            try { if (_hookedOc != null) _hookedOc.OnOrderIssued -= OnPlayerOrderIssued; } catch { }
+            _hookedOc = null;
             _running = false;
             try { _listener?.Stop(); } catch { }
             base.OnRemoveBehavior();
@@ -166,6 +264,7 @@ namespace BannerlordVoiceLink
         public override void OnMissionTick(float dt)
         {
             base.OnMissionTick(dt);
+            DriveTick();
             Req req;
             while (_requests.TryDequeue(out req))
             {
@@ -499,7 +598,8 @@ namespace BannerlordVoiceLink
                 if (best == null)
                     continue;
                 if (g.IsAIControlled)
-                    g.SetControlledByAI(false);  // 直接指令打断战术托管
+                    StopDriving(g);              // 直接指令打断战术驱动
+                    g.SetControlledByAI(false);
                 oc.ClearSelectedFormations();
                 oc.SelectFormation(g);
                 oc.SetOrderWithFormation(OrderType.Charge, best);
@@ -649,8 +749,9 @@ namespace BannerlordVoiceLink
         private string IssueToFormation(Formation pick, string order, string label,
                                         string target)
         {
+            StopDriving(pick);                   // 直接指令打断战术驱动(绕后等)
             if (pick.IsAIControlled)
-                pick.SetControlledByAI(false);   // 直接指令自然打断战术托管(绕后等)
+                pick.SetControlledByAI(false);
             var oc = Mission.Current.PlayerTeam.PlayerOrderController;
             var backup = new List<Formation>(oc.SelectedFormations);
 
@@ -732,21 +833,14 @@ namespace BannerlordVoiceLink
             {
                 case "flank":
                     foreach (var f in targets)
-                    {
-                        // 交给 AI + 插入"特殊行为"绕后(压过常规权重竞争)。
-                        // WeightFactor 拉高确保它赢; purgePrevious 清掉旧特殊行为。
-                        f.SetControlledByAI(true);
-                        var b = new BehaviorFlank(f) { WeightFactor = 10f };
-                        f.AI.AddSpecialBehavior(b, true);
-                        Beacon("tactic flank " + f.FormationIndex
-                               + " units=" + f.CountOfUnits);
-                    }
-                    Notify(label + T(" → 绕后包抄(AI自主执行, 喊\"听令\"收回)",
-                                     " → flanking (AI-driven; say 'manual control' to take back)"));
+                        Drive(f, new BehaviorFlank(f), verb);
+                    Notify(label + T(" → 绕后包抄(自动执行, 下任何指令即停)",
+                                     " → flanking (auto; any direct order stops it)"));
                     return "ok tactic=flank n=" + targets.Count;
                 case "manual":
                     foreach (var f in targets)
                     {
+                        StopDriving(f);
                         f.SetControlledByAI(false);
                         Beacon("tactic manual " + f.FormationIndex);
                     }
@@ -755,9 +849,17 @@ namespace BannerlordVoiceLink
                 // ---- 第二批(2026-09): 与 flank 同一机制, 只是换行为类 ----
                 case "highground":
                     foreach (var f in targets)
-                        Hand(f, new BehaviorHoldHighGround(f), verb);
-                    Notify(label + T(" → 占据高地(AI自主执行, 喊\"听令\"收回)",
-                                     " → holding the high ground (AI-driven; 'manual control' to take back)"));
+                    {
+                        var hg = new BehaviorHoldHighGround(f);
+                        // 非远程编队占高地时, 告诉它己方最大的弓箭手编队在哪, 它会按射程留距离
+                        if (!f.QuerySystem.IsRangedFormation)
+                            hg.RangedAllyFormation = OwnNonEmpty()
+                                .Where(x => x != f && x.QuerySystem.IsRangedFormation)
+                                .OrderByDescending(x => x.CountOfUnits).FirstOrDefault();
+                        Drive(f, hg, verb);
+                    }
+                    Notify(label + T(" → 占据高地(自动执行, 下任何指令即停)",
+                                     " → holding the high ground (auto; any direct order stops it)"));
                     return "ok tactic=highground n=" + targets.Count;
                 case "skirmish":
                     foreach (var f in targets)
@@ -770,36 +872,26 @@ namespace BannerlordVoiceLink
                             case FormationClass.Cavalry: b = new BehaviorMountedSkirmish(f); break;
                             default: b = new BehaviorSkirmish(f); break;
                         }
-                        Hand(f, b, verb);
+                        Drive(f, b, verb);
                     }
-                    Notify(label + T(" → 游击骚扰(AI自主执行, 喊\"听令\"收回)",
-                                     " → skirmishing (AI-driven; 'manual control' to take back)"));
+                    Notify(label + T(" → 游击骚扰(自动执行, 下任何指令即停)",
+                                     " → skirmishing (auto; any direct order stops it)"));
                     return "ok tactic=skirmish n=" + targets.Count;
                 case "cautious":
                     foreach (var f in targets)
-                        Hand(f, new BehaviorCautiousAdvance(f), verb);
-                    Notify(label + T(" → 稳步推进(盾墙/贴弓箭手射程, 喊\"听令\"收回)",
-                                     " → advancing carefully (AI-driven; 'manual control' to take back)"));
+                        Drive(f, new BehaviorCautiousAdvance(f), verb);
+                    Notify(label + T(" → 稳步推进(盾墙/贴弓箭手射程, 下任何指令即停)",
+                                     " → advancing carefully (auto; any direct order stops it)"));
                     return "ok tactic=cautious n=" + targets.Count;
                 case "protect":
                     foreach (var f in targets)
-                        Hand(f, new BehaviorDefensiveRing(f), verb);
-                    Notify(label + T(" → 护住弓箭手(结圆阵护弓, 喊\"听令\"收回)",
-                                     " → protecting the archers (AI-driven; 'manual control' to take back)"));
+                        Drive(f, new BehaviorDefensiveRing(f), verb);
+                    Notify(label + T(" → 护住弓箭手(结圆阵护弓, 下任何指令即停)",
+                                     " → protecting the archers (auto; any direct order stops it)"));
                     return "ok tactic=protect n=" + targets.Count;
                 default:
                     return "err bad_tactic";
             }
-        }
-
-        /// <summary>把编队交给 AI 并插入指定特殊行为(权重拉高压过常规竞争,
-        /// purgePrevious 清掉上一个特殊行为)。flank/highground/skirmish/... 共用。</summary>
-        private static void Hand(Formation f, BehaviorComponent b, string verb)
-        {
-            f.SetControlledByAI(true);
-            b.WeightFactor = 10f;
-            f.AI.AddSpecialBehavior(b, true);
-            Beacon("tactic " + verb + " " + f.FormationIndex + " units=" + f.CountOfUnits);
         }
 
         private static string CnOrder(string order)
