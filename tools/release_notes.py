@@ -7,8 +7,9 @@
   .venv\\Scripts\\python tools\\release_notes.py --preview  # 只打印, 不写
 
 CHANGELOG 约定 (见文件头): "## <版本> — <日期>" 起一节, 下面 "### 中文" / "### English"
-两段, 每段是 "- " 开头的条目。渲染成 BBCode(工坊 Change Notes 支持), 换行写成
-字面 \\n —— SteamCMD 的 workshop_build_item 会把它还原成真换行。
+两段, 每段是 "- " 开头的条目。渲染成 BBCode(工坊 Change Notes 支持), 换行用
+真换行(VDF 引号串可以跨行)。字面 \\n 不会被 SteamCMD 转义, 会原样显示在
+工坊页上 —— v0.9.6 首发踩过, 别再改回去。
 """
 import os
 import re
@@ -59,7 +60,7 @@ def render(entry):
         lines.append("[list]")
         lines += [f"[*]{_md_inline_to_bbcode(x)}" for x in entry[key]]
         lines.append("[/list]")
-    return "\\n".join(lines)
+    return "\n".join(lines)
 
 
 def write_vdf(note):
@@ -85,7 +86,7 @@ def main():
     if entry is None:
         raise SystemExit(f"CHANGELOG.md 里没有版本 {want}")
     note = render(entry)
-    print(note.replace("\\n", "\n"))
+    print(note)
     if "--preview" in sys.argv:
         return
     write_vdf(note)

@@ -68,7 +68,17 @@
 - 排错流程: 用户从启动器测, 报问题看 app.log 最后一个"新会话"段落 + mod.log
   心跳三行 + usage.csv 尾部。
 
-## 当前状态 (2026-07-10)
+## 当前状态 (2026-09-02)
+
+v0.9.6 已上工坊(ItemID 3775571491, Unlisted)。发版四步见 mod/PUBLISH.md:
+build --release → 写 docs/CHANGELOG.md(中文+English) → tools/release_notes.py
+→ steamcmd 上传(登录态已缓存)。用户要求每版说明都中英双语, 由 AI 起草。
+教训: 打包版查 HF 缓存曾写死 Systran 仓库名, turbo(mobiuslabsgmbh)永远"未下载"
+静默回退 small —— 凡"模型解析"必须走 models.model_repo 映射并用假 _MEIPASS 测。
+英文模式: 占比/杂字按词算; 短句对长别名 partial_ratio 按长度比打折; 口音别名
+(or/oh units)进词典; 测试模式(listen.py)不走快路/重试, 与真实模式有差异(待收敛)。
+
+## 历史状态 (2026-07-10)
 
 v0.8.0(游戏1.4.7): 混合识别/指令复盘(F11)/语音数据共建/整活词典(fun.pack)/
 游戏内双通道通知(顶部横幅+左下记录)/**分队**(骑兵分队→左队进攻/右队跟我,

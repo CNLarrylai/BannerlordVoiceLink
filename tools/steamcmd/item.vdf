@@ -4,5 +4,17 @@
 	"publishedfileid"	"3775571491"
 	"contentfolder"		"C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord\Modules\BannerlordVoiceLink"
 	"previewfile"		"C:\Users\Victoria\bannerlord-voice\assets\workshop_preview.png"
-	"changenote"		"[h2]v0.9.6  (2026-09-02)[/h2]\n[h3]中文[/h3]\n[list]\n[*][b]重要修复[/b]:选了 large-v3-turbo 模型,实际一直在跑 small。打包版找模型缓存时仓库名写错,导致音频设置里选 turbo、或 GPU 引导装完 turbo 之后都静默回退。现已修复,N 卡玩家会真正用上最准的模型。\n[*][b]英文识别加固[/b]:非母语口音把 'All' 说成 'Or/Oh' 也能命中;英文的'是不是指令'判定改按词算,短指令不再被当聊天丢掉;'Or.' 'Oh.' 这类噪音短句不再误触阵型。\n[*][b]手动放模型[/b]:模型文件可直接放到 %LOCALAPPDATA%\BannerlordVoice\models\<模型名>\,免手搓缓存路径。国内下载教程见讨论区。\n[/list]\n[h3]English[/h3]\n[list]\n[*][b]Important fix[/b]: selecting large-v3-turbo actually kept running small. The packaged build looked up the model cache under the wrong repository name, so choosing turbo in Audio Settings (or after the GPU setup wizard) silently fell back. Fixed; NVIDIA users now really get the most accurate model.\n[*][b]English recognition hardened[/b]: non-native 'All' heard as 'Or/Oh' still lands on all units; the 'is this a command' check now counts words instead of letters so short orders are no longer dropped as chatter; noise fragments like 'Or.' / 'Oh.' no longer trigger formations.\n[*][b]Manual model folder[/b]: drop model files into %LOCALAPPDATA%\BannerlordVoice\models\<model>\ and they are picked up directly.\n[/list]"
+	"changenote"		"[h2]v0.9.6  (2026-09-02)[/h2]
+[h3]中文[/h3]
+[list]
+[*][b]重要修复[/b]:选了 large-v3-turbo 模型,实际一直在跑 small。打包版找模型缓存时仓库名写错,导致音频设置里选 turbo、或 GPU 引导装完 turbo 之后都静默回退。现已修复,N 卡玩家会真正用上最准的模型。
+[*][b]英文识别加固[/b]:非母语口音把 'All' 说成 'Or/Oh' 也能命中;英文的'是不是指令'判定改按词算,短指令不再被当聊天丢掉;'Or.' 'Oh.' 这类噪音短句不再误触阵型。
+[*][b]手动放模型[/b]:模型文件可直接放到 %LOCALAPPDATA%\BannerlordVoice\models\<模型名>\,免手搓缓存路径。国内下载教程见讨论区。
+[/list]
+[h3]English[/h3]
+[list]
+[*][b]Important fix[/b]: selecting large-v3-turbo actually kept running small. The packaged build looked up the model cache under the wrong repository name, so choosing turbo in Audio Settings (or after the GPU setup wizard) silently fell back. Fixed; NVIDIA users now really get the most accurate model.
+[*][b]English recognition hardened[/b]: non-native 'All' heard as 'Or/Oh' still lands on all units; the 'is this a command' check now counts words instead of letters so short orders are no longer dropped as chatter; noise fragments like 'Or.' / 'Oh.' no longer trigger formations.
+[*][b]Manual model folder[/b]: drop model files into %LOCALAPPDATA%\BannerlordVoice\models\<model>\ and they are picked up directly.
+[/list]"
 }
