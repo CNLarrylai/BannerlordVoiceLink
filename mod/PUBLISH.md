@@ -30,27 +30,23 @@ Modules/BannerlordVoiceLink/            (~397 MB, 工坊对大模组很宽容)
 体检会硬校验: 三件套齐全 + 随包配置必须是发行默认(麦克风 null / model auto /
 中文) —— 你的本机设备名和模型选择不会被打进包里。
 
-## 首次上传 (官方工具, 一条命令)
+## 发版流程 (SteamCMD, 2026-08 起; 官方 TaleWorlds 工具在本机会 "Timeout uploading manifest")
 
-1. 确认 Steam 客户端在线, 且游戏的 Steam Cloud 已开启 (Steam 库 → 游戏属性)。
-2. 准备一张宣传图, 放到 `assets\workshop_preview.png` (或改 WorkshopCreate.xml 里的路径)。
-3. 命令行进入游戏 bin 目录并执行:
+ItemID 3775571491 (Unlisted)。每次发版四步:
 
 ```
-cd "C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client"
-TaleWorlds.MountAndBlade.SteamWorkshop.exe "C:\Users\Victoria\bannerlord-voice\mod\WorkshopCreate.xml"
+.venv\Scripts\python tools\build_workshop.py --release     # 1. 正式构建(去掉 [DEV] 名)
+# 2. 在 docs/CHANGELOG.md 顶部写新版本一节(中文 + English 两段)
+.venv\Scripts\python tools\release_notes.py               # 3. 渲染成工坊 Change Notes -> item.vdf
+cd tools\steamcmd
+.\steamcmd.exe +login linghualai +workshop_build_item "C:\Users\Victoria\bannerlord-voice\tools\steamcmd\item.vdf" +quit   # 4. 上传
 ```
 
-成功后去自己的工坊页拿 **ItemId** (页面 URL 里的数字)。
-
-## 后续更新
-
-把 ItemId 填进 `mod\WorkshopUpdate.xml` (模板已备好), 以后每次:
-
-```
-python tools\build_workshop.py
-TaleWorlds.MountAndBlade.SteamWorkshop.exe "C:\Users\Victoria\bannerlord-voice\mod\WorkshopUpdate.xml"
-```
+- 构建前关掉: 打包版语音程序(管理员权限, 用 stop_all.bat)、骑砍 launcher / 游戏。
+- 首次登录要输密码 + Steam Guard, 之后 steamcmd 会缓存登录态, 一般不再问。
+- Change Notes 支持 BBCode; release_notes.py 输出的是 [h2]/[h3]/[list], 中英各一段。
+- 上传成功后到工坊页 Change Notes 标签核对:
+  https://steamcommunity.com/sharedfiles/filedetails/changelog/3775571491
 
 ## 诚实注意事项
 
