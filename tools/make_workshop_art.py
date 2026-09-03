@@ -74,7 +74,7 @@ def cover():
         y += 76
     center(d, W / 2, 578, "本地离线识别 · 不联网不上传 · BETA",
            font("msyh.ttc", 19), DIM)
-    p = os.path.join(ROOT, "assets", "workshop_preview.png")
+    p = os.path.join(ROOT, "assets", "workshop_preview_zh.png")   # 中文版留档, 工坊用双语版
     img.save(p)
     print("封面:", p)
 
@@ -233,12 +233,62 @@ def promo_4x3():
     print("4:3 主视觉:", p)
 
 
+def cover_en():
+    """640x640 双语封面(工坊 previewfile): 英文为主 + 中文副标题。
+    英文标题用 Segoe UI Bold(Windows 自带, 无衬线粗体, 和金色底最搭);
+    中文用微软雅黑粗体。三张指令卡全英文, 底部一行双语保证。"""
+    W, H = 640, 640
+    img = Image.new("RGB", (W, H), BG)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, W, 10], fill=GOLD)
+    d.rectangle([0, H - 10, W, H], fill=GOLD)
+
+    mic_icon(d, W / 2, 96, 74, GOLD)
+
+    # 标题: VOICE COMMANDER (自适应字号) / for Mount & Blade II: Bannerlord / 骑砍语音指挥
+    title = "VOICE COMMANDER"
+    size = 60
+    while size > 40:
+        f_t = font("segoeuib.ttf", size)
+        b = d.textbbox((0, 0), title, font=f_t)
+        if b[2] - b[0] <= W - 80:
+            break
+        size -= 2
+    center(d, W / 2, 148, title, f_t, GOLD)
+    center(d, W / 2, 222, "for Mount & Blade II: Bannerlord", font("seguisb.ttf", 22), FG)
+    center(d, W / 2, 258, "骑砍语音指挥 · 用嘴指挥你的军队", font("msyhbd.ttc", 21), DIM)
+
+    # 三张指令卡: 说法(左) + 卖点(右, 绿)
+    cards = [
+        ('"Cavalry, charge!"', "0.2s response"),
+        ('"Cavalry, charge their archers!"', "real target lock"),
+        ('"Cavalry, split!"  "Left, charge!"', "split & flank"),
+    ]
+    f_cmd = font("seguisb.ttf", 23)
+    f_tag = font("seguisb.ttf", 16)
+    y = 318
+    for cmd, tag in cards:
+        d.rounded_rectangle([46, y, W - 46, y + 62], radius=12, fill=CARD)
+        d.text((66, y + 17), cmd, font=f_cmd, fill=FG)
+        b = d.textbbox((0, 0), tag, font=f_tag)
+        d.text((W - 66 - (b[2] - b[0]), y + 22), tag, font=f_tag, fill=GREEN)
+        y += 76
+
+    center(d, W / 2, 566, "Offline · No cloud · Free · BETA", font("seguisb.ttf", 18), DIM)
+    center(d, W / 2, 594, "本地离线识别 · 不联网不上传", font("msyh.ttc", 15), DIM)
+
+    for name in ("workshop_preview_en.png", "workshop_preview.png"):   # 后者=工坊 previewfile
+        img.save(os.path.join(ROOT, "assets", name))
+    print("双语封面: assets/workshop_preview.png (中文旧版留在 workshop_preview_zh.png)")
+
+
 def main():
     os.makedirs(ART, exist_ok=True)
     cover()
     shot_commands()
     shot_split()
     promo_4x3()
+    cover_en()
 
 
 if __name__ == "__main__":
