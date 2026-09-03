@@ -117,6 +117,19 @@ def test_formorder_roundtrip():
     assert got[0] == "formorder 5 charge -", got[0]
 
 
+def test_side_orders_cover_every_keyed_order():
+    """半队/第N队的派遣令表必须覆盖词典里所有带按键的指令(定点移动/就近集火除外)。"""
+    import yaml
+    from main import App
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, "config", "commands.yaml"), encoding="utf-8") as f:
+        cmds = yaml.safe_load(f)
+    skip = {"to_position", "focus_target"}
+    missing = [k for k, d in cmds["orders"].items()
+               if d.get("keys") and k not in skip and k not in App._SIDE_ORDERS]
+    assert not missing, f"半队/第N队不支持的按键指令: {missing}"
+
+
 def test_moverel_roundtrip():
     port, got = _fake_mod("ok moverel=Cavalry units=20")
     r = ModLink(port=port).moverel("cavalry", "archers", "right", 20)

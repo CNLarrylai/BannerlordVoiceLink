@@ -86,12 +86,18 @@ def _group(matcher, seg, allow_all=False):
     if not g or not g["pass"]:
         return None
     name = g["name"]
-    # 错听形(如"功箭手")单独看时可能被拼音蹭到伪兵种 archers_left(别名更长赢
-    # tiebreak); 站位只关心兵种本身, 半队归回其兵种
+    alias = g.get("alias") or ""
+    # 半队(骑兵左队)本身就是合法的 A/B; 但错听形(如"功箭手")单独看时可能被拼音蹭到
+    # archers_left(别名更长赢 tiebreak) —— 说法里根本没有 左/右 字样就归回兵种
     for suf in ("_left", "_right"):
         if name.endswith(suf) and name[:-len(suf)] in CLASSES:
-            name = name[:-len(suf)]
+            if not any(w in alias for w in ("左", "右", "left", "right")):
+                name = name[:-len(suf)]
     if name in CLASSES or (allow_all and name == "all"):
+        return name
+    if name.startswith("form") and name[4:].isdigit():
+        return name
+    if name.endswith(("_left", "_right")):
         return name
     return None
 

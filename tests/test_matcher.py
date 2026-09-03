@@ -226,6 +226,9 @@ SPLIT_CASES = [
     ("步兵右队后退", "infantry_right", "fall_back"),
     ("左路骑兵冲锋", "cavalry_left", "charge"),
     ("骑射右队撤退", "horse_archers_right", "retreat"),
+    ("第六队盾墙", "form6", "shield_wall"),
+    ("第五队游击", "form5", "skirmish"),
+    ("骑兵左队自由射击", "cavalry_left", "fire_at_will"),
     # 复合不能污染光杆兵种: "骑兵冲锋" 仍是 cavalry, 不被 cavalry_left 抢
     ("骑兵冲锋", "cavalry", "charge"),
     # 第N队按槽位号指挥(第五~八队=分队新队落的空槽)
@@ -309,6 +312,10 @@ EN_CASES = [
     ("Group 4, charge", "horse_archers", "charge"),
     ("Group 5, charge", "form5", "charge"),
     ("Group 7, fall back", "form7", "fall_back"),
+    # 第5~8队 / 半队 收全部指令 (2026-09-03 走查: Group 6 skirmish 曾没反应)
+    ("Group 6, skirmish", "form6", "skirmish"),
+    ("Group 5, shield wall", "form5", "shield_wall"),
+    ("Cavalry left, fire at will", "cavalry_left", "fire_at_will"),
     # 2026-09-03 实测错听/漏收
     ("Group 4, Vetch Formation", "horse_archers", "skein"),
     ("Groove 6, charge!", "form6", "charge"),

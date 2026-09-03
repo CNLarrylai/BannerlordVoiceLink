@@ -292,7 +292,14 @@ class App:
     # 左右半队支持的"派遣"指令 -> 模组 sideorder 令牌 (命令key 与模组用词对齐)
     _SIDE_ORDERS = {"charge": "charge", "advance": "advance",
                     "follow_me": "follow", "halt": "halt",
-                    "fall_back": "fallback", "retreat": "retreat"}
+                    "fall_back": "fallback", "retreat": "retreat",
+                    # 阵型 / 射击 / 上下马 / 交AI / 朝向: 半队与第N队全支持
+                    "line": "line", "shield_wall": "shieldwall", "loose": "loose",
+                    "circle": "circle", "square": "square", "skein": "skein",
+                    "column": "column", "scatter": "scatter",
+                    "fire_at_will": "fire", "hold_fire": "holdfire",
+                    "mount_toggle": "mounttoggle", "ai_control": "aion",
+                    "face_direction": "lookenemy"}
     _SPLIT_CLASSES = ("infantry", "archers", "cavalry", "horse_archers")
     # 战术层(FormationAI, 需模组): 命令key -> 模组 tactic 动词
     _TACTICS = {"flank": "flank", "reclaim": "manual",
@@ -312,8 +319,10 @@ class App:
             return False
         desc2 = desc     # 定向进攻时下面会补上目标, 让浮层/横幅显示"打谁"
         if o_key in self._TACTICS:
-            # 战术层: 兵种或全军("骑兵绕后"/"全军听令"); 左右半队/第N队暂不支持
-            cls = g_key if g_key in self._SPLIT_CLASSES + ("all",) else None
+            # 战术层: 兵种 / 全军 / 半队 / 第N队 都行(模组统一解析队伍名)
+            cls = g_key if (g_key in self._SPLIT_CLASSES + ("all",)
+                            or (g_key or "").startswith("form")
+                            or (g_key or "").endswith(("_left", "_right"))) else None
             if not cls:
                 print("    ⚙ 战术指令要指定兵种或全军, 例:「骑兵绕后」「全军听令」")
                 self._set(t("⚙ 要指定兵种或全军"), t("例：骑兵绕后"), "#ffb37f")
@@ -419,10 +428,8 @@ class App:
 
     def _side_unsupported(self, o_key):
         """左右队/第N队收到不支持的指令(如定点移动去那儿) —— 提示并返回失败。"""
-        print(f"    ⚙ 左右/第N队暂不支持「{o_key}」"
-              "(仅冲锋/进攻/前进/跟随/待命/后退/撤退; 定点移动用'跟我'把它们唤到身边)")
-        self._set(t("⚙ 左右队暂不支持这条"),
-                  t("仅冲锋/前进/跟随/待命/后退/撤退；定点移动用'跟我'"), "#ffb37f")
+        print(f"    ⚙ 左右/第N队暂不支持「{o_key}」(定点移动用'跟我'或'去某队旁边')")
+        self._set(t("⚙ 左右队暂不支持这条"), t("定点移动用'跟我'"), "#ffb37f")
         return False
 
     def _with_target(self, desc, o_key, t_key):

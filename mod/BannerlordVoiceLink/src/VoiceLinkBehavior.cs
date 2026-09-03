@@ -414,6 +414,39 @@ namespace BannerlordVoiceLink
             return m != null && m.PlayerTeam != null && !m.MissionEnded;
         }
 
+        /// <summary>任何"队伍名"解析成编队: 四兵种 / form5..form8(槽位) / cavalry_left 等半队。
+        /// 第 5~8 队和半队从此和四兵种一样能收全部指令(2026-09-03 用户走查: Group 6
+        /// skirmish 没反应, 因为它们以前只走 6 条派遣令的专用通道)。</summary>
+        private bool TryFormation(string name, Team player, out Formation f, out string err)
+        {
+            f = null; err = "err bad_group";
+            if (string.IsNullOrEmpty(name)) return false;
+            FormationClass fc;
+            if (TryClass(name, out fc))
+            {
+                f = player.GetFormation(fc);
+            }
+            else if (name.StartsWith("form") && name.Length == 5 && char.IsDigit(name[4]))
+            {
+                int n = name[4] - '0';
+                if (n < 1 || n > 8) { err = "err bad_slot"; return false; }
+                f = player.GetFormation((FormationClass)(n - 1));
+            }
+            else if (name.EndsWith("_left") || name.EndsWith("_right"))
+            {
+                bool left = name.EndsWith("_left");
+                string cls = left ? name.Substring(0, name.Length - 5) : name.Substring(0, name.Length - 6);
+                if (!TryClass(cls, out fc)) return false;
+                Formation[] pair;
+                if (!_splits.TryGetValue(fc, out pair) || pair[0] == null || pair[1] == null)
+                { err = "err not_split"; return false; }
+                f = left ? pair[0] : pair[1];
+            }
+            else return false;
+            if (f == null || f.CountOfUnits == 0) { err = "err group_empty"; f = null; return false; }
+            return true;
+        }
+
         private static bool TryClass(string name, out FormationClass fc)
         {
             switch (name)
@@ -608,12 +641,9 @@ namespace BannerlordVoiceLink
             }
             else
             {
-                FormationClass gc;
-                if (!TryClass(groupName, out gc))
-                    return "err bad_group";
-                var f = player.GetFormation(gc);
-                if (f == null || f.CountOfUnits == 0)
-                    return "err group_empty";
+                Formation f; string err;
+                if (!TryFormation(groupName, player, out f, out err))
+                    return err;
                 groups.Add(f);
             }
             if (groups.Count == 0)
@@ -878,6 +908,23 @@ namespace BannerlordVoiceLink
                 case "halt": ot = OrderType.StandYourGround; break;
                 case "fallback": ot = OrderType.FallBack; break;
                 case "retreat": ot = OrderType.Retreat; break;
+                // 阵型 / 射击 / 上下马 / 交AI: 半队与第N队也能收(与 F 键菜单一一对应)
+                case "line": ot = OrderType.ArrangementLine; break;
+                case "shieldwall": ot = OrderType.ArrangementCloseOrder; break;
+                case "loose": ot = OrderType.ArrangementLoose; break;
+                case "circle": ot = OrderType.ArrangementCircular; break;
+                case "square": ot = OrderType.ArrangementSchiltron; break;
+                case "skein": ot = OrderType.ArrangementVee; break;
+                case "column": ot = OrderType.ArrangementColumn; break;
+                case "scatter": ot = OrderType.ArrangementScatter; break;
+                case "fire": ot = OrderType.FireAtWill; break;
+                case "holdfire": ot = OrderType.HoldFire; break;
+                case "mounttoggle":
+                    ot = (pick.QuerySystem.IsCavalryFormation || pick.QuerySystem.IsRangedCavalryFormation)
+                        ? OrderType.Dismount : OrderType.Mount;
+                    break;
+                case "aion": ot = OrderType.AIControlOn; break;
+                case "lookenemy": ot = OrderType.LookAtEnemy; break;
                 default: return "err bad_order";
             }
             oc.ClearSelectedFormations();
@@ -921,13 +968,11 @@ namespace BannerlordVoiceLink
         {
             if (!InBattle())
                 return "err no_battle";
-            FormationClass gc;
-            if (!TryClass(groupName, out gc))
-                return "err bad_group";
             var player = Mission.Current.PlayerTeam;
-            var f = player.GetFormation(gc);
-            if (f == null || f.CountOfUnits == 0)
-                return "err group_empty";
+            Formation f; string err;
+            if (!TryFormation(groupName, player, out f, out err))
+                return err;
+            var gc = f.FormationIndex;
             float dist;
             if (!float.TryParse(distStr, out dist) || dist <= 0f || dist > 300f)
                 return "err bad_dist";
@@ -935,12 +980,10 @@ namespace BannerlordVoiceLink
             Formation ward = f;
             if (wardName != "self")
             {
-                FormationClass wc;
-                if (!TryClass(wardName, out wc))
+                if (!TryFormation(wardName, player, out ward, out err))
+                    return err == "err group_empty" ? "err no_ward" : "err bad_ward";
+                if (ward == f)
                     return "err bad_ward";
-                ward = player.GetFormation(wc);
-                if (ward == null || ward.CountOfUnits == 0)
-                    return "err no_ward";
             }
             Vec2 origin = ward.CachedMedianPosition.AsVec2;
             Vec2 view = PlayerView();          // 左/右: 玩家视角
@@ -1001,12 +1044,9 @@ namespace BannerlordVoiceLink
             }
             else
             {
-                FormationClass gc;
-                if (!TryClass(groupName, out gc))
-                    return "err bad_group";
-                var f = player.GetFormation(gc);
-                if (f == null || f.CountOfUnits == 0)
-                    return "err group_empty";
+                Formation f; string err;
+                if (!TryFormation(groupName, player, out f, out err))
+                    return err;
                 targets.Add(f);
             }
 
@@ -1121,6 +1161,19 @@ namespace BannerlordVoiceLink
                     case "halt": return "Hold position";
                     case "fallback": return "Fall back";
                     case "retreat": return "Retreat";
+                    case "line": return "Line";
+                    case "shieldwall": return "Shield wall";
+                    case "loose": return "Loose";
+                    case "circle": return "Circle";
+                    case "square": return "Square";
+                    case "skein": return "Wedge";
+                    case "column": return "Column";
+                    case "scatter": return "Scatter";
+                    case "fire": return "Fire at will";
+                    case "holdfire": return "Hold fire";
+                    case "mounttoggle": return "Mount / dismount";
+                    case "aion": return "AI control";
+                    case "lookenemy": return "Face the enemy";
                     default: return order;
                 }
             }
@@ -1132,6 +1185,19 @@ namespace BannerlordVoiceLink
                 case "halt": return "原地待命";
                 case "fallback": return "后退";
                 case "retreat": return "撤退";
+                case "line": return "线阵";
+                case "shieldwall": return "盾墙";
+                case "loose": return "散阵";
+                case "circle": return "圆阵";
+                case "square": return "方阵";
+                case "skein": return "三角阵";
+                case "column": return "纵列";
+                case "scatter": return "乱阵";
+                case "fire": return "自由射击";
+                case "holdfire": return "停止射击";
+                case "mounttoggle": return "上马/下马";
+                case "aion": return "交给AI";
+                case "lookenemy": return "面朝敌军";
                 default: return order;
             }
         }

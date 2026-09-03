@@ -27,6 +27,10 @@ def test_zh_relative_to_other():
     assert _r("步兵到骑射前面三十米") == {"group": "infantry", "ward": "horse_archers", "side": "front", "dist": 30}
     assert _r("骑兵站到弓箭手的后面") == {"group": "cavalry", "ward": "archers", "side": "back", "dist": 20}
     assert _r("骑射到骑兵左侧50米") == {"group": "horse_archers", "ward": "cavalry", "side": "left", "dist": 50}
+    # 第N队 / 半队 也能当 A 或 B
+    assert _r("第六队去弓箭手右边")["group"] == "form6"
+    assert _r("骑兵左队往前二十米") == {"group": "cavalry_left", "ward": None, "side": "front", "dist": 20}
+    assert _r("步兵到骑兵右队后面")["ward"] == "cavalry_right"
     # 错听: 骑兵 -> 起兵(拼音兜底), 弓箭手 -> 功箭手
     assert _r("起兵去功箭手右边")["ward"] == "archers"
 
