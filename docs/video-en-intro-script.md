@@ -19,6 +19,7 @@
 4. (75) The whole thing runs offline on your PC, and answers in about 0.2 seconds.
 5. (70) "Cavalry, charge their archers" is a real API lock-on, not a fake cursor.
 6. (60) It learned a Chinese accent. "All units" heard as "Or unit" still charges.
+7. (85) Voice control in Bannerlord is not new: Resonant showed VoiceAttack doing it in April 2020 (26k views). But that was a macro tool — your voice pressed F-keys through Windows speech recognition. Top comments back then: "train Windows speech recognition more than once", "my accent is too Glaswegian for this", and a 139-like "not sure if this is an April Fools". Every one of those is a thing this mod fixes.
 
 ---
 
@@ -59,7 +60,12 @@ VO:
 
 ## BODY 2 — Orders the keyboard can't give (1:15–2:30)  ← 次好的点
 
-**Rehook**: "Here's where it stops being a voice remote and starts being a new controller."
+**Rehook**(直接对老玩家的怀疑说话):
+> "Some of you have seen this before. 2020, VoiceAttack, first week of early access.
+> That tool did one thing: your voice pressed a key. Whatever the keyboard could do, it could do. Nothing more.
+> Everything from here on is something a key press cannot do."
+
+(字幕:**2020: voice → key press. 2026: voice → the game itself.**)
 
 **Context**: "With F-keys you can tell cavalry to charge. You can't tell them *who* to charge."
 
@@ -115,7 +121,8 @@ VO(收回演示):
 (屏幕录制配字幕:Subscribe → Mods 勾选 → Play → 两个弹窗 → 选麦克风)
 
 VO:
-> "Setup is one Workshop subscribe. Link below.
+> "If you tried VoiceAttack back then, you remember the setup: buy it, build a profile, train Windows speech recognition, pray about your accent.
+> This is one Workshop subscribe. Link below.
 > First launch shows two popups: an *unverified code* warning, because the mod opens a local port; and a UAC prompt, because it presses keys for you. Both are expected.
 > Catch one: English support is new. I'm a Chinese streamer; this started as a Chinese mod. Run the calibration once — you read every command out loud and it learns your accent. It learned mine.
 > Catch two: it's better with an NVIDIA card. One click downloads the accurate model.
@@ -137,11 +144,34 @@ VO:
 
 ---
 
+## Differentiation vs VoiceAttack(写给你自己,口播只取其中两三句)
+
+那条 2020 年视频(Resonant, 26k 观看)证明观众见过"语音指挥骑砍"。所以不能只说"能用嘴指挥",要说清**为什么这次不一样**。别贬低 VoiceAttack,它是好工具,只是**通用宏工具**;我们是**骑砍专用的游戏集成**。
+
+| | VoiceAttack(2020 视频) | 这个模组 |
+|---|---|---|
+| 做什么 | 语音 → 按键宏 | 语音 → 游戏 API(伴侣模组) |
+| 能下的指令 | 键盘有的 | 键盘有的 + 定向进攻 / 分队 / AI 战术层 |
+| 识别引擎 | Windows 语音识别,要先训练 | 本地神经网络(Whisper),开箱即用 |
+| 口音 | 评论:"我格拉斯哥口音怕不行" | 校准一轮学你的口音;中国主播实测 |
+| 说法 | 必须念配置好的原话 | 口语随便说,"go get them" 也认 |
+| 反馈 | 无(不知道按没按到) | 屏幕顶部横幅 + 战斗记录回执 |
+| 价格 / 安装 | 付费 + 自己建 profile | 免费,工坊一键订阅 |
+| 隐私 | 本地 | 本地,不联网 |
+
+**口播里用的三句**(已写进 BODY 2 rehook 和 BODY 4):
+- "That tool did one thing: your voice pressed a key."
+- "Everything from here on is something a key press cannot do."
+- "Buy it, build a profile, train Windows speech recognition, pray about your accent. This is one subscribe."
+
+**视频描述里加一行**:"Not a VoiceAttack profile. A companion mod that talks to the game's own formation API — targeting, splitting, and AI tactics that F-keys can't reach."
+
 ## Title / thumbnail
 
 - **Title A**: Bannerlord won't let you use half its tactics. So I talk to it.
 - **Title B**: I gave Bannerlord's AI a voice interface (no keyboard, no cloud, free)
 - **Title C**: "Cavalry, charge their archers" — Bannerlord, hands-free
+- **Title D**(直接对标老视频): Voice-controlled Bannerlord, 6 years later: it's not a macro anymore
 - **Thumbnail**: 第一人称骑马挥剑 + 放大的 `[Voice] Cavalry → attacking enemy Archers` 横幅 + 大字 **NO KEYBOARD**。钩子、标题、封面三者都指向"键盘做不到的指令",满足对齐要求。
 
 ## Pre-publish audit(按那套方法自检)
