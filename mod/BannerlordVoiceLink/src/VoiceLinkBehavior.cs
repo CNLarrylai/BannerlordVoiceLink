@@ -156,6 +156,7 @@ namespace BannerlordVoiceLink
             private readonly Formation _ward;
             private readonly Func<IEnumerable<Formation>> _enemies;
             private int _side;
+            private readonly Vec2 _view = PlayerView();   // 左/右按下令时的玩家视角, 之后不变
 
             public BehaviorGuard(Formation f, Formation ward, Func<IEnumerable<Formation>> enemies,
                                  int side)
@@ -209,11 +210,11 @@ namespace BannerlordVoiceLink
                     else
                     {
                         Vec2 t = threat.CachedMedianPosition.AsVec2;
-                        _side = (w + dir.LeftVec() * 25f).DistanceSquared(t)
-                                < (w + dir.RightVec() * 25f).DistanceSquared(t) ? -1 : 1;
+                        _side = (w + _view.LeftVec() * 25f).DistanceSquared(t)
+                                < (w + _view.RightVec() * 25f).DistanceSquared(t) ? -1 : 1;
                     }
                 }
-                Vec2 lateral = _side < 0 ? dir.LeftVec() : dir.RightVec();
+                Vec2 lateral = _side < 0 ? _view.LeftVec() : _view.RightVec();   // 玩家视角的左右
                 TaleWorlds.Engine.WorldPosition wp = _ward.CachedMedianPosition;   // 全名: Engine.Path 与 IO.Path 撞名, 不 using
                 wp.SetVec2(w + lateral * 25f + dir * 5f);
                 CurrentOrder = MovementOrder.MovementOrderMove(wp);
@@ -889,6 +890,30 @@ namespace BannerlordVoiceLink
             return "ok units=" + pick.CountOfUnits;
         }
 
+        /// <summary>玩家视角的"前方"(镜头朝向, 玩家阵亡后是观战镜头; 都取不到就用主将朝向)。
+        /// 左/右一律按这个算(用户 2026-09-03 定): 喊指令的人看着战场说"左边", 指的是
+        /// 自己视角的左边; 按编队朝向算的话弓箭手一转身"左"就跟着转, 没法预判。</summary>
+        private static Vec2 PlayerView()
+        {
+            try
+            {
+                var f = Mission.Current.GetCameraFrame().rotation.f.AsVec2;
+                if (f.IsValid && f.LengthSquared > 0.01f) return f.Normalized();
+            }
+            catch { }
+            try
+            {
+                var a = Mission.Current.MainAgent;
+                if (a != null)
+                {
+                    var l = a.LookDirection.AsVec2;
+                    if (l.IsValid && l.LengthSquared > 0.01f) return l.Normalized();
+                }
+            }
+            catch { }
+            return new Vec2(0f, 1f);
+        }
+
         // ---------- 相对站位 / 位置微调 (一次性移动令) ----------
         // 语法 A 去 B 的 C [D]: 方位以 B 朝敌方向为准(没敌人用 B 的朝向), B=self 时
         // 以 A 自己的朝向为准。发 MovementOrderMove, 面朝敌军; 不持续驱动, 玩家随时改。
@@ -918,26 +943,27 @@ namespace BannerlordVoiceLink
                     return "err no_ward";
             }
             Vec2 origin = ward.CachedMedianPosition.AsVec2;
-            Vec2 dir = ward.Direction;
+            Vec2 view = PlayerView();          // 左/右: 玩家视角
+            Vec2 dir = view;                   // 前/后: 相对自己=玩家视角
             if (ward != f)
             {
-                // 朝敌方向: 离 B 最近的敌军
+                // 有 B 时 前/后 = 朝敌/背敌(前面=挡在敌人那侧, 后面=安全那侧), 与视角无关
                 Formation nearest = null; float best = float.MaxValue;
                 foreach (var e in EnemyFormations())
                 {
                     float d2 = e.CachedMedianPosition.AsVec2.DistanceSquared(origin);
                     if (d2 < best) { best = d2; nearest = e; }
                 }
-                if (nearest != null)
-                    dir = (nearest.CachedMedianPosition.AsVec2 - origin).Normalized();
+                dir = nearest != null ? (nearest.CachedMedianPosition.AsVec2 - origin).Normalized()
+                                      : ward.Direction;
             }
             if (!dir.IsValid || dir.LengthSquared < 0.01f)
-                dir = new Vec2(0f, 1f);
+                dir = view;
             Vec2 off;
             switch (side)
             {
-                case "left": off = dir.LeftVec(); break;
-                case "right": off = dir.RightVec(); break;
+                case "left": off = view.LeftVec(); break;
+                case "right": off = view.RightVec(); break;
                 case "front": off = dir; break;
                 case "back": off = -dir; break;
                 default: return "err bad_side";
