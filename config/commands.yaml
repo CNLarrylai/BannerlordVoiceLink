@@ -266,7 +266,7 @@ orders:
     keys: [f2, f3]
     aliases: [散阵, 散开, 疏散, 散开队形, 分散, 疏散队形, 散一散, 散开点儿,
               都散开, 散开点, 拉开距离, 拉开点儿, 都散一散, 别扎堆, 散一点, 别挤]
-    en: [loose, spread out, loose formation, disperse, open up]
+    en: [loose, spread out, loose formation, disperse, open up, lose formation]   # lose: 实测错听
   circle:
     keys: [f2, f4]
     aliases: [圆阵, 圆形, 结圆阵, 围成圈, 围圈, 结个圆阵, 摆圆阵, 围成圆圈,

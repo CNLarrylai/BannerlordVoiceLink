@@ -313,6 +313,7 @@ EN_CASES = [
     ("Infantry, split into two groups.", "infantry", "split"),
     ("Cavalry, flank their archers!", "cavalry", "flank"),
     ("Group 1, Loose Formation.", "infantry", "loose"),
+    ("Group 1 lose formation!", "infantry", "loose"),
     ("Archers, spread out.", "archers", "loose"),
     # 一个没解释的词放行(≈中文 2 字余量)
     ("Okay cavalry charge", "cavalry", "charge"),
