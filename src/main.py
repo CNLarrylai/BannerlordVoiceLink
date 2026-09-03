@@ -241,7 +241,7 @@ class App:
                 if armed:
                     boost, _ = self.retry.boost_for(cleaned)
                     if self.matcher.parse(cleaned, boost=boost):
-                        return ftext, t("快路")
+                        return ftext, "快路"   # 引擎标签进 usage.csv, 保持稳定; 显示层再翻译
         return self.transcriber.transcribe(audio, hotwords=hotwords), "Whisper"
 
     @staticmethod
@@ -563,7 +563,7 @@ class App:
         t0 = time.perf_counter()
         text, engine = self._transcribe(audio, hotwords)
         t_stt = time.perf_counter() - t0
-        eng = f"[{engine}]" if self.fast else ""
+        eng = f"[{t(engine)}]" if self.fast else ""
         if t_stt > self.slow_warn_sec:
             print(f"    [⚠ 识别偏慢] {t_stt:.1f}s (音频 {secs:.1f}s) "
                   f"—— 多半是游戏在抢 GPU, 试试游戏内锁帧/关游戏模式")
