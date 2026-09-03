@@ -16,24 +16,24 @@ groups:
     key: "1"
     aliases: [步兵, 步兵们, 步卒, 盾兵, 刀盾兵, 长矛兵, 近战, 近战兵, 大头兵,
               一队, 第一队, 步兵队]
-    en: [infantry, foot, footmen, foot soldiers, spearmen, group one, first group, group 1]
+    en: [infantry, foot, footmen, foot soldiers, spearmen, group one, first group, group 1, groove 1]
   archers:
     key: "2"
     aliases: [弓箭手, 弓箭手们, 弓兵, 射手, 神射手, 弓弩手, 远程, 弓手, 射箭的,
               放箭的, 二队, 第二队]
-    en: [archers, bowmen, ranged, bows, archer, group two, second group, group 2]
+    en: [archers, bowmen, ranged, bows, archer, group two, second group, group 2, groove 2]
   cavalry:
     key: "3"
     # 注意: 别名不能"包含其它指令的完整别名"(如曾有的"冲锋骑"包含"冲锋"),
     # 否则光杆短指令会滑进长别名拿满分, 同分比长度反而错赢 -> 乱路由。
     aliases: [骑兵, 骑兵们, 重骑, 重骑兵, 骑士, 突骑, 马队, 骑马的,
               三队, 第三队]
-    en: [cavalry, horsemen, knights, horse, riders, group three, third group, group 3]
+    en: [cavalry, horsemen, knights, horse, riders, group three, third group, group 3, groove 3]
   horse_archers:
     key: "4"
     aliases: [骑射, 骑射手, 骑射兵, 骑射们, 第四队, 四队, 四号队, 游骑,
               弓骑, 弓骑兵, 空骑兵, 空骑手]
-    en: [horse archers, mounted archers, horse archer, group four, fourth group, group 4]
+    en: [horse archers, mounted archers, horse archer, group four, fourth group, group 4, groove 4]
   all:
     key: "0"
     aliases: [全军, 全体, 所有人, 所有队伍, 大家, 大伙, 大伙儿, 士兵, 士兵们,
@@ -91,19 +91,19 @@ groups:
   form5:
     key: ""
     aliases: [第五队, 五队, 第5队, 五号队]
-    en: [fifth group, formation five, group five, group 5]
+    en: [fifth group, formation five, group five, group 5, groove 5]
   form6:
     key: ""
     aliases: [第六队, 六队, 第6队, 六号队]
-    en: [sixth group, formation six, group six, group 6]
+    en: [sixth group, formation six, group six, group 6, groove 6]
   form7:
     key: ""
     aliases: [第七队, 七队, 第7队, 七号队]
-    en: [seventh group, formation seven, group seven, group 7]
+    en: [seventh group, formation seven, group seven, group 7, groove 7]
   form8:
     key: ""
     aliases: [第八队, 八队, 第8队, 八号队]
-    en: [eighth group, formation eight, group eight, group 8]
+    en: [eighth group, formation eight, group eight, group 8, groove 8]
 
 orders:
   # ---------- 移动类 (F1 子菜单) ----------
@@ -156,11 +156,15 @@ orders:
     keys: []
     aliases: [分队, 一分为二, 分成两队, 分兵, 分成两拨, 一分为二分队, 拆成两队,
               分作两队, 分兵两路]
-    en: [split, divide, split in two, split up, divide in two]
+    en: [split, divide, split in two, split up, divide in two, split into two,
+         split into two groups, split in two groups, split the formation]
   flank:
     # 需伴侣模组: 战术层指令 —— 该编队交给 AI 执行原生 BehaviorFlank(绕后包抄),
     # 键盘玩家摸不到的 FormationAI 层。喊"听令"或任何直接指令即收回。
+    # takes_target: "Cavalry, flank their archers" 这种带目标的自然说法要能过
+    # (目标只用于显示/占比, 行为本身绕最近敌军)。
     keys: []
+    takes_target: true
     aliases: [绕后, 绕后包抄, 绕到后面, 绕到背后, 抄后路, 迂回包抄, 绕背偷袭,
               绕后袭扰, 去绕后]
     en: [flank, flank them, go around, flank attack]
@@ -277,7 +281,8 @@ orders:
     aliases: [三角阵, 尖阵, 尖头阵, 楔阵, 楔形, 楔形阵, 锥形阵, 锥子阵, 结楔阵, 尖刀阵]
     # "form a witch": wedge 被 Whisper/流式引擎一致听成 witch (2026-09 TTS 基准),
     # 没人会真喊这句, 收进来零风险
-    en: [wedge, triangle, form a wedge, wedge formation, spearhead, form a witch]
+    en: [wedge, triangle, form a wedge, wedge formation, spearhead, form a witch,
+         vetch formation, vetch, wedge them]   # vetch: 口音 w->v 实测错听
   column:
     keys: [f2, f7]
     aliases: [排成一列, 竖排, 竖着排, 排成竖排, 排成一竖排, 纵队, 纵列, 排纵队,

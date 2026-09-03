@@ -307,6 +307,12 @@ EN_CASES = [
     ("Group 4, charge", "horse_archers", "charge"),
     ("Group 5, charge", "form5", "charge"),
     ("Group 7, fall back", "form7", "fall_back"),
+    # 2026-09-03 实测错听/漏收
+    ("Group 4, Vetch Formation", "horse_archers", "skein"),
+    ("Groove 6, charge!", "form6", "charge"),
+    ("Infantry, split into two groups.", "infantry", "split"),
+    ("Cavalry, flank their archers!", "cavalry", "flank"),
+    ("Group 1, Loose Formation.", "infantry", "loose"),
     ("Archers, spread out.", "archers", "loose"),
     # 一个没解释的词放行(≈中文 2 字余量)
     ("Okay cavalry charge", "cavalry", "charge"),
