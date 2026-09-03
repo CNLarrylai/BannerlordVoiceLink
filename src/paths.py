@@ -78,12 +78,15 @@ def refresh_config(d, src):
     覆盖为新包默认, 再把用户的麦克风/模型/语言等选择写回新 settings.yaml。
     """
     from version import APP_VERSION
+    # 戳 = 版本号 + 包内配置内容哈希: 只看版本号的教训(2026-09-02) —— 同一 APP_VERSION
+    # 下多次开发打包, 词典改了但用户目录副本永不刷新, 测的是老词典还不自知。
+    want = _bundle_stamp(src, APP_VERSION)
     stamp_p = os.path.join(d, ".bundled_version")
     stamp = ""
     if os.path.exists(stamp_p):
         with open(stamp_p, encoding="utf-8") as f:
             stamp = f.read().strip()
-    if stamp == APP_VERSION:
+    if stamp == want:
         for name in _CONFIG_FILES:      # 版本一致: 只补缺
             dst = os.path.join(d, name)
             if not os.path.exists(dst):
@@ -111,7 +114,19 @@ def refresh_config(d, src):
     if old_settings:
         _reapply_prefs(sp, old_settings)
     with open(stamp_p, "w", encoding="utf-8") as f:
-        f.write(APP_VERSION)
+        f.write(want)
+
+
+def _bundle_stamp(src, version):
+    """包内配置的身份: 版本号-内容哈希前8位 (任一默认配置文件变了就换戳)。"""
+    import hashlib
+    h = hashlib.sha1()
+    for name in _CONFIG_FILES:
+        p = os.path.join(src, name)
+        if os.path.exists(p):
+            with open(p, "rb") as f:
+                h.update(f.read())
+    return f"{version}-{h.hexdigest()[:8]}"
 
 
 # 历史默认值: 这些不是"用户的选择", 而是老版本播下来的默认。迁移时若发现

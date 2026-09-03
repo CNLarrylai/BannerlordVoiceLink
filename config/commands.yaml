@@ -16,24 +16,24 @@ groups:
     key: "1"
     aliases: [步兵, 步兵们, 步卒, 盾兵, 刀盾兵, 长矛兵, 近战, 近战兵, 大头兵,
               一队, 第一队, 步兵队]
-    en: [infantry, foot, footmen, foot soldiers, spearmen, group one, first group]
+    en: [infantry, foot, footmen, foot soldiers, spearmen, group one, first group, group 1]
   archers:
     key: "2"
     aliases: [弓箭手, 弓箭手们, 弓兵, 射手, 神射手, 弓弩手, 远程, 弓手, 射箭的,
               放箭的, 二队, 第二队]
-    en: [archers, bowmen, ranged, bows, archer, group two, second group]
+    en: [archers, bowmen, ranged, bows, archer, group two, second group, group 2]
   cavalry:
     key: "3"
     # 注意: 别名不能"包含其它指令的完整别名"(如曾有的"冲锋骑"包含"冲锋"),
     # 否则光杆短指令会滑进长别名拿满分, 同分比长度反而错赢 -> 乱路由。
     aliases: [骑兵, 骑兵们, 重骑, 重骑兵, 骑士, 突骑, 马队, 骑马的,
               三队, 第三队]
-    en: [cavalry, horsemen, knights, horse, riders, group three, third group]
+    en: [cavalry, horsemen, knights, horse, riders, group three, third group, group 3]
   horse_archers:
     key: "4"
     aliases: [骑射, 骑射手, 骑射兵, 骑射们, 第四队, 四队, 四号队, 游骑,
               弓骑, 弓骑兵, 空骑兵, 空骑手]
-    en: [horse archers, mounted archers, horse archer, group four, fourth group]
+    en: [horse archers, mounted archers, horse archer, group four, fourth group, group 4]
   all:
     key: "0"
     aliases: [全军, 全体, 所有人, 所有队伍, 大家, 大伙, 大伙儿, 士兵, 士兵们,
@@ -83,25 +83,27 @@ groups:
     key: ""
     aliases: [骑射右队, 右路骑射, 右边骑射, 骑射右路, 骑射手右队]
     en: [horse archers right, right horse archers]
+  # 英文数字形("group 2")必须显式收录: Whisper 常输出阿拉伯数字, 只有 "group two"
+  # 时 "group 2, follow me" 会模糊蹭成 group four(2026-09-02 实测)。
   # 按编队槽位号直接指挥(需模组): 第五~八队是分队后新队落的空槽(第一~四队
   # 已是步/弓/骑/骑射的别名, 走按键)。key 名 form<N> 由 main 拆出槽位号路由。
   # "第五队"这类纯位置编号谁都懂, 和"骑兵右队"指同一支队, 两个名字都能喊。
   form5:
     key: ""
     aliases: [第五队, 五队, 第5队, 五号队]
-    en: [fifth group, formation five, group five]
+    en: [fifth group, formation five, group five, group 5]
   form6:
     key: ""
     aliases: [第六队, 六队, 第6队, 六号队]
-    en: [sixth group, formation six, group six]
+    en: [sixth group, formation six, group six, group 6]
   form7:
     key: ""
     aliases: [第七队, 七队, 第7队, 七号队]
-    en: [seventh group, formation seven, group seven]
+    en: [seventh group, formation seven, group seven, group 7]
   form8:
     key: ""
     aliases: [第八队, 八队, 第8队, 八号队]
-    en: [eighth group, formation eight, group eight]
+    en: [eighth group, formation eight, group eight, group 8]
 
 orders:
   # ---------- 移动类 (F1 子菜单) ----------

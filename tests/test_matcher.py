@@ -302,6 +302,11 @@ EN_CASES = [
     ("Cavalry, protect the left flank", "cavalry", "guard_left"),
     ("Cavalry, guard the right flank", "cavalry", "guard_right"),
     ("Infantry, advance", "infantry", "advance"),
+    # Whisper 输出阿拉伯数字: "Group 2" 曾模糊蹭成 group four
+    ("Group 2, follow me", "archers", "follow_me"),
+    ("Group 4, charge", "horse_archers", "charge"),
+    ("Group 5, charge", "form5", "charge"),
+    ("Group 7, fall back", "form7", "fall_back"),
     ("Archers, spread out.", "archers", "loose"),
     # 一个没解释的词放行(≈中文 2 字余量)
     ("Okay cavalry charge", "cavalry", "charge"),

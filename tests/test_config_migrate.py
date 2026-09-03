@@ -43,7 +43,7 @@ def test_first_install_seeds_everything():
         for name in ("settings.yaml", "commands.yaml", "order_tree.yaml"):
             assert os.path.getsize(os.path.join(d, name)) > 100, name
         with open(os.path.join(d, ".bundled_version"), encoding="utf-8") as f:
-            assert f.read().strip() == APP_VERSION
+            assert f.read().strip().startswith(APP_VERSION)
         assert not os.path.isdir(os.path.join(d, "backup"))  # 首装无备份
     finally:
         shutil.rmtree(d, ignore_errors=True)
@@ -98,6 +98,28 @@ def test_same_version_untouched():
         assert not os.path.isdir(os.path.join(d, "backup"))
     finally:
         shutil.rmtree(d, ignore_errors=True)
+
+
+def test_same_version_new_dictionary_refreshes():
+    """同一 APP_VERSION 下包内词典改了 => 必须刷新(戳含内容哈希)。
+    教训: 开发期多次打包版本号不变, 用户目录词典永不更新, 测的是老词典。"""
+    import tempfile
+    d = _fresh_dir()
+    src2 = tempfile.mkdtemp(prefix="bundle_")
+    try:
+        refresh_config(d, SRC)
+        for name in os.listdir(SRC):
+            if name.endswith(".yaml"):
+                shutil.copy(os.path.join(SRC, name), os.path.join(src2, name))
+        with open(os.path.join(src2, "commands.yaml"), "a", encoding="utf-8") as f:
+            f.write("# 新版词典标记 NEW_ALIAS_MARKER" + chr(10))
+        refresh_config(d, src2)   # 版本没变, 内容变了 -> 刷新
+        cmds = open(os.path.join(d, "commands.yaml"), encoding="utf-8").read()
+        assert "NEW_ALIAS_MARKER" in cmds, "同版本词典改动没刷进用户目录"
+        assert os.path.isdir(os.path.join(d, "backup")), "刷新前应备份旧配置"
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+        shutil.rmtree(src2, ignore_errors=True)
 
 
 if __name__ == "__main__":
