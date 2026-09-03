@@ -122,6 +122,9 @@ def test_tactic_roundtrip():
     r = ModLink(port=port).tactic("cavalry", "flank")
     assert r == "ok tactic=flank n=1", r
     assert got[0] == "tactic cavalry flank", got[0]
+    port, got = _fake_mod("ok tactic=protect side=left n=1")
+    ModLink(port=port).tactic("cavalry", "protect", "horse_archers")
+    assert got[0] == "tactic cavalry protect horse_archers", got[0]
 
 
 if __name__ == "__main__":

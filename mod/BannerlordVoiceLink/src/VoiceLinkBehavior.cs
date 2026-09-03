@@ -396,8 +396,8 @@ namespace BannerlordVoiceLink
                                       parts.Length > 3 ? parts[3] : "-");
                 case "tactic":
                     return parts.Length < 3
-                        ? "err usage: tactic <group|all> <flank|manual>"
-                        : DoTactic(parts[1], parts[2]);
+                        ? "err usage: tactic <group|all> <verb> [ward]"
+                        : DoTactic(parts[1], parts[2], parts.Length > 3 ? parts[3] : "");
                 default:
                     return "err unknown_cmd";
             }
@@ -887,7 +887,7 @@ namespace BannerlordVoiceLink
 
         // ---------- 战术层 (FormationAI, 键盘玩家摸不到的那层) ----------
 
-        private string DoTactic(string groupName, string verb)
+        private string DoTactic(string groupName, string verb, string wardName)
         {
             if (!InBattle())
                 return "err no_battle";
@@ -968,12 +968,25 @@ namespace BannerlordVoiceLink
                 case "guardleft":
                 case "guardright":
                     {
-                        // 被护的是己方最大的弓箭手编队(主程序已限定目标=弓箭手)
-                        var ward = OwnNonEmpty()
-                            .Where(x => x.QuerySystem.IsRangedFormation && !x.QuerySystem.IsRangedCavalryFormation)
-                            .OrderByDescending(x => x.CountOfUnits).FirstOrDefault();
-                        if (ward == null)
-                            return "err no_archers";
+                        // 被护的队伍: 主程序传来的兵种(archers/horse_archers/infantry/
+                        // cavalry), 没传就是弓箭手。骑兵护骑射、步兵护骑兵都合理。
+                        Formation ward = null;
+                        FormationClass wc;
+                        if (!string.IsNullOrEmpty(wardName) && TryClass(wardName, out wc))
+                        {
+                            ward = player.GetFormation(wc);
+                            if (ward == null || ward.CountOfUnits == 0)
+                                return "err no_ward";
+                        }
+                        else
+                        {
+                            ward = OwnNonEmpty()
+                                .Where(x => x.QuerySystem.IsRangedFormation && !x.QuerySystem.IsRangedCavalryFormation)
+                                .OrderByDescending(x => x.CountOfUnits).FirstOrDefault();
+                            if (ward == null)
+                                return "err no_archers";
+                        }
+                        string wardCn = Cn(ward.FormationIndex);
                         int side = verb == "guardleft" ? -1 : verb == "guardright" ? 1 : 0;
                         int n = 0;
                         foreach (var f in targets)
@@ -986,8 +999,8 @@ namespace BannerlordVoiceLink
                         }
                         string sideCn = side < 0 ? "左翼" : "右翼";
                         string sideEn = side < 0 ? "left" : "right";
-                        Notify(label + T(" → 守弓箭手" + sideCn + "(敌军逼近就打; 下任何指令即停)",
-                                         " → guarding the archers' " + sideEn + " flank (engages anything closing in; any direct order stops it)"));
+                        Notify(label + T(" → 守" + wardCn + sideCn + "(敌军逼近就打; 下任何指令即停)",
+                                         " → guarding the " + wardCn + "' " + sideEn + " flank (engages anything closing in; any direct order stops it)"));
                         return "ok tactic=" + verb + " side=" + sideEn + " n=" + n;
                     }
                 default:

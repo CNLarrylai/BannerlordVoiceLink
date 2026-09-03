@@ -301,6 +301,8 @@ EN_CASES = [
     ("Cavalry, protect the archers", "cavalry", "protect"),
     ("Cavalry, protect the left flank", "cavalry", "guard_left"),
     ("Cavalry, guard the right flank", "cavalry", "guard_right"),
+    ("Cavalry, protect left wing!", "cavalry", "guard_left"),      # 实测漏收
+    ("Cavalry, protect the horse archers", "cavalry", "protect"),   # 目标=骑射, 主程序放行
     ("Infantry, advance", "infantry", "advance"),
     # Whisper 输出阿拉伯数字: "Group 2" 曾模糊蹭成 group four
     ("Group 2, follow me", "archers", "follow_me"),

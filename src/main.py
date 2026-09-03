@@ -316,18 +316,20 @@ class App:
                 print("    ⚙ 战术指令要指定兵种或全军, 例:「骑兵绕后」「全军听令」")
                 self._set(t("⚙ 要指定兵种或全军"), t("例：骑兵绕后"), "#ffb37f")
                 return False
-            if o_key == "protect":
-                # 护弓只认"弓箭手"目标: 没目标多半是噪音蹭到"保护"(如"招呼"),
-                # 目标是别的兵种游戏里没有对应行为 —— 都不执行, 免得乱交 AI。
-                if t_key != "archers":
-                    print("    ⚙ 护卫指令只支持护弓箭手, 例:「骑兵保护弓箭手」")
-                    self._set(t("⚙ 只支持护弓箭手"), t("例：骑兵保护弓箭手"), "#ffb37f")
+            tgt = ""
+            if o_key in ("protect", "guard_left", "guard_right"):
+                # 护卫: 目标=被护的己方兵种。"保护"必须带目标(没目标多半是噪音蹭到
+                # "保护", 如"招呼"); 左右翼可不带(默认护弓箭手)。不能护自己/全军。
+                if o_key == "protect" and t_key not in self._SPLIT_CLASSES:
+                    print("    ⚙ 护卫要说明护谁, 例:「骑兵保护弓箭手」「步兵保护骑射」")
+                    self._set(t("⚙ 护卫要说明护谁"), t("例：骑兵保护弓箭手"), "#ffb37f")
                     return False
-                if cls == "archers":
-                    print("    ⚙ 弓箭手不能护自己, 换个兵种:「步兵保护弓箭手」")
-                    self._set(t("⚙ 弓箭手不能护自己"), t("例：步兵保护弓箭手"), "#ffb37f")
+                tgt = t_key if t_key in self._SPLIT_CLASSES else "archers"
+                if cls == tgt or cls == "all":
+                    print("    ⚙ 不能护自己/全军, 换个兵种:「步兵保护弓箭手」")
+                    self._set(t("⚙ 不能护自己"), t("例：步兵保护弓箭手"), "#ffb37f")
                     return False
-            r = self.modlink.tactic(cls, self._TACTICS[o_key])
+            r = self.modlink.tactic(cls, self._TACTICS[o_key], tgt)
         elif o_key == "split":
             if g_key not in self._SPLIT_CLASSES:
                 print("    ⚙ 分队要指定具体兵种, 例:「骑兵分队」")
@@ -360,7 +362,8 @@ class App:
                       "bad_slot": t("队号要在 1-8 之间"),
                       "no_empty_slot": t("编队槽满了(最多分出4支), 新战斗才清空"),
                       "no_battle": t("不在战斗中"),
-                      "no_archers": t("场上没有弓箭手可护")}.get(r.replace("err ", ""), r)
+                      "no_archers": t("场上没有弓箭手可护"),
+                      "no_ward": t("场上没有这支要护的队伍")}.get(r.replace("err ", ""), r)
             print(f"    ⚙ 分队未执行: {reason}")
             self._set(t("⚙ 分队未执行"), reason, "#ffb37f")
             via = "mod_err"
@@ -627,6 +630,11 @@ class App:
             # 定点移动)会把自己写进回声窗口, 重说反被误抑制(实战踩到)
             if ok:
                 self.retry.note_exec(g_key, o_key)
+            else:
+                # 被拒也要落 usage.csv: 否则"喊了没反应"在日志里是空白, 排错无从下手
+                # (2026-09-03 "cavalry protect horse archer" 就是这样消失的)
+                usage.record(self.lang, "miss", g_key, o_key, "mod_rejected",
+                             t_stt, text, engine if self.fast else "", t_key)
             self._idle()
             return
         t0 = time.perf_counter()

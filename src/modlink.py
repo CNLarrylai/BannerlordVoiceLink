@@ -62,7 +62,8 @@ class ModLink:
         """按编队槽位号"第N队"指挥(slot 1-8)。order/target 同 sideorder。"""
         return self._send(f"formorder {slot} {order} {target or '-'}")
 
-    def tactic(self, group, verb):
+    def tactic(self, group, verb, target=""):
         """战术层(FormationAI): group=兵种/all; verb=flank(绕后)/highground(占高地)/
-        skirmish(游击)/cautious(稳步推进)/protect(护弓)/manual(收回)。"""
-        return self._send(f"tactic {group} {verb}")
+        skirmish(游击)/cautious(稳步推进)/protect|guardleft|guardright(护卫)/manual(收回)。
+        target: 护卫时被护的己方兵种(archers/horse_archers/infantry/cavalry), 空=弓箭手。"""
+        return self._send(f"tactic {group} {verb} {target}".rstrip())

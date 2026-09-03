@@ -207,12 +207,14 @@ orders:
     # 只收 4 字以上: 3 字的"护右翼"会被拼音对齐成裸"右翼"(youyi), "友谊/有一些"直接满分误触
     aliases: [保护左翼, 掩护左翼, 保护左侧, 守住左翼, 左翼掩护]
     en: [protect the left flank, guard the left flank, cover the left flank,
-         left flank guard, hold the left flank]
+         left flank guard, hold the left flank, protect left wing, protect the left wing,
+         guard the left wing, left wing]
   guard_right:
     keys: []
     aliases: [保护右翼, 掩护右翼, 保护右侧, 守住右翼, 右翼掩护]
     en: [protect the right flank, guard the right flank, cover the right flank,
-         right flank guard, hold the right flank]
+         right flank guard, hold the right flank, protect right wing, protect the right wing,
+         guard the right wing, right wing]
   reclaim:
     # 战术托管的收回: "骑兵听令"=骑兵收回指挥权回到手动。全军听令=全收。
     keys: []
