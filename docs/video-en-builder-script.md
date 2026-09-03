@@ -27,19 +27,21 @@
 
 ---
 
-## HOOK (0:00–0:15)
+## HOOK (0:00–0:20)
 
-**Format**: Personal Experience + Contrarian. 3 秒内确认点击(画面就是军队听话)。
+**Format**: 效果先行(0~5 秒纯实况确认点击)→ 自我介绍即钩子(Personal Experience + Contrarian)。
+定稿顺序:先看军队听话,再认识你;订阅请求挪到第一个 payoff 之后。
 
-(0 秒:骑马砍人,喊 **"All units, charge!"**,横幅特写,不解说)
+(0~5 秒:骑马砍人,不解说,连喊两条,横幅特写)
+> **"All units, charge!"** → **"Cavalry, charge their archers!"**
 
-VO:
-> "I'm a product manager, not a programmer.
-> That army just obeyed my voice — including orders the game's own keyboard can't give.
-> I didn't write this. I *managed* an AI into writing it.
-> Here are the four moves, and the one that almost wrecked everything."
+(切到你露脸,或压着战场画面 VO)
+> "Hi. I'm a product manager, and I love games.
+> I don't write code. But I just built that — a mod that lets me command an army with my voice, including orders the keyboard can't even give.
+> I made it to play Bannerlord a new way. I'm sharing it to show what AI can do for modding.
+> Let me show you."
 
-(字幕:**4 MOVES. 0 LINES OF CODE BY ME.** 进标题卡)
+(字幕:**PM. NOT A CODER. 0 LINES WRITTEN BY ME.** 进标题卡)
 
 ---
 
@@ -58,6 +60,9 @@ VO:
 
 **Framing / payoff**:
 > "Move one: don't ask the AI to build the thing. Ask it to draw the shortest path. Then build the boring version first."
+
+**订阅请求放这里**(第一个 payoff 之后,观众刚看到"一天就能跑",转化最好的位置):
+> "If you want to see more things like this built with AI — the next one is a different game — subscribe. Now the part where it fell apart."
 
 ---
 
