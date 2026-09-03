@@ -109,6 +109,7 @@ v0.8.0(游戏1.4.7): 混合识别/指令复盘(F11)/语音数据共建/整活词
 C:\Users\Victoria\bannerlord-voice              main       集成 / 识别链路 / 部署 / 发版 (唯一有权写 Modules 与上传工坊)
 C:\Users\Victoria\bannerlord-voice-wt\matcher   wt/matcher 词典 + matcher + 回归用例
 C:\Users\Victoria\bannerlord-voice-wt\mod       wt/mod     C# 模组 (dotnet build 独立编译)
+C:\Users\Victoria\bannerlord-voice-wt\ui        wt/ui      UI/UX: 窗口文案 i18n / 布局 / 浮层提示 (不碰识别与匹配逻辑)
 ```
 - 每个 worktree 开自己的 Claude 会话; 新增: `git worktree add ../bannerlord-voice-wt/<名> -b wt/<名>`。
 - worktree 里没有 .venv 和 kws/models(gitignore): 跑测试用主目录的解释器

@@ -96,6 +96,8 @@ _EN = {
     "📋 查看日志": "📋 View Log",
     "📦 打包日志 (报障用)": "📦 Pack Logs (for bug reports)",
     "打包日志": "Pack logs",
+    "日志": "logs",
+    "_版本": "_version",
     "还没有日志 (先运行一次语音指挥)":
         "No logs yet — run Voice Command once first",
     ("日志已打包(不含任何录音):\n{p}\n\n"
@@ -201,8 +203,8 @@ _EN = {
     "打击目标:": "Attack target:",
     "(不指定)": "(none)",
     "(无)": "(none)",
-    "要学的说法(自动提取, 可改):": "Alias to learn (auto, editable):",
-    "✎ 保存绑定(学进个人词典)": "✎ Save binding (personal dict)",
+    "要学的说法(自动提取, 可改):": "Phrase to learn (auto-filled, editable):",
+    "✎ 保存绑定(学进个人词典)": "✎ Learn this phrase",
     "🔄 刷新": "🔄 Refresh",
     "绑定保存后: 语音程序按 F10 生效, 下次启动自动生效":
         "After saving: press F10 in the voice app to apply (auto on restart)",
@@ -213,7 +215,7 @@ _EN = {
     "没有可保存的改动 (兵种/指令都与记录相同)":
         "Nothing to save (troop/order unchanged)",
     "说法「{a}」太短(至少2个字), 请在输入框改":
-        "Alias \"{a}\" too short (min 2 chars), edit it above",
+        "Phrase \"{a}\" is too short (min 2 chars), edit it above",
     "✓ 已学 {d} · 语音程序按 F10 生效(重启也生效)":
         "✓ Learned {d} · press F10 in the voice app to apply",
 
@@ -224,11 +226,11 @@ _EN = {
         "Read the prompted commands aloud; each is checked live. At the end you "
         "get a report, and your consistent mis-hearings are learned into your "
         "personal dictionary — it adapts to you.",
-    "点「开始」后跟着念": "Press Start, then read aloud",
+    "点「开始」后跟着念": "Choose a run, then read aloud",
     "▶ 开始": "▶ Start",
     "▶ 开始校准 (约3分钟)": "▶ Start calibration (~3 min)",
     "▶ 完整校准 (全部指令, 约6分钟)": "▶ Full run (~6 min)",
-    "快速校准 (常用指令)": "Quick run",
+    "快速校准 (常用指令)": "Quick run (most-used)",
     "题目来源: 完整指令库 (当前版本支持的全部指令各一遍, 共{n}条)":
         "Source: full command set (every supported command once, {n} items)",
     "跳过这条": "Skip",
@@ -242,8 +244,8 @@ _EN = {
         "Drill source: default list (switches to your most-used commands "
         "once enough usage data exists)",
     "题目来源: 内置题库": "Drill source: built-in list",
-    "  ① 点「开始校准」(首次会加载识别模型, 稍等)":
-        "  1. Click Start (the speech model loads first, one moment)",
+    "  ① 点「完整校准」或「快速校准」(首次会加载识别模型, 稍等)":
+        "  1. Click Full run or Quick run (the speech model loads first, one moment)",
     "  ② 屏幕大字出题, 共 {n} 条 —— 对着麦克风念出来即可; 没念对自动给第二次机会, 也可点「跳过这条」":
         "  2. Read the {n} prompted commands aloud; misses get a second try, "
         "or click Skip",
@@ -261,6 +263,9 @@ _EN = {
     " · 再念一次试试": " · try once more",
     "✗ 听到「{h}」没对上{more}": "✗ heard \"{h}\", no match{more}",
     "🎉 校准完成": "🎉 Calibration complete",
+    "  「{say}」→ 你的说法「{alias}」": "  \"{say}\" → you say \"{alias}\"",
+    "已切到快速校准: {src}": "Switched to Quick run: {src}",
+    "已切到完整校准: {src}": "Switched to Full run: {src}",
     "命中 {p}% · 平均识别 {s}s · 录音已存本地":
         "Hit rate {p}% · avg recognition {s}s · recordings saved locally",
     "—— 报告: {n} 条练习, 命中率 {p}% ——":
@@ -305,6 +310,75 @@ _EN = {
     "模组直达": "via mod",
     "[目标(需准星锁定)]": "[target (aim at them!)]",
     "[模组已锁定✓]": "[locked by mod ✓]",
+    "⚙ 需要模组": "⚙ Needs the companion mod",
+    "游戏没开或模组没启用": "game not running, or mod not enabled",
+    "⚙ 要指定兵种或全军": "⚙ Name a troop type or 'everyone'",
+    "例：骑兵绕后": "e.g. 'cavalry flank'",
+    "⚙ 只支持护弓箭手": "⚙ Only the archers can be protected",
+    "例：骑兵保护弓箭手": "e.g. 'cavalry protect the archers'",
+    "⚙ 弓箭手不能护自己": "⚙ Archers can't protect themselves",
+    "例：步兵保护弓箭手": "e.g. 'infantry protect the archers'",
+    "⚙ 分队要指定兵种": "⚙ Split needs a troop type",
+    "例：骑兵分队": "e.g. 'cavalry split'",
+    "⚙ 分队未执行": "⚙ Not executed",
+    "⚙ 模组未连接": "⚙ Mod not connected",
+    "游戏没开或不在战斗": "game not running, or not in battle",
+    "⚙ 左右队暂不支持这条": "⚙ Half-groups can't take this order",
+    "仅冲锋/前进/跟随/待命/后退/撤退；定点移动用'跟我'":
+        "only charge / advance / follow / halt / fall back / retreat; say 'follow me' to reposition",
+    "还没分队(先喊'骑兵分队')": "not split yet (say 'cavalry split' first)",
+    "这队人太少, 分不了": "too few units to split",
+    "这个队现在没兵(先分队或换个队号)": "that group is empty (split first, or pick another number)",
+    "队号要在 1-8 之间": "group number must be 1-8",
+    "编队槽满了(最多分出4支), 新战斗才清空": "no free formation slot (max 4 splits); resets next battle",
+    "不在战斗中": "not in battle",
+    "(太短)": "(too short)",
+    "⚠ 麦克风打开失败": "⚠ Microphone failed to open",
+    "请打开「音频设置」换一路设备": "open Audio Setup and pick another device",
+    "🎙 录音中…": "🎙 Recording…",
+    "场上没有弓箭手可护": "no archers on the field to protect",
+    "快路": "stream",
+    "(无说法)": "(no phrases)",
+    "语音数据包": "voice-data",
+    # ---------- 音频设备错误 audio (测试模式窗口/浮层会原样显示) ----------
+    "找不到输入设备「{name}」, 请打开音频输入设置重新选择。":
+        "Input device \"{name}\" not found. Open Audio Setup and pick another one.",
+    ("输入设备「{name}」的所有通道都无法打开。\n"
+     "最可能的原因: 它被其他软件独占 (如 Voicemeeter 把它当硬件输入)。\n"
+     "解决: 打开「语音指挥·音频设置」, 改选一路能跳绿条的设备 "
+     "(比如 Voicemeeter Out B1 或 NVIDIA Broadcast)。\n"
+     "详细尝试记录: {errors}"):
+        ("Could not open any channel of input device \"{name}\".\n"
+         "Most likely another app holds it exclusively (e.g. Voicemeeter using it as a hardware input).\n"
+         "Fix: open Audio Setup and pick a device whose level bar moves "
+         "(e.g. Voicemeeter Out B1 or NVIDIA Broadcast).\n"
+         "Attempts: {errors}"),
+    # ---------- CUDA 下载错误 cuda_libs (音频设置/引导弹窗状态行显示) ----------
+    "{pkg} {ver} 找不到 win_amd64 wheel: {err}":
+        "No win_amd64 wheel found for {pkg} {ver}: {err}",
+    "所有下载源都失败了: {err}": "All download sources failed: {err}",
+    "下载后仍缺: {missing}": "Still missing after download: {missing}",
+    # ---------- matcher 判定说明 (词典窗口测试台显示) ----------
+    "剔除填充词后仍有 {n} 个词 (> {max}), 按聊天处理":
+        "{n} words left after removing fillers (> {max}), treated as chat",
+    "剩余杂词仅 {n} 个, 放行": "only {n} stray word(s) left, allowed",
+    "指令占比 {cov} < {min} (剩余杂词「{left}」太多), 按聊天处理":
+        "command share {cov} < {min} (too many stray words: \"{left}\"), treated as chat",
+    "指令占比 {cov} ≥ {min}, 放行": "command share {cov} ≥ {min}, allowed",
+    "剔除填充词后仍有 {n} 字 (> {max}), 按聊天处理":
+        "{n} characters left after removing fillers (> {max}), treated as chat",
+    "剩余杂字仅 {n} 个, 放行": "only {n} stray character(s) left, allowed",
+    "指令占比 {cov} < {min} (剩余杂字「{left}」太多), 按聊天处理":
+        "command share {cov} < {min} (too many stray characters: \"{left}\"), treated as chat",
+    "空文本": "empty text",
+    "只有标点/空白": "only punctuation / whitespace",
+    "含聊天特征词「{hit}」, 判为聊天": "contains chat marker \"{hit}\", treated as chat",
+    "没有匹配到指令动作 (最接近: {key} {score}分, 阈值 {th})":
+        "no order matched (closest: {key} score {score}, threshold {th})",
+    "没有匹配到任何指令动作": "no order matched",
+    "指令只命中单字「{alias}」, 句中还有「{left}」, 疑似错听, 不执行":
+        "only the single-character alias \"{alias}\" matched and \"{left}\" remains; likely a mis-hearing, not executed",
+    "执行": "execute",
 
     # ---------- 测试模式 listen ----------
     "测试模式 · 只听不发键 — 骑砍语音指挥":
@@ -386,7 +460,7 @@ _EN = {
     "改了模型 / 运行方式后，重启语音指挥生效。":
         "After changing model / run mode, restart Voice Command to apply.",
     "🎙 麦克风：对着说话，看哪根音量条在跳，选中它，点保存":
-        "🎙 Microphone: speak and watch which level bar moves, select it, Save",
+        "🎙 Microphone: speak, select the device whose bar moves, then Save",
     "绿色条 = 有声音进来。选中后建议再说几句确认就是这一路。":
         "Green bar = sound coming in. After selecting, say a few more words to confirm.",
     "系统默认设备": "System default device",
@@ -428,8 +502,8 @@ _EN = {
     "➕ 给指令加一种新说法 (立即写入词典)":
         "➕ Add a new phrase for a command",
     "添加": "Add",
-    "提示: 聊天过滤词和填充词见控制台输出":
-        "Tip: chat-filter and filler word lists are printed to the console",
+    "提示: 在上面输入一句话, 看它会不会执行、为什么":
+        "Tip: type a phrase above to see whether it would execute, and why",
     "兵种: {name}": "Troop: {name}",
     "指令: {name}": "Order: {name}",
     "【{kind} · {name}】 键位 {keys}\n{say}：{phrases}":
@@ -478,7 +552,7 @@ _EN = {
     "顶层直接键 (无子菜单)": "Top-level direct keys (no submenu)",
     "菜单": "menu",
     "键:": "Key:",
-    "含义(中/英):": "Meaning (zh / en):",
+    "含义(中/英):": "Meaning (中文 / English):",
     "💾 保存修改": "💾 Save change",
     "➕ 添加子项": "➕ Add entry",
     "🗑 删除所选": "🗑 Delete selected",

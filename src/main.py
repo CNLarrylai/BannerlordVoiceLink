@@ -241,7 +241,7 @@ class App:
                 if armed:
                     boost, _ = self.retry.boost_for(cleaned)
                     if self.matcher.parse(cleaned, boost=boost):
-                        return ftext, "快路"
+                        return ftext, t("快路")
         return self.transcriber.transcribe(audio, hotwords=hotwords), "Whisper"
 
     @staticmethod

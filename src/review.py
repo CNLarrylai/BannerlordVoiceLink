@@ -307,7 +307,8 @@ class ReviewGUI:
                 return
             disp = (self.g_disp if section == "groups" else self.o_disp)[key]
             dictionary.add_user_alias(section, key, alias)
-            done.append(f"「{alias}」→{disp}")
+            done.append((f'"{alias}" → {disp}' if self.lang == "en"
+                         else f"「{alias}」→{disp}"))
         # 学完立刻用新词典重建 matcher, 复盘里的后续建议/判定同步新绑定
         self.commands = dictionary.load_commands()
         self.matcher = Matcher.from_config(
