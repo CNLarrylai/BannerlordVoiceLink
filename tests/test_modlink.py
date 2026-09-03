@@ -117,6 +117,16 @@ def test_formorder_roundtrip():
     assert got[0] == "formorder 5 charge -", got[0]
 
 
+def test_moverel_roundtrip():
+    port, got = _fake_mod("ok moverel=Cavalry units=20")
+    r = ModLink(port=port).moverel("cavalry", "archers", "right", 20)
+    assert r.startswith("ok moverel"), r
+    assert got[0] == "moverel cavalry archers right 20", got[0]
+    port, got = _fake_mod("ok moverel=Infantry units=30")
+    ModLink(port=port).moverel("infantry", None, "back", 5)
+    assert got[0] == "moverel infantry self back 5", got[0]
+
+
 def test_tactic_roundtrip():
     port, got = _fake_mod("ok tactic=flank n=1")
     r = ModLink(port=port).tactic("cavalry", "flank")

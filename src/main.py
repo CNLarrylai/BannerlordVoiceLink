@@ -19,6 +19,8 @@ for _s in (sys.stdout, sys.stderr):
         pass
 
 import keyboard
+
+import relpos
 import numpy as np
 import yaml
 from rapidfuzz import fuzz
@@ -387,6 +389,34 @@ class App:
         except Exception as e:
             print(f"    ⚙ 写 lang.txt 失败(模组横幅将保持中文): {e}")
 
+    def _do_moverel(self, rel, text, t_stt, engine, audio):
+        """相对站位: 走模组一次性移动令。无模组/不在战斗 -> 提示, 不发键。"""
+        desc = relpos.describe(rel, self.commands, self.lang)
+        eng = f"[{t(engine)}]" if self.fast else ""
+        if self.dry_run:
+            print(f"    ⚙ [dry-run] 相对站位: {desc}")
+            return
+        r = self.modlink.moverel(rel["group"], rel["ward"], rel["side"], rel["dist"]) \
+            if self.modlink else None
+        ok = bool(r and r.startswith("ok"))
+        if ok:
+            print(f"    ✓ 听到「{text}」→ {desc} · 模组直达 [{r}]（识别 {t_stt:.2f}s{eng}）")
+            self._set(f"✓ {desc}", t("听到: {t}").format(t=text), "#7dff9b")
+            self._debug(t("上一条 ✓ 听到「{t}」→ {d} · {how}（{s}s）").format(
+                t=text, d=desc, how=t("模组直达"), s=f"{t_stt:.1f}"))
+        else:
+            reason = ({"no_battle": t("不在战斗中"), "no_ward": t("场上没有这支要护的队伍"),
+                       "group_empty": t("这个队现在没兵(先分队或换个队号)")}
+                      .get((r or "").replace("err ", ""), r) if r
+                      else t("游戏没开或模组没启用"))
+            print(f"    ⚙ 相对站位未执行: {reason}  ({desc})")
+            self._set(t("⚙ 需要模组"), reason, "#ffb37f")
+        usage.record(self.lang, "ok" if ok else "miss", rel["group"], "move_rel",
+                     "mod" if ok else "mod_err", t_stt, text,
+                     engine if self.fast else "", rel["ward"] or "")
+        self.donation.save(audio, self.samplerate, "ok" if ok else "miss",
+                           rel["group"], "move_rel", text, engine)
+
     def _side_unsupported(self, o_key):
         """左右队/第N队收到不支持的指令(如定点移动去那儿) —— 提示并返回失败。"""
         print(f"    ⚙ 左右/第N队暂不支持「{o_key}」"
@@ -581,6 +611,14 @@ class App:
             print(f"    · 听到「{text}」→ 无口令前缀, 忽略（识别 {t_stt:.2f}s）")
             self._debug(t("上一条 · 听到「{t}」→ 无口令前缀, 忽略").format(t=text))
             self._idle(t("听到: {t}").format(t=text))
+            return
+
+        # 相对站位/位置微调("骑兵去弓箭手右边"/"步兵往后退五米"): 语法特殊(中文方位
+        # 词在目标之后), 通用匹配之前先试; 解析不出返回 None, 一切照旧
+        rel = relpos.parse(cleaned, self.matcher, self.lang)
+        if rel:
+            self._do_moverel(rel, text, t_stt, engine, audio)
+            self._idle()
             return
 
         boost, boost_why = self.retry.boost_for(cleaned)

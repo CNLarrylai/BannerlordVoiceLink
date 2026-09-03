@@ -62,6 +62,11 @@ class ModLink:
         """按编队槽位号"第N队"指挥(slot 1-8)。order/target 同 sideorder。"""
         return self._send(f"formorder {slot} {order} {target or '-'}")
 
+    def moverel(self, group, ward, side, dist):
+        """相对站位(需模组): group 走到 ward(己方兵种, self=自己) 的 side(left/right/
+        front/back) dist 米处, 一次性移动令, 不持续驱动。"""
+        return self._send(f"moverel {group} {ward or 'self'} {side} {int(dist)}")
+
     def tactic(self, group, verb, target=""):
         """战术层(FormationAI): group=兵种/all; verb=flank(绕后)/highground(占高地)/
         skirmish(游击)/cautious(稳步推进)/protect|guardleft|guardright(护卫)/manual(收回)。

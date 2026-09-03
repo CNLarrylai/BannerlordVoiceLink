@@ -394,6 +394,10 @@ namespace BannerlordVoiceLink
                         ? "err usage: formorder <slot 1-8> <order> [target]"
                         : DoFormOrder(parts[1], parts[2],
                                       parts.Length > 3 ? parts[3] : "-");
+                case "moverel":
+                    return parts.Length < 5
+                        ? "err usage: moverel <group> <ward|self> <left|right|front|back> <meters>"
+                        : DoMoveRel(parts[1], parts[2], parts[3], parts[4]);
                 case "tactic":
                     return parts.Length < 3
                         ? "err usage: tactic <group|all> <verb> [ward]"
@@ -883,6 +887,77 @@ namespace BannerlordVoiceLink
                 oc.SelectFormation(f);
             Notify(label + " → " + CnOrder(order) + Units(pick.CountOfUnits));
             return "ok units=" + pick.CountOfUnits;
+        }
+
+        // ---------- 相对站位 / 位置微调 (一次性移动令) ----------
+        // 语法 A 去 B 的 C [D]: 方位以 B 朝敌方向为准(没敌人用 B 的朝向), B=self 时
+        // 以 A 自己的朝向为准。发 MovementOrderMove, 面朝敌军; 不持续驱动, 玩家随时改。
+        private string DoMoveRel(string groupName, string wardName, string side, string distStr)
+        {
+            if (!InBattle())
+                return "err no_battle";
+            FormationClass gc;
+            if (!TryClass(groupName, out gc))
+                return "err bad_group";
+            var player = Mission.Current.PlayerTeam;
+            var f = player.GetFormation(gc);
+            if (f == null || f.CountOfUnits == 0)
+                return "err group_empty";
+            float dist;
+            if (!float.TryParse(distStr, out dist) || dist <= 0f || dist > 300f)
+                return "err bad_dist";
+
+            Formation ward = f;
+            if (wardName != "self")
+            {
+                FormationClass wc;
+                if (!TryClass(wardName, out wc))
+                    return "err bad_ward";
+                ward = player.GetFormation(wc);
+                if (ward == null || ward.CountOfUnits == 0)
+                    return "err no_ward";
+            }
+            Vec2 origin = ward.CachedMedianPosition.AsVec2;
+            Vec2 dir = ward.Direction;
+            if (ward != f)
+            {
+                // 朝敌方向: 离 B 最近的敌军
+                Formation nearest = null; float best = float.MaxValue;
+                foreach (var e in EnemyFormations())
+                {
+                    float d2 = e.CachedMedianPosition.AsVec2.DistanceSquared(origin);
+                    if (d2 < best) { best = d2; nearest = e; }
+                }
+                if (nearest != null)
+                    dir = (nearest.CachedMedianPosition.AsVec2 - origin).Normalized();
+            }
+            if (!dir.IsValid || dir.LengthSquared < 0.01f)
+                dir = new Vec2(0f, 1f);
+            Vec2 off;
+            switch (side)
+            {
+                case "left": off = dir.LeftVec(); break;
+                case "right": off = dir.RightVec(); break;
+                case "front": off = dir; break;
+                case "back": off = -dir; break;
+                default: return "err bad_side";
+            }
+            TaleWorlds.Engine.WorldPosition wp = ward.CachedMedianPosition;
+            wp.SetVec2(origin + off * dist);
+            StopDriving(f);
+            if (f.IsAIControlled)
+                f.SetControlledByAI(false);
+            f.SetMovementOrder(MovementOrder.MovementOrderMove(wp));
+            f.SetFacingOrder(FacingOrder.FacingOrderLookAtEnemy);
+            Beacon("moverel " + gc + " -> " + wardName + " " + side + " " + dist + "m");
+
+            string sideCn = side == "left" ? "左边" : side == "right" ? "右边" : side == "front" ? "前面" : "后面";
+            string sideEn = side == "left" ? "left of" : side == "right" ? "right of" : side == "front" ? "in front of" : "behind";
+            string where = ward != f
+                ? T(Cn(ward.FormationIndex) + sideCn, sideEn + " the " + Cn(ward.FormationIndex))
+                : T("往" + sideCn.Substring(0, 1), side == "front" ? "forward" : side == "back" ? "back" : "to the " + side);
+            Notify(Cn(gc) + T(" → 到" + where + " " + (int)dist + "米", " → moving " + (int)dist + "m " + where));
+            return "ok moverel=" + gc + " units=" + f.CountOfUnits;
         }
 
         // ---------- 战术层 (FormationAI, 键盘玩家摸不到的那层) ----------

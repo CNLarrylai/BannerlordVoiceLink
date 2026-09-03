@@ -65,6 +65,10 @@ def main():
     if rc != 0:
         print("\n❌ 数据共建测试有失败! 先修这个。")
         sys.exit(1)
+    rc = run("相对站位解析 (A去B的C[D], 正确性门槛)", "test_relpos.py")
+    if rc != 0:
+        print("\n❌ 相对站位测试有失败! 先修这个。")
+        sys.exit(1)
     rc = run("整活词典 (激活/合并/路由, 正确性门槛)", "test_fun_pack.py")
     if rc != 0:
         print("\n❌ 整活词典测试有失败! 先修这个。")
