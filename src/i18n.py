@@ -336,6 +336,49 @@ _EN = {
     "⚠ 麦克风打开失败": "⚠ Microphone failed to open",
     "请打开「音频设置」换一路设备": "open Audio Setup and pick another device",
     "🎙 录音中…": "🎙 Recording…",
+    "场上没有弓箭手可护": "no archers on the field to protect",
+    "快路": "stream",
+    "(无说法)": "(no phrases)",
+    "语音数据包": "voice-data",
+    # ---------- 音频设备错误 audio (测试模式窗口/浮层会原样显示) ----------
+    "找不到输入设备「{name}」, 请打开音频输入设置重新选择。":
+        "Input device \"{name}\" not found. Open Audio Setup and pick another one.",
+    ("输入设备「{name}」的所有通道都无法打开。\n"
+     "最可能的原因: 它被其他软件独占 (如 Voicemeeter 把它当硬件输入)。\n"
+     "解决: 打开「语音指挥·音频设置」, 改选一路能跳绿条的设备 "
+     "(比如 Voicemeeter Out B1 或 NVIDIA Broadcast)。\n"
+     "详细尝试记录: {errors}"):
+        ("Could not open any channel of input device \"{name}\".\n"
+         "Most likely another app holds it exclusively (e.g. Voicemeeter using it as a hardware input).\n"
+         "Fix: open Audio Setup and pick a device whose level bar moves "
+         "(e.g. Voicemeeter Out B1 or NVIDIA Broadcast).\n"
+         "Attempts: {errors}"),
+    # ---------- CUDA 下载错误 cuda_libs (音频设置/引导弹窗状态行显示) ----------
+    "{pkg} {ver} 找不到 win_amd64 wheel: {err}":
+        "No win_amd64 wheel found for {pkg} {ver}: {err}",
+    "所有下载源都失败了: {err}": "All download sources failed: {err}",
+    "下载后仍缺: {missing}": "Still missing after download: {missing}",
+    # ---------- matcher 判定说明 (词典窗口测试台显示) ----------
+    "剔除填充词后仍有 {n} 个词 (> {max}), 按聊天处理":
+        "{n} words left after removing fillers (> {max}), treated as chat",
+    "剩余杂词仅 {n} 个, 放行": "only {n} stray word(s) left, allowed",
+    "指令占比 {cov} < {min} (剩余杂词「{left}」太多), 按聊天处理":
+        "command share {cov} < {min} (too many stray words: \"{left}\"), treated as chat",
+    "指令占比 {cov} ≥ {min}, 放行": "command share {cov} ≥ {min}, allowed",
+    "剔除填充词后仍有 {n} 字 (> {max}), 按聊天处理":
+        "{n} characters left after removing fillers (> {max}), treated as chat",
+    "剩余杂字仅 {n} 个, 放行": "only {n} stray character(s) left, allowed",
+    "指令占比 {cov} < {min} (剩余杂字「{left}」太多), 按聊天处理":
+        "command share {cov} < {min} (too many stray characters: \"{left}\"), treated as chat",
+    "空文本": "empty text",
+    "只有标点/空白": "only punctuation / whitespace",
+    "含聊天特征词「{hit}」, 判为聊天": "contains chat marker \"{hit}\", treated as chat",
+    "没有匹配到指令动作 (最接近: {key} {score}分, 阈值 {th})":
+        "no order matched (closest: {key} score {score}, threshold {th})",
+    "没有匹配到任何指令动作": "no order matched",
+    "指令只命中单字「{alias}」, 句中还有「{left}」, 疑似错听, 不执行":
+        "only the single-character alias \"{alias}\" matched and \"{left}\" remains; likely a mis-hearing, not executed",
+    "执行": "execute",
 
     # ---------- 测试模式 listen ----------
     "测试模式 · 只听不发键 — 骑砍语音指挥":

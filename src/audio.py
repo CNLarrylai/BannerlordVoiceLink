@@ -13,6 +13,8 @@ import queue
 import numpy as np
 import sounddevice as sd
 
+from i18n import t
+
 TARGET_SR = 16000
 
 
@@ -44,7 +46,7 @@ def resolve_input_device(name):
         if pool:
             return pool[0][0]
     raise ValueError(
-        f"找不到输入设备「{name}」, 请打开音频输入设置重新选择。"
+        t("找不到输入设备「{name}」, 请打开音频输入设置重新选择。").format(name=name)
     )
 
 
@@ -128,11 +130,11 @@ def open_input_stream(device_index, blocksize_sec=None, callback=None):
         device_index if device_index is not None else sd.default.device[0]
     )["name"]
     raise RuntimeError(
-        f"输入设备「{name}」的所有通道都无法打开。\n"
-        f"最可能的原因: 它被其他软件独占 (如 Voicemeeter 把它当硬件输入)。\n"
-        f"解决: 打开「语音指挥·音频设置」, 改选一路能跳绿条的设备 "
-        f"(比如 Voicemeeter Out B1 或 NVIDIA Broadcast)。\n"
-        f"详细尝试记录: " + " | ".join(errors)
+        t("输入设备「{name}」的所有通道都无法打开。\n"
+          "最可能的原因: 它被其他软件独占 (如 Voicemeeter 把它当硬件输入)。\n"
+          "解决: 打开「语音指挥·音频设置」, 改选一路能跳绿条的设备 "
+          "(比如 Voicemeeter Out B1 或 NVIDIA Broadcast)。\n"
+          "详细尝试记录: {errors}").format(name=name, errors=" | ".join(errors))
     )
 
 

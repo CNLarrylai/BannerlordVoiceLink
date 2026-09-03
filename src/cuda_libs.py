@@ -14,6 +14,8 @@ import os
 import sys
 import zipfile
 
+from i18n import t
+
 # 与源码版 .venv 对齐的版本 (和 ctranslate2 4.8 / faster-whisper 1.2 兼容)
 _PKGS = [
     ("nvidia-cublas-cu12", "12.9.2.10"),
@@ -196,7 +198,8 @@ def _wheel_url(pkg, ver):
         except Exception as e:
             last_err = e
             continue
-    raise RuntimeError(f"{pkg} {ver} 找不到 win_amd64 wheel: {last_err}")
+    raise RuntimeError(t("{pkg} {ver} 找不到 win_amd64 wheel: {err}").format(
+        pkg=pkg, ver=ver, err=last_err))
 
 
 def download(progress_cb=None):
@@ -237,7 +240,7 @@ def download(progress_cb=None):
                 buf = None
                 continue
         if buf is None:
-            raise RuntimeError(f"所有下载源都失败了: {last_err}")
+            raise RuntimeError(t("所有下载源都失败了: {err}").format(err=last_err))
         # wheel 是 zip: 把里面所有 .dll 平铺解出到 cuda_dir
         buf.seek(0)
         with zipfile.ZipFile(buf) as z:
@@ -253,5 +256,5 @@ def download(progress_cb=None):
     missing = [d for d in _REQUIRED
                if not os.path.exists(os.path.join(cuda_dir(), d))]
     if missing:
-        raise RuntimeError("下载后仍缺: " + ", ".join(missing))
+        raise RuntimeError(t("下载后仍缺: {missing}").format(missing=", ".join(missing)))
     return True

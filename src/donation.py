@@ -18,6 +18,8 @@ import os
 import time
 import zipfile
 
+from i18n import t
+
 APP_DIRNAME = "BannerlordVoice"
 MAX_MB_DEFAULT = 500
 
@@ -111,7 +113,7 @@ def export_zip():
         return None
     out = os.path.join(
         os.path.dirname(d),
-        f"语音数据包-{machine_id()[:8]}-{time.strftime('%Y%m%d')}.zip")
+        f"{t('语音数据包')}-{machine_id()[:8]}-{time.strftime('%Y%m%d')}.zip")
     meta = {"speaker": machine_id(), "app": APP_VERSION,
             "exported": time.strftime("%Y-%m-%d %H:%M:%S"), "count": len(wavs)}
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:

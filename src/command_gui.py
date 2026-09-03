@@ -305,7 +305,7 @@ class CommandGUI:
 
     def _name(self, d):
         al = self._disp(d)
-        return al[0] if al else "(无说法)"
+        return al[0] if al else t("(无说法)")
 
     def _fill_tree(self):
         self.tree.delete(*self.tree.get_children())

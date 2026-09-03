@@ -14,6 +14,8 @@
 """
 import re
 
+from i18n import t
+
 from rapidfuzz import fuzz
 
 try:
@@ -298,17 +300,18 @@ class Matcher:
         total = matched + len(leftover)
         if total > EN_MAX_WORDS:
             info["is_chat"] = True
-            info["why"] = f"剔除填充词后仍有 {total} 个词 (> {EN_MAX_WORDS}), 按聊天处理"
+            info["why"] = t("剔除填充词后仍有 {n} 个词 (> {max}), 按聊天处理").format(
+                n=total, max=EN_MAX_WORDS)
         elif len(leftover) <= EN_MAX_FREE_LEFTOVER:
-            info["why"] = f"剩余杂词仅 {len(leftover)} 个, 放行"
+            info["why"] = t("剩余杂词仅 {n} 个, 放行").format(n=len(leftover))
         elif info["coverage"] < MIN_COVERAGE:
             info["is_chat"] = True
-            info["why"] = (
-                f"指令占比 {info['coverage']:.0%} < {MIN_COVERAGE:.0%} "
-                f"(剩余杂词「{info['leftover']}」太多), 按聊天处理"
-            )
+            info["why"] = t("指令占比 {cov} < {min} (剩余杂词「{left}」太多), 按聊天处理").format(
+                cov=f"{info['coverage']:.0%}", min=f"{MIN_COVERAGE:.0%}",
+                left=info["leftover"])
         else:
-            info["why"] = f"指令占比 {info['coverage']:.0%} ≥ {MIN_COVERAGE:.0%}, 放行"
+            info["why"] = t("指令占比 {cov} ≥ {min}, 放行").format(
+                cov=f"{info['coverage']:.0%}", min=f"{MIN_COVERAGE:.0%}")
         return info
 
     def _coverage(self, clean: str, spans: list, words=None) -> dict:
@@ -332,17 +335,17 @@ class Matcher:
         }
         if matched_len + len(leftover) > self.max_eff_len:
             info["is_chat"] = True
-            info["why"] = f"剔除填充词后仍有 {matched_len + len(leftover)} 字 (> {self.max_eff_len}), 按聊天处理"
+            info["why"] = t("剔除填充词后仍有 {n} 字 (> {max}), 按聊天处理").format(
+                n=matched_len + len(leftover), max=self.max_eff_len)
         elif len(leftover) <= MAX_FREE_LEFTOVER:
-            info["why"] = f"剩余杂字仅 {len(leftover)} 个, 放行"
+            info["why"] = t("剩余杂字仅 {n} 个, 放行").format(n=len(leftover))
         elif info["coverage"] < MIN_COVERAGE:
             info["is_chat"] = True
-            info["why"] = (
-                f"指令占比 {info['coverage']:.0%} < {MIN_COVERAGE:.0%} "
-                f"(剩余杂字「{leftover}」太多), 按聊天处理"
-            )
+            info["why"] = t("指令占比 {cov} < {min} (剩余杂字「{left}」太多), 按聊天处理").format(
+                cov=f"{info['coverage']:.0%}", min=f"{MIN_COVERAGE:.0%}", left=leftover)
         else:
-            info["why"] = f"指令占比 {info['coverage']:.0%} ≥ {MIN_COVERAGE:.0%}, 放行"
+            info["why"] = t("指令占比 {cov} ≥ {min}, 放行").format(
+                cov=f"{info['coverage']:.0%}", min=f"{MIN_COVERAGE:.0%}")
         return info
 
     def explain(self, text: str, boost=None) -> dict:
@@ -357,12 +360,12 @@ class Matcher:
             "result": None, "reason": "",
         }
         if not text:
-            trace["reason"] = "空文本"
+            trace["reason"] = t("空文本")
             return trace
         clean = self._clean(text)
         trace["clean"] = clean
         if not clean:
-            trace["reason"] = "只有标点/空白"
+            trace["reason"] = t("只有标点/空白")
             return trace
         # 英文: 记住词边界(clean 恰是这些词无缝拼接), 占比判定按词算
         words = re.findall(r"[a-z0-9]+", text.lower()) if self.lang == "en" else None
@@ -372,7 +375,7 @@ class Matcher:
             hit = next((m for m in self.chat_markers if m in clean), None)
             if hit:
                 trace["chat_marker"] = hit
-                trace["reason"] = f"含聊天特征词「{hit}」, 判为聊天"
+                trace["reason"] = t("含聊天特征词「{hit}」, 判为聊天").format(hit=hit)
                 return trace
 
         if self.pinyin_match:
@@ -426,8 +429,9 @@ class Matcher:
         # 必须有"指令"才执行; 只有兵种的半截匹配只会乱切编队, 忽略
         if not o_key or o_score < self.order_threshold:
             trace["reason"] = (
-                f"没有匹配到指令动作 (最接近: {o_key} {round(o_score)}分, "
-                f"阈值 {self.order_threshold})" if o_key else "没有匹配到任何指令动作"
+                t("没有匹配到指令动作 (最接近: {key} {score}分, 阈值 {th})").format(
+                    key=o_key, score=round(o_score), th=self.order_threshold)
+                if o_key else t("没有匹配到任何指令动作")
             )
             return trace
 
@@ -493,8 +497,8 @@ class Matcher:
             # 单字指令(冲/杀/停/放)只在"基本就说了这个字"时才算; 句中还有别的杂字,
             # 多半是错听里蹭到的(如"撤锋"里的撤), 不执行, 免得乱发。
             if len(o_alias) == 1 and cov["leftover"]:
-                trace["reason"] = (f"指令只命中单字「{o_alias}」, 句中还有"
-                                   f"「{cov['leftover']}」, 疑似错听, 不执行")
+                trace["reason"] = t("指令只命中单字「{alias}」, 句中还有「{left}」, 疑似错听, 不执行").format(
+                    alias=o_alias, left=cov["leftover"])
                 return trace
 
         order = {"name": o_key, "keys": o_data["keys"], "score": o_score}
@@ -504,7 +508,7 @@ class Matcher:
         )
         trace["result"] = {"text": text, "group": group, "order": order,
                            "target": ({"name": target["name"]} if target else None)}
-        trace["reason"] = "执行"
+        trace["reason"] = t("执行")
         return trace
 
     def parse(self, text: str, boost=None):
