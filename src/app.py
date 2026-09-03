@@ -24,6 +24,33 @@ if _HERE not in sys.path:
 os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 
 
+class _Stamped:
+    """给日志文件的每一行加 "月-日 时:分:秒" 前缀(控制台不加, 保持清爽)。
+    以前文件里只有会话头带日期, 行内一个时间都没有, 翻几天前的日志分不清
+    哪条是哪天的(用户反馈)。"""
+
+    def __init__(self, f):
+        self._f = f
+        self._bol = True          # 下一次写入是否处在行首
+
+    def write(self, s):
+        from datetime import datetime
+        out = []
+        for i, part in enumerate(s.split(chr(10))):
+            if i:
+                out.append(chr(10))
+                self._bol = True
+            if part and self._bol:
+                out.append(f"{datetime.now():%m-%d %H:%M:%S} ")
+                self._bol = False
+            out.append(part)
+        self._f.write("".join(out))
+        return len(s)
+
+    def flush(self):
+        self._f.flush()
+
+
 class _Tee:
     """同时写多个流 (控制台 + 日志文件)。源码版黑窗实时看, 文件留存供排错。"""
 
@@ -87,8 +114,9 @@ def _setup_stdio():
     except Exception:
         logf = None
     if logf is not None:
-        sys.stdout = _Tee(console_out, logf)
-        sys.stderr = _Tee(console_err, logf)
+        stamped = _Stamped(logf)
+        sys.stdout = _Tee(console_out, stamped)
+        sys.stderr = _Tee(console_err, stamped)
 
 
 _setup_stdio()

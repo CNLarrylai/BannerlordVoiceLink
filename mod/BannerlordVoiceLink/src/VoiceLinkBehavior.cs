@@ -51,7 +51,7 @@ namespace BannerlordVoiceLink
                     "BannerlordVoice", "logs");
                 Directory.CreateDirectory(dir);
                 File.AppendAllText(Path.Combine(dir, "mod.log"),
-                    DateTime.Now.ToString("HH:mm:ss") + " " + msg + "\r\n");
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")   /* 带日期: 只有时分秒分不清是哪天的 */ + " " + msg + "\r\n");
             }
             catch
             {
