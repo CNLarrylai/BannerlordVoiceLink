@@ -86,12 +86,12 @@ def _group(matcher, seg, allow_all=False):
     if not g or not g["pass"]:
         return None
     name = g["name"]
-    alias = g.get("alias") or ""
     # 半队(骑兵左队)本身就是合法的 A/B; 但错听形(如"功箭手")单独看时可能被拼音蹭到
-    # archers_left(别名更长赢 tiebreak) —— 说法里根本没有 左/右 字样就归回兵种
+    # archers_left(别名"弓箭手左队"更长赢 tiebreak) —— 用户说的那段里根本没有
+    # 左/右 字样就归回兵种
     for suf in ("_left", "_right"):
         if name.endswith(suf) and name[:-len(suf)] in CLASSES:
-            if not any(w in alias for w in ("左", "右", "left", "right")):
+            if not any(w in seg.lower() for w in ("左", "右", "left", "right")):
                 name = name[:-len(suf)]
     if name in CLASSES or (allow_all and name == "all"):
         return name
