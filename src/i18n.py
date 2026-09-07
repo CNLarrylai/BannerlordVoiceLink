@@ -68,6 +68,17 @@ _EN = {
     "选麦克风\n看音量条": "Pick your mic,\nsee levels",
     "📖\n指令词典": "📖\nCommands",
     "看/加说法\n改键位": "View/add phrases,\nedit keybinds",
+    # 分步布局 (2026-09-07)
+    "① 🎙 音频与模型设置": "① 🎙 Audio & Model Setup",
+    "还没设置 · 先选麦克风和识别模型, 再开始":
+        "Not set up yet · pick your mic and model before you start",
+    "✓ 麦克风: {mic} · 模型: {model} · 运行在: {dev}":
+        "✓ Mic: {mic} · Model: {model} · Runs on: {dev}",
+    "② 🎯 跟读练习 (可选, 约 5 分钟)": "② 🎯 Practice (optional, ~5 min)",
+    "念一遍全部指令: 学会说法, 顺便把你的稳定错听记进个人词典":
+        "Read every command once: learn the phrases, and save how you say them to your personal dictionary",
+    "🎧 测试模式\n只听不发键": "🎧 Test Mode\nlisten only",
+    "— 玩过之后 · 看记录、改说法 —": "— After playing · review & tweak —",
     # ---------- 首次 GPU 加速引导 gpu_setup ----------
     "发现你的显卡可以加速": "Your GPU can speed this up",
     "🚀 检测到 NVIDIA 显卡": "🚀 NVIDIA GPU detected",

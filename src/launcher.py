@@ -1,10 +1,10 @@
 """启动器 Hub —— 一个入口, 汇总全部功能。
 
-双击桌面图标打开这个面板, 四个按钮:
-  ▶ 开始语音指挥   (正式版: 识别 -> 发按键, 进游戏用)
-  🎧 测试模式      (只听不发键, 安全调试)
-  🎙 音频设置      (选麦克风)
-  📖 指令词典      (看/加说法、改键位)
+双击桌面图标打开这个面板, 按玩家的使用顺序分层:
+  ① 🎙 音频与模型设置  (选麦克风 + 识别模型; 没选过麦克风就金边高亮)
+  ② 🎯 跟读练习        (可选: 学指令 + 稳定错听进个人词典 + 攒语音样本)
+  ▶ 开始语音指挥       (正式版: 识别 -> 发按键, 进游戏用) + 小号 🎧 测试模式
+  玩过之后: 📜 指令复盘 / 📖 指令词典
 
 语音引擎和测试模式各自开一个黑窗(看日志); 两个设置窗口是 GUI。
 """
@@ -134,24 +134,42 @@ class Launcher:
         self.en_btn.pack(side="left", padx=3)
         self._refresh_lang_btns()
 
-        # 主按钮: 开始语音指挥
+        # ---------- 按玩家的使用顺序分层 (2026-09-07 用户定) ----------
+        # ① 设置(麦克风+识别模型)是新手必做的两件事, 都在音频设置窗口里 ->
+        #    单独一张宽卡片放最上面; 还没选过麦克风就金边高亮, 选过后降为灰卡
+        #    并显示一行当前状态(麦/模型/GPU), 焦点让给「开始」。
+        # ② 跟读练习是可选的第二步, 同样式但不高亮。
+        # 主按钮「开始语音指挥」右侧挂一个小号、低饱和的「测试模式」。
+        # 复盘/词典是玩过之后才会碰的, 归一组放下面。
+        done, summary = self._setup_summary()
+        self._step_card(t("① 🎙 音频与模型设置"), summary, self.open_audio, hot=not done)
+        self._step_card(t("② 🎯 跟读练习 (可选, 约 5 分钟)"),
+                        t("念一遍全部指令: 学会说法, 顺便把你的稳定错听记进个人词典"),
+                        self.start_calibrate, hot=False)
+
+        # 主按钮: 开始语音指挥 (+ 右侧小号测试模式)
+        hero = tk.Frame(self.root, bg=BG)
+        hero.pack(padx=40, pady=(16, 4))
         self.start_btn = tk.Button(
-            self.root, text=t("▶  开始语音指挥"), command=self.start_voice,
+            hero, text=t("▶  开始语音指挥"), command=self.start_voice,
             font=("Microsoft YaHei", 16, "bold"), bg=GOLD, fg="#101418",
             activebackground="#e8c95a", relief="flat", padx=20, pady=12, width=20,
         )
-        self.start_btn.pack(padx=40, pady=(0, 4))
+        self.start_btn.pack(side="left")
+        tk.Button(hero, text=t("🎧 测试模式\n只听不发键"), command=self.start_listen,
+                  font=("Microsoft YaHei", 9), bg=GRAY, fg=DIM,
+                  activebackground="#3a444e", activeforeground=FG, relief="flat",
+                  padx=10).pack(side="left", padx=(8, 0), fill="y")
         tk.Label(self.root, text=t("进游戏用这个：识别到指令就发按键 (需管理员)"),
-                 fg=DIM, bg=BG, font=("Microsoft YaHei", 9)).pack(pady=(0, 16))
+                 fg=DIM, bg=BG, font=("Microsoft YaHei", 9)).pack(pady=(0, 14))
 
-        # 次要按钮 (宽度按当前语言的最长文案计算, 防止英文被截断)
+        # 玩过之后: 复盘 + 词典 (宽度按当前语言的最长文案计算, 防止英文被截断)
+        tk.Label(self.root, text=t("— 玩过之后 · 看记录、改说法 —"), fg=DIM, bg=BG,
+                 font=("Microsoft YaHei", 9)).pack(pady=(0, 4))
         row = tk.Frame(self.root, bg=BG)
         row.pack(padx=30, pady=(0, 6))
         minis = [
-            (t("🎯\n上手校准"), t("跟读学指令\n适配你的发音"), self.start_calibrate),
-            (t("🎧\n测试模式"), t("只听不发键\n安全调试"), self.start_listen),
             (t("📜\n指令复盘"), t("看识别记录\n纠错改绑定"), self.open_review),
-            (t("🎙\n音频设置"), t("选麦克风\n看音量条"), self.open_audio),
             (t("📖\n指令词典"), t("看/加说法\n改键位"), self.open_dict),
         ]
         btn_w = max(i18n.text_units(title) for title, _, _ in minis) + 2
@@ -194,6 +212,47 @@ class Launcher:
                                fg=DIM, bg=BG, font=("Microsoft YaHei", 9))
         self.status.pack(pady=(6, 16))
         self._refresh_start_btn()
+
+    def _setup_summary(self):
+        """(是否设置过, 一行状态)。判据=选过麦克风(audio.device 非空);
+        成品包出厂 device 为 null, 所以首次打开必定高亮①。"""
+        try:
+            import yaml
+            from paths import config_path
+            with open(config_path("settings.yaml"), encoding="utf-8") as f:
+                s = yaml.safe_load(f) or {}
+            mic = (s.get("audio") or {}).get("device")
+            stt = s.get("stt") or {}
+            model = str(stt.get("model", "auto"))
+            dev = str(stt.get("device", "auto"))
+        except Exception:
+            return False, t("还没设置 · 先选麦克风和识别模型, 再开始")
+        if not mic:
+            return False, t("还没设置 · 先选麦克风和识别模型, 再开始")
+        mic = str(mic)
+        if len(mic) > 26:
+            mic = mic[:25] + "…"
+        model = t("自动") if model == "auto" else model
+        dev = {"auto": t("自动"), "cuda": "GPU", "cpu": "CPU"}.get(dev, dev)
+        return True, t("✓ 麦克风: {mic} · 模型: {model} · 运行在: {dev}").format(
+            mic=mic, model=model, dev=dev)
+
+    def _step_card(self, title, sub, cmd, hot):
+        """一张整行可点的步骤卡: 标题行 + 说明行。hot=金边高亮(待办), 否则灰边。"""
+        edge = GOLD if hot else "#2a323a"
+        card = tk.Frame(self.root, bg="#161c22", highlightthickness=2,
+                        highlightbackground=edge, highlightcolor=edge, cursor="hand2")
+        card.pack(fill="x", padx=40, pady=(0, 8))
+        title_lb = tk.Label(card, text=title, fg=GOLD if hot else FG, bg="#161c22",
+                            font=("Microsoft YaHei", 12, "bold"), anchor="w")
+        title_lb.pack(fill="x", padx=14, pady=(8, 0))
+        sub_lb = tk.Label(card, text=sub, fg=GOLD if hot else DIM, bg="#161c22",
+                          font=("Microsoft YaHei", 9), anchor="w", justify="left",
+                          wraplength=560)
+        sub_lb.pack(fill="x", padx=14, pady=(2, 8))
+        for w in (card, title_lb, sub_lb):
+            w.bind("<Button-1>", lambda _e, c=cmd: c())
+        return card
 
     def _mini(self, parent, title, sub, cmd, width):
         f = tk.Frame(parent, bg=BG)
