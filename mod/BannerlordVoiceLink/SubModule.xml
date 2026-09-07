@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Module>
-  <Name value="Bannerlord Voice Link" />
+  <Name value="Voice Commander" />
   <Id value="BannerlordVoiceLink" />
   <Version value="v0.1.0" />
   <!-- This game version's launcher (v1.4.6) requires SingleplayerModule

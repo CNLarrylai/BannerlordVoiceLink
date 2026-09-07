@@ -44,6 +44,13 @@ cd tools\steamcmd
 
 - 构建前关掉: 打包版语音程序(管理员权限, 用 stop_all.bat)、骑砍 launcher / 游戏。
 - 首次登录要输密码 + Steam Guard, 之后 steamcmd 会缓存登录态, 一般不再问。
+- 封面(item.vdf 的 previewfile = assets/workshop_preview.png, 640x640, 工坊限 1MB):
+  由 tools/make_cover_painted.py 在 AI 绘画底图 assets/art/cover_base_2048.jpg 上叠标题生成,
+  换底图只换那张 jpg 再跑脚本; 旧卡片版留在 workshop_preview_en.png / _zh.png。
+- **只改标题/封面不发版**: 跑 `tools/steamcmd/item_meta.vdf`(只有 title + previewfile, 没有
+  contentfolder/changenote), 实测只传封面不重传内容包、不产生 Change Note(2026-09-07)。
+  图库里的示意图(shot1/shot2/shot3_commands_en)steamcmd 传不了, 只能在工坊页
+  "添加/编辑图片与视频" 里传, 需要浏览器登录 Steam。
 - Change Notes 支持 BBCode; release_notes.py 输出的是 [h2]/[h3]/[list], 中英各一段。
 - 上传成功后到工坊页 Change Notes 标签核对:
   https://steamcommunity.com/sharedfiles/filedetails/changelog/3775571491
@@ -82,7 +89,7 @@ cd C:\Users\Victoria\bannerlord-voice\tools\steamcmd
 
 ## 开发版/工坊版命名区分 (2026-08-02 起)
 
-- 默认构建给模组名字盖 [DEV] 戳: launcher 里显示 "Bannerlord Voice Link [DEV]",
+- 默认构建给模组名字盖 [DEV] 戳: launcher 里显示 "Voice Commander [DEV]",
   与工坊订阅版一眼区分, 防止勾错。
 - **上传工坊前必须**: `build_workshop.py --release` 重新组装(干净名字), 再跑
   SteamCMD 上传; 传完想继续开发, 再跑一次不带 --release 的构建即可。
