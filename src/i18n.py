@@ -471,6 +471,9 @@ _EN = {
     "下载中… 已下 {d} MB": "Downloading… {d} MB so far",
     "✓ {m} 下载完成，已就绪": "✓ {m} downloaded and ready",
     "下载失败: {e}": "Download failed: {e}",
+    "连不上模型下载源 (试过 {tried})。国内需要代理; 或把模型文件夹手动放到 {path} (含 model.bin)":
+        "Can't reach any model source (tried {tried}). Check your connection/proxy, "
+        "or put the model folder at {path} (with model.bin)",
     "改了模型 / 运行方式后，重启语音指挥生效。":
         "After changing model / run mode, restart Voice Command to apply.",
     "🎙 麦克风：对着说话，看哪根音量条在跳，选中它，点保存":

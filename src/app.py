@@ -18,10 +18,9 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
-# HuggingFace 镜像: 必须在任何 HF/faster-whisper 导入之前设好, 否则不生效。
-# 粉丝主力在国内, hf.co 被墙 -> 不设的话手动切 medium/large 会直接下载失败。
-# setdefault: 用户自己设了(挂梯子想走官方)就尊重。
-os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+# HF 下载源不再在这里全局写死 hf-mirror.com(该站 2026-09 已变成对 hf.co 的跳转,
+# 反而让下载必失败, 见 models.py 顶部)。下载源顺序由 models.endpoints() 决定,
+# 用户自设的 HF_ENDPOINT 环境变量仍然优先。
 
 
 class _Stamped:

@@ -49,6 +49,10 @@ def main():
     if rc != 0:
         print("\n❌ 退化过滤测试有失败! 先修这个。")
         sys.exit(1)
+    rc = run("模型下载源回退 (hf.co → 镜像, 正确性门槛)", "test_models_download.py")
+    if rc != 0:
+        print("\n❌ 模型下载源测试有失败! 先修这个。")
+        sys.exit(1)
     rc = run("监听门 (手动开关/战斗自动门, 正确性门槛)", "test_gate.py")
     if rc != 0:
         print("\n❌ 监听门测试有失败! 先修这个。")

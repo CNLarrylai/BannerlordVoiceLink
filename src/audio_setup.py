@@ -336,7 +336,8 @@ class SetupWindow:
         dl.grid(row=3, column=0, columnspan=4, sticky="ew", padx=12, pady=(0, 4))
         dl.columnconfigure(0, weight=1)
         self.dl_status = tk.Label(dl, text="", bg="#161c22", fg=DIM,
-                                  font=("Microsoft YaHei", 9), anchor="w")
+                                  font=("Microsoft YaHei", 9), anchor="w",
+                                  justify="left", wraplength=540)   # 失败文案是整句, 要能折行
         self.dl_status.grid(row=0, column=0, sticky="w")
         self.dl_btn = tk.Button(dl, text=t("⬇ 下载所选模型"),
                                 command=self._download_model,
@@ -485,7 +486,7 @@ class SetupWindow:
                 models.download(eff, lambda d, t: self.dl_q.put(("prog", (d, t))))
                 self.dl_q.put(("done", mv))
             except Exception as e:
-                self.dl_q.put(("err", str(e)))
+                self.dl_q.put(("err", e))
 
         threading.Thread(target=work, daemon=True).start()
 
@@ -517,9 +518,14 @@ class SetupWindow:
                     self.downloading = False
                     self.dl_btn.config(state="normal")
                     self.dl_bar.grid_remove()
-                    self.dl_status.config(
-                        text=t("下载失败: {e}").format(e=str(payload)[:60]),
-                        fg="#ff8a8a")
+                    # ModelDownloadError 的文案本身就是给用户的一句话, 整句显示;
+                    # 其它异常截短(hub 库的英文长篇对小白没意义)
+                    import models
+                    msg = str(payload)
+                    if not isinstance(payload, models.ModelDownloadError):
+                        msg = msg[:60]
+                    self.dl_status.config(text=t("下载失败: {e}").format(e=msg),
+                                          fg="#ff8a8a")
         except queue.Empty:
             pass
         self.root.after(150, self._dl_poll)

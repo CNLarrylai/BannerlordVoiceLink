@@ -10,10 +10,25 @@ import time
 
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
-# HuggingFace 在中国大陆被墙 —— 国内玩家(粉丝主力)不挂梯子根本下不动模型。
-# hf-mirror.com 是公益全量镜像, HF 工具链认 HF_ENDPOINT 这个环境变量。
-# setdefault: 用户自己设了(比如挂了梯子想走官方)就尊重他的选择。
-os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+# 下载源(按顺序试, 哪个成功用哪个):
+#   用户自设 HF_ENDPOINT > huggingface.co 官方 > hf-mirror.com。
+# 教训(2026-09-09 新用户模拟实测): 曾把 HF_ENDPOINT 默认写死成 hf-mirror.com —— 该站
+# 已变成对 huggingface.co 的 308 跳转(等于关站), huggingface_hub 检测到跨域直接抛
+# "Distant resource does not seem to be on huggingface.co", 挂着梯子也下不了。
+# 所以: 不再全局改 HF_ENDPOINT(会连累 faster-whisper 自己的缓存解析), 只在 download()
+# 里按 endpoint 参数逐个试; 全失败就明确告诉用户"连不上, 需代理或手动放模型"。
+def endpoints():
+    seen, out = set(), []
+    for e in (os.environ.get("HF_ENDPOINT"), "https://huggingface.co", "https://hf-mirror.com"):
+        e = (e or "").strip().rstrip("/")
+        if e and e not in seen:
+            seen.add(e)
+            out.append(e)
+    return out
+
+
+class ModelDownloadError(RuntimeError):
+    """所有下载源都失败。message 已是给用户看的一句话。"""
 
 # 语言中立写法 (≈), 中英 UI 都能直接嵌用
 _SIZE = {
@@ -51,13 +66,19 @@ def size_hint(model):
     return _SIZE.get(model, "?")
 
 
-def _repo_total_bytes(repo):
+def _repo_total_bytes(repo, endpoint=None):
     try:
         from huggingface_hub import HfApi
-        info = HfApi().model_info(repo, files_metadata=True)
+        info = HfApi(endpoint=endpoint).model_info(repo, files_metadata=True)
         return sum((s.size or 0) for s in info.siblings)
     except Exception:
         return 0
+
+
+def _snapshot(repo, endpoint):
+    """真正的下载动作(单独成函数便于测试替换)。"""
+    from huggingface_hub import snapshot_download
+    snapshot_download(repo, endpoint=endpoint)
 
 
 def _downloaded_bytes(model):
@@ -81,26 +102,42 @@ def download(model, progress_cb=None):
     成功返回 True; 失败抛异常。
     """
     repo = model_repo(model)
-    total = _repo_total_bytes(repo)
-    state = {"done": False, "err": None}
+    errors = []
+    for ep in endpoints():
+        total = _repo_total_bytes(repo, ep)
+        state = {"done": False, "err": None}
 
-    def _dl():
-        try:
-            from huggingface_hub import snapshot_download
-            snapshot_download(repo)
-        except Exception as e:
-            state["err"] = e
-        state["done"] = True
+        def _dl():
+            try:
+                _snapshot(repo, ep)
+            except Exception as e:
+                state["err"] = e
+            state["done"] = True
 
-    t = threading.Thread(target=_dl, daemon=True)
-    t.start()
-    while not state["done"]:
-        if progress_cb:
-            progress_cb(_downloaded_bytes(model), total)
-        time.sleep(0.4)
-    if state["err"]:
-        raise state["err"]
-    if progress_cb:
-        got = _downloaded_bytes(model)
-        progress_cb(got, total or got)
-    return True
+        t = threading.Thread(target=_dl, daemon=True)
+        t.start()
+        while not state["done"]:
+            if progress_cb:
+                progress_cb(_downloaded_bytes(model), total)
+            time.sleep(0.4)
+        if not state["err"]:
+            if progress_cb:
+                got = _downloaded_bytes(model)
+                progress_cb(got, total or got)
+            return True
+        errors.append(f"{ep}: {type(state['err']).__name__}")
+        print(f"[模型] 下载源失败 {ep}: {str(state['err'])[:200]}")
+    raise ModelDownloadError(user_message(model, errors))
+
+
+def user_message(model, errors):
+    """全部下载源失败时给用户看的一句话(双语; 只说他能做的事: 代理 / 手动放模型)。"""
+    try:
+        from i18n import t
+    except Exception:          # 纯逻辑测试环境
+        def t(s):
+            return s
+    tried = ", ".join(e.split("//")[-1].split(":")[0] for e in errors) or "-"
+    return t("连不上模型下载源 (试过 {tried})。国内需要代理; 或把模型文件夹手动放到 "
+             "{path} (含 model.bin)").format(
+        tried=tried, path=f"%LOCALAPPDATA%\\BannerlordVoice\\models\\{model}\\")

@@ -78,10 +78,20 @@
 - **Mac = 纯开发**: matcher/词典/测试(纯逻辑部分)/文档可改; keyboard/
   pydirectinput/模组编译不可用; 改完推回来在 Windows 机验证+部署。
 - 用户数据在 %LOCALAPPDATA%\BannerlordVoice\(个人词典/usage/共建录音/日志),
-  不进仓库; 日志 app.log, 模组心跳 mod.log, 每条识别 usage.csv(黑窗日志
-  有"不落盘之谜", usage.csv 才是可靠数据源)。
+  不进仓库; 日志 app.log, 模组心跳 mod.log, 每条识别 usage.csv。
+- **AI 工具进程看到的 %LOCALAPPDATA% 是假的**(2026-09-09 查明, 即所谓"日志不落盘之谜"):
+  Claude 桌面版是 MSIX 包, 它拉起的终端/python 对 AppData 的**写入被重定向到**
+  `%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Local\`, 读取是"影子层+真实
+  目录"的合并视图, 同名文件影子层优先。后果: 从工具里热拷 commands.yaml / 改 settings /
+  改名数据目录全落在影子层, 成品包(容器外)看不见; 之后读日志读到的是影子层的旧文件。
+  规矩: 工具里**只读不写** %LOCALAPPDATA%\BannerlordVoice; 必须写就走容器外进程
+  (`tools/fresh_user.py` 里的 `run_outside()`: WMI Win32_Process.Create 起的进程没有包
+  身份, 写真实目录); 读到的日志时间对不上时先 `os.path.realpath` 看是不是影子层。
+  `~/.cache/huggingface` 不在 AppData, 不受影响。
 - 排错流程: 用户从启动器测, 报问题看 app.log 最后一个"新会话"段落 + mod.log
   心跳三行 + usage.csv 尾部。
+- 模拟新用户: `tools/fresh_user.py start|restore|status`(藏起数据目录与 HF 模型缓存,
+  可逆不删)。2026-09-09 首测即抓到: hf-mirror.com 已变 308 跳转, 模型下载必失败。
 
 ## 当前状态 (2026-09-02)
 
