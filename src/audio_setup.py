@@ -308,8 +308,10 @@ class SetupWindow:
             label = f"{tag}   — {t(hint)}"
             self.model_map[label] = val
             mvals.append(label)
-        # 宽度按当前语言最长条目算 (i18n: 不写死字符宽), 上限防止窗口过宽
-        mbox_w = min(58, max(text_units(v) for v in mvals) + 2)
+        # 宽度按当前语言最长条目算 (i18n: 不写死字符宽), 上限防止窗口过宽。
+        # 上限 64: 新用户状态下所有档位都是 "needs download"(比 downloaded 长),
+        # 英文最长条目 61 字符, 58 会截断(2026-09-09 新用户模拟 ui_audit 抓到)
+        mbox_w = min(64, max(text_units(v) for v in mvals) + 2)
         self.model_box = ttk.Combobox(eng, state="readonly", values=mvals,
                                       font=("Microsoft YaHei", 10), width=mbox_w)
         self.model_box.grid(row=2, column=1, sticky="w", pady=(0, 10))
@@ -336,8 +338,7 @@ class SetupWindow:
         dl.grid(row=3, column=0, columnspan=4, sticky="ew", padx=12, pady=(0, 4))
         dl.columnconfigure(0, weight=1)
         self.dl_status = tk.Label(dl, text="", bg="#161c22", fg=DIM,
-                                  font=("Microsoft YaHei", 9), anchor="w",
-                                  justify="left", wraplength=540)   # 失败文案是整句, 要能折行
+                                  font=("Microsoft YaHei", 9), anchor="w", justify="left")
         self.dl_status.grid(row=0, column=0, sticky="w")
         self.dl_btn = tk.Button(dl, text=t("⬇ 下载所选模型"),
                                 command=self._download_model,
@@ -524,8 +525,10 @@ class SetupWindow:
                     msg = str(payload)
                     if not isinstance(payload, models.ModelDownloadError):
                         msg = msg[:60]
+                    # 整句失败文案要折行(wraplength 只在这时设: 建窗时设会让空标签
+                    # 的需求宽度撑到 540, ui_audit 判成截断)
                     self.dl_status.config(text=t("下载失败: {e}").format(e=msg),
-                                          fg="#ff8a8a")
+                                          fg="#ff8a8a", wraplength=540)
         except queue.Empty:
             pass
         self.root.after(150, self._dl_poll)

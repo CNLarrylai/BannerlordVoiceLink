@@ -50,10 +50,22 @@ def _cache_dir(model):
     return os.path.join(_CACHE, "models--" + model_repo(model).replace("/", "--"))
 
 
+def manual_dir(model):
+    """手动放模型 / ModelScope 下载落地的目录: <用户数据>\\models\\<模型名>\\。
+    stt.bundled_model_path 最先看这里, 所以它和 HF 缓存一样算"就绪"。"""
+    from paths import user_data_dir
+    return os.path.join(user_data_dir(), "models", model)
+
+
 def is_ready(model):
-    """模型是否已完整下载 (缓存里有像样的 model.bin)。"""
+    """模型是否已完整下载 (手动目录或 HF 缓存里有像样的 model.bin)。"""
     if model in (None, "", "auto"):
         return True
+    try:
+        if os.path.getsize(os.path.join(manual_dir(model), "model.bin")) > 20_000_000:
+            return True
+    except Exception:
+        pass
     d = _cache_dir(model)
     if not os.path.isdir(d):
         return False
@@ -81,6 +93,81 @@ def _snapshot(repo, endpoint):
     snapshot_download(repo, endpoint=endpoint)
 
 
+_UA = {"User-Agent": "BannerlordVoice/model-download"}
+
+
+def _reachable(url, timeout=4):
+    """4 秒内有任何 HTTP 回应就算通(国内连 hf.co 是长时间无响应, 不是快速拒绝;
+    不先探一下, 每个源要卡到 hub 库自己超时, 用户以为死机)。"""
+    import urllib.error
+    import urllib.request
+    try:
+        urllib.request.urlopen(urllib.request.Request(url, method="HEAD", headers=_UA),
+                               timeout=timeout)
+        return True
+    except urllib.error.HTTPError as e:
+        return e.code < 500
+    except Exception:
+        return False
+
+
+# ---------- ModelScope(魔搭, 阿里) —— 国内可达的备用源 ----------
+# 2026-09-09 核实: 六个 faster-whisper 模型在魔搭上同名同文件(mobiuslabsgmbh/…turbo,
+# Systran/…small 等)。它的文件接口是普通 HTTP, 不走 huggingface_hub, 所以直接下到
+# manual_dir(model) —— 就是"手动放模型"目录, stt 侧零改动。
+MODELSCOPE = "https://www.modelscope.cn"
+
+
+def _ms_files(repo):
+    import json
+    import urllib.request
+    u = f"{MODELSCOPE}/api/v1/models/{repo}/repo/files?Revision=master&Recursive=true"
+    with urllib.request.urlopen(urllib.request.Request(u, headers=_UA), timeout=25) as r:
+        d = json.load(r)
+    files = [(f["Path"], int(f["Size"])) for f in d["Data"]["Files"]
+             if f.get("Type") == "blob" and f["Path"] not in (".gitattributes", "README.md")]
+    if not any(p == "model.bin" for p, _ in files):
+        raise RuntimeError("modelscope repo has no model.bin")
+    return files
+
+
+def _ms_fetch(url, out, on_chunk):
+    import urllib.request
+    with urllib.request.urlopen(urllib.request.Request(url, headers=_UA), timeout=60) as r, \
+            open(out + ".part", "wb") as f:
+        while True:
+            chunk = r.read(1 << 20)
+            if not chunk:
+                break
+            f.write(chunk)
+            on_chunk(len(chunk))
+    os.replace(out + ".part", out)
+
+
+def _modelscope_download(model, repo, progress_cb=None):
+    dst = manual_dir(model)
+    os.makedirs(dst, exist_ok=True)
+    files = _ms_files(repo)
+    total = sum(s for _, s in files)
+    state = {"done": 0}
+
+    def tick(n):
+        state["done"] += n
+        if progress_cb:
+            progress_cb(state["done"], total)
+
+    for path, size in files:
+        out = os.path.join(dst, path)
+        if os.path.isfile(out) and os.path.getsize(out) == size:
+            tick(size)                       # 断点续传: 上次下完的整文件直接跳过
+            continue
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        _ms_fetch(f"{MODELSCOPE}/models/{repo}/resolve/master/{path}", out, tick)
+    if not os.path.isfile(os.path.join(dst, "model.bin")):
+        raise RuntimeError("model.bin missing after modelscope download")
+    return True
+
+
 def _downloaded_bytes(model):
     """已下到磁盘的字节 (数 blobs/, 就是真正的下载内容)。"""
     d = _cache_dir(model)
@@ -104,6 +191,10 @@ def download(model, progress_cb=None):
     repo = model_repo(model)
     errors = []
     for ep in endpoints():
+        if not _reachable(f"{ep}/api/models/{repo}"):
+            errors.append(f"{ep}: unreachable")
+            print(f"[模型] 下载源不可达(4s 无回应) {ep}")
+            continue
         total = _repo_total_bytes(repo, ep)
         state = {"done": False, "err": None}
 
@@ -127,6 +218,14 @@ def download(model, progress_cb=None):
             return True
         errors.append(f"{ep}: {type(state['err']).__name__}")
         print(f"[模型] 下载源失败 {ep}: {str(state['err'])[:200]}")
+    # HF 系全不通(典型: 国内无代理) -> 魔搭
+    try:
+        _modelscope_download(model, repo, progress_cb)
+        print(f"[模型] 已从 ModelScope 下到 {manual_dir(model)}")
+        return True
+    except Exception as e:
+        errors.append(f"{MODELSCOPE}: {type(e).__name__}")
+        print(f"[模型] 下载源失败 {MODELSCOPE}: {str(e)[:200]}")
     raise ModelDownloadError(user_message(model, errors))
 
 
