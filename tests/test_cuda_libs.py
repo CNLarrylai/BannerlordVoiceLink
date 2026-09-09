@@ -198,6 +198,45 @@ def test_mirror_fallback_when_first_source_dies():
         cuda_libs._PKGS = real_req
 
 
+def test_rank_by_speed_prefers_fastest_and_keeps_dead_last():
+    """下载前并行测速: 快的排前, 探不通的排最后但不剔除。
+    教训(2026-09-09): 固定镜像优先, 海外机器上阿里云 2.4MB/s vs 官方 95MB/s。"""
+    import io
+    import time
+    import urllib.request
+
+    class Resp(io.BytesIO):
+        def __init__(self, delay):
+            super().__init__(b"x" * (4 << 20))
+            self.delay = delay
+
+        def read(self, n=-1):
+            time.sleep(self.delay)
+            return super().read(n)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def fake_urlopen(url, timeout=0):
+        if "dead" in url:
+            raise OSError("refused")
+        return Resp(0.05 if "slow" in url else 0.0)
+
+    real_open = urllib.request.urlopen
+    urllib.request.urlopen = fake_urlopen
+    try:
+        ranked = cuda_libs._rank_by_speed(
+            ["http://slow/w.whl", "http://dead/w.whl", "http://fast/w.whl"], secs=0.3)
+        assert ranked[0] == "http://fast/w.whl", ranked
+        assert ranked[-1] == "http://dead/w.whl", ranked
+        assert cuda_libs._rank_by_speed(["http://only/w.whl"]) == ["http://only/w.whl"]
+    finally:
+        urllib.request.urlopen = real_open
+
+
 if __name__ == "__main__":
     for _s in (sys.stdout, sys.stderr):
         try:

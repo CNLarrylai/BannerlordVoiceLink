@@ -162,11 +162,49 @@ _INDEXES = [
     "https://pypi.org/pypi",                    # 官方(兜底)
 ]
 
-# wheel 直链的镜像替换: 官方文件站 -> 国内文件镜像(路径结构一致)
+# wheel 直链的镜像替换: 官方文件站 -> 国内文件镜像(路径结构一致)。
+# 清华文件站 2026-09 对 wheel 直链返回 403, 已剔除。候选顺序不重要 —— 下载前
+# _rank_by_speed 并行实测两秒, 谁快用谁(2026-09-09 实测: 海外/挂梯子的机器上阿里云
+# 只有 2.4 MB/s, 官方 95 MB/s, 而原先固定镜像优先, 1.2GB 要下 8 分钟)。
 _FILE_MIRRORS = [
     "https://mirrors.aliyun.com/pypi/web",
-    "https://pypi.tuna.tsinghua.edu.cn",
 ]
+
+
+def _rank_by_speed(cands, secs=2.0, cap=16 << 20):
+    """并行探测每个候选 URL 的实际吞吐(读 secs 秒或 cap 字节), 按快慢排序返回。
+    探不通的排最后但不剔除(探测时抖动不代表下载时也失败)。单候选直接返回。"""
+    if len(cands) < 2:
+        return list(cands)
+    import threading
+    import time
+    import urllib.request
+    speed = {u: -1.0 for u in cands}
+
+    def probe(u):
+        t0 = time.time()
+        n = 0
+        try:
+            with urllib.request.urlopen(u, timeout=8) as r:
+                while time.time() - t0 < secs and n < cap:
+                    chunk = r.read(1 << 18)
+                    if not chunk:
+                        break
+                    n += len(chunk)
+            speed[u] = n / max(time.time() - t0, 1e-3)
+        except Exception:
+            speed[u] = -1.0
+
+    threads = [threading.Thread(target=probe, args=(u,), daemon=True) for u in cands]
+    for th in threads:
+        th.start()
+    for th in threads:
+        th.join(secs + 10)
+    ranked = sorted(cands, key=lambda u: -speed[u])
+    print("[CUDA] 下载源测速: " + ", ".join(
+        f"{u.split('/')[2]} {speed[u]/1e6:.1f}MB/s" if speed[u] >= 0 else f"{u.split('/')[2]} 不通"
+        for u in ranked))
+    return ranked
 
 
 def _mirror_of(url, host):
@@ -221,7 +259,7 @@ def download(progress_cb=None):
         base_done = done
         buf = None
         last_err = None
-        for url in cands:          # 逐源尝试: 某个镜像断流就换下一个重下这一包
+        for url in _rank_by_speed(cands):   # 先测速排序; 某源断流就换下一个重下这一包
             try:
                 done = base_done
                 buf = io.BytesIO()

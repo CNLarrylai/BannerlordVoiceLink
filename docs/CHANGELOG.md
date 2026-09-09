@@ -13,6 +13,7 @@
 - **相对站位 / 位置微调**(需伴侣模组):"骑兵去弓箭手右边""步兵到骑射前面三十米""骑射往后退五十米";英文 "Cavalry, go to the right of the archers""Infantry, move 20 meters to the right"。左右按你的视角、前后按朝敌方向,默认 20 米;一次性移动令,随时可改。护卫目标也放开到任意己方兵种(骑兵保护骑射)。
 - **游戏内横幅跟随语言**:英文模式下定向进攻、分队、战术播报全部英文。
 - **模型下载修复**:原先用的 hf-mirror 镜像已关站,导致"需联网下载"的模型谁都下不了。现在按顺序自动试 HuggingFace 官方 → 镜像 → **魔搭 ModelScope(国内直连可用)**,哪个通用哪个;都不通时会明确告诉你怎么办(挂代理,或把模型文件夹放到 `%LOCALAPPDATA%\BannerlordVoice\models\<模型名>\`)。
+- **GPU 加速库下载提速**:下载前并行测速各个源,谁快用谁(原先固定国内镜像优先,海外或挂代理的机器上只有 2 MB/s,现在能跑满带宽)。
 - **首次打开跟随系统语言**:中文 Windows 默认中文,其它系统默认英文;之后你在启动器里切过的语言一直保留。
 - **启动器按使用顺序重排**:① 音频与模型设置(没选麦克风时高亮提醒)→ ② 跟读练习(可选)→ 开始语音指挥(旁边是小号的测试模式)→ 玩过之后再看的指令复盘 / 指令词典。
 - **英文就近集火**:"attack them / get them / kill them / attack the nearest enemy" 现在和中文"打他们"一样,让编队集火离你最近的那支敌军(需伴侣模组);"charge / attack / charge them" 仍是普通冲锋。
@@ -24,6 +25,7 @@
 - **Relative positioning** (companion mod): "Cavalry, go to the right of the archers", "Infantry, move in front of the horse archers, 30 meters", "Horse archers, fall back 50 meters". left/right follow your camera view, front/back follow the enemy direction; default 20 m; a one-shot move order you can override any time. Guarding now works for any friendly formation ("cavalry, protect the horse archers").
 - **In-game banners follow your language**: targeted attacks, splits and tactics are announced in English in English mode.
 - **Model download fixed**: the hf-mirror site we relied on shut down, so any model marked "needs download" failed for everyone. Downloads now try HuggingFace → mirror → **ModelScope (reachable from mainland China)** in turn, and if nothing works you get a clear next step (use a proxy, or drop the model folder into `%LOCALAPPDATA%\BannerlordVoice\models\<model>\`).
+- **Faster GPU library download**: sources are speed-tested in parallel before downloading and the fastest wins (it used to pin a China mirror first, which crawls at ~2 MB/s from abroad or through a proxy).
 - **First launch follows your system language**: Chinese Windows starts in Chinese, everything else in English; whatever you pick in the launcher afterwards sticks.
 - **Launcher reorganized in the order you actually use it**: ① Audio & Model Setup (highlighted until you pick a mic) → ② Practice (optional) → Start Voice Command (with a small Test Mode beside it) → Review / Commands for later.
 - **Focus fire in English**: "attack them / get them / kill them / attack the nearest enemy" now behaves like the Chinese "打他们": the formation focuses the enemy formation nearest to you (companion mod required). "charge / attack / charge them" remain a plain charge.
