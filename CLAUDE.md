@@ -93,9 +93,13 @@
 - 模拟新用户: `tools/fresh_user.py start|restore|status`(藏起数据目录与 HF 模型缓存,
   可逆不删)。2026-09-09 首测即抓到: hf-mirror.com 已变 308 跳转, 模型下载必失败。
 
-## 当前状态 (2026-09-02)
+## 当前状态 (2026-09-09)
 
-v0.9.6 已上工坊(ItemID 3775571491, Unlisted)。发版四步见 mod/PUBLISH.md:
+v0.9.7 已上工坊(ItemID 3775571491, Unlisted; 模组显示名 Voice Commander, 新封面)。
+本版要点: 战术层第二批 / 相对站位 / 5~8 队与半队全指令 / 模型下载改多源回退(hf.co →
+镜像 → 魔搭, HF 系先 4s 探通) / CUDA 库下载并行测速 / 首启跟随系统语言 / 启动器分步重排。
+待办: 工坊简介双语化; 魔搭这条路等真实国内用户反馈; 若不稳再考虑把 turbo 打进包(+1.6GB)。
+发版四步见 mod/PUBLISH.md:
 build --release → 写 docs/CHANGELOG.md(中文+English) → tools/release_notes.py
 → steamcmd 上传(登录态已缓存)。用户要求每版说明都中英双语, 由 AI 起草。
 教训: 打包版查 HF 缓存曾写死 Systran 仓库名, turbo(mobiuslabsgmbh)永远"未下载"
@@ -125,6 +129,18 @@ v0.8.0(游戏1.4.7): 混合识别/指令复盘(F11)/语音数据共建/整活词
    一致; 按编队朝向算会随弓箭手转身而变, 实测不可预判), 前/后按朝敌/背敌;
    D 默认 20m。中文方位词在目标之后, matcher 需支持带占位的模板别名(去{目标}右边);
    模组侧一次性 MovementOrderMove, 不持续驱动。
+
+## 视频/封面素材工具 (2026-09)
+
+- 抠图: `.venv` 里已装 **rembg 2.0.84 + onnxruntime**(2026-09-09), 人像模型
+  `u2net_human_seg` 已下载到 `~/.u2net/`, 以后抠头像直接用, 不用再装/下载。
+  经验: 先把源图紧裁到人物(把椅子/杂物裁出画框), 再 `remove(..., session=new_session("u2net_human_seg"), post_process_mask=True)`;
+  人像贴画面右/下边缘让切边落在画框外; 白描边 = alpha 膨胀(MaxFilter)后填白。
+- 封面加字: `tools/thumb_text.py`(1280×720, `*词*` 黄色, `|` 分行, --style round/shout, --top 裁剪起点, --align)。
+- 成片叠指令注释卡 + YouTube 规格重编码: `tools/annotate_video.py`(转写定位指令, NVENC cq20, 音频 remux)。
+- 素材目录: 视频/封面产物在 `H:\2025录制\粗剪_语音指挥\剪映初稿\`; 模组宣传图在 `assets/art/`。
+- 文案: `docs/youtube-upload-kit.md`(标题/描述/标签/上传设置), `docs/nexus-description.md`。
+  口径: 语音补键盘不替代键盘; 不用 "voice mod" 连写(会命中 Voicemod 破解搜索), 统一 voice command。
 
 ## 多会话并行 (git worktree, 2026-09 起)
 
