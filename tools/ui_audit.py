@@ -212,6 +212,11 @@ def audit(lang):
 
     real = stt.Transcriber
     stt.Transcriber = _Stub
+    # 测试模式窗口一打开就在线程里"模型没下过就先下载": 审计不能真联网下 1.6GB
+    # (2026-09-09 新用户态跑审计, 30 秒内往仓库根目录 models/ 灌了 275MB 半截文件)
+    import models
+    real_dl = models.download
+    models.download = lambda *a, **k: True
     try:
         from listen import ListenGUI
         lg = ListenGUI()
@@ -221,6 +226,7 @@ def audit(lang):
         lg.root.destroy()
     finally:
         stt.Transcriber = real
+        models.download = real_dl
     fails += _report("listen", lang, bad)
 
     return fails

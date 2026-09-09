@@ -10,6 +10,9 @@ import time
 
 os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+# xet 传输保持开启: 2026-09-09 实测同一台机器 20 秒内 xet 564MB vs 普通 HTTP 283MB,
+# 且 xet 同样写 blobs/*.incomplete, 按磁盘字节算的进度条照常走(曾误以为它不落盘,
+# 其实是探测脚本数错了缓存目录 —— _CACHE 必须尊重 HF_HUB_CACHE, 见 _hub_cache)。
 # 下载源(按顺序试, 哪个成功用哪个):
 #   用户自设 HF_ENDPOINT > huggingface.co 官方 > hf-mirror.com。
 # 教训(2026-09-09 新用户模拟实测): 曾把 HF_ENDPOINT 默认写死成 hf-mirror.com —— 该站
@@ -35,7 +38,16 @@ _SIZE = {
     "tiny": "≈ 75 MB", "base": "≈ 145 MB", "small": "≈ 480 MB",
     "medium": "≈ 1.5 GB", "large-v3": "≈ 3 GB", "large-v3-turbo": "≈ 1.6 GB",
 }
-_CACHE = os.path.expanduser("~/.cache/huggingface/hub")
+def _hub_cache():
+    """HF 缓存根: 尊重 HF_HOME / HF_HUB_CACHE(用户可能挪到别的盘), 否则默认位置。"""
+    try:
+        from huggingface_hub.constants import HF_HUB_CACHE
+        return HF_HUB_CACHE
+    except Exception:
+        return os.path.expanduser("~/.cache/huggingface/hub")
+
+
+_CACHE = _hub_cache()
 
 
 def model_repo(model):

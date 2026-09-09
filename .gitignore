@@ -43,3 +43,6 @@ config/user_aliases.yaml
 # SteamCMD 本体/日志/缓存不入库 (上传配置 item.vdf 保留)
 tools/steamcmd/*
 !tools/steamcmd/item.vdf
+
+# 源码模式下 models.manual_dir(手动放/魔搭下载的模型)落在仓库根目录, 不进库
+models/
