@@ -122,6 +122,34 @@ def test_same_version_new_dictionary_refreshes():
         shutil.rmtree(src2, ignore_errors=True)
 
 
+def test_first_install_follows_system_language():
+    """首装: 界面/识别语言跟系统(中文->zh, 其它->en); 升级: 用户选过的语言不被探测覆盖。"""
+    import paths
+    orig = paths.system_lang
+    try:
+        for sys_lang in ("en", "zh"):
+            paths.system_lang = lambda s=sys_lang: s
+            d = _fresh_dir()
+            try:
+                refresh_config(d, SRC)
+                st = open(os.path.join(d, "settings.yaml"), encoding="utf-8").read()
+                assert f"language: {sys_lang}" in st, (sys_lang, st[:400])
+            finally:
+                shutil.rmtree(d, ignore_errors=True)
+        # 老用户 settings 里 language: en, 系统是中文 -> 仍是 en
+        paths.system_lang = lambda: "zh"
+        d = _fresh_dir(with_old=True)
+        try:
+            refresh_config(d, SRC)
+            st = open(os.path.join(d, "settings.yaml"), encoding="utf-8").read()
+            assert "language: en" in st, "升级时用户语言被系统探测覆盖了"
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+    finally:
+        paths.system_lang = orig
+    assert paths.system_lang() in ("zh", "en")
+
+
 if __name__ == "__main__":
     for _s in (sys.stdout, sys.stderr):
         try:

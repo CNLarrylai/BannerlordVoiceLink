@@ -113,8 +113,52 @@ def refresh_config(d, src):
 
     if old_settings:
         _reapply_prefs(sp, old_settings)
+    else:
+        # 首次安装(没有任何旧配置): 界面/识别语言跟随系统语言 —— 中文系统用中文,
+        # 其它一律英文。只在这一刻决定一次; 之后用户在启动器里切过的语言经
+        # _KEEP_PREFS 在升级时原样保留, 不会被再次探测覆盖。(用户 2026-09-09 提)
+        _set_setting_line(sp, "stt", "language", system_lang())
     with open(stamp_p, "w", encoding="utf-8") as f:
         f.write(want)
+
+
+def system_lang():
+    """系统界面语言 -> "zh" / "en"。Windows 用 UI 语言 LANGID(主语言 0x04 = 中文,
+    简繁都算); 拿不到就看 locale; 再不行默认 en(非中文系统看英文总比看中文强)。"""
+    try:
+        import ctypes
+        langid = ctypes.windll.kernel32.GetUserDefaultUILanguage()
+        return "zh" if (langid & 0x3FF) == 0x04 else "en"
+    except Exception:
+        pass
+    try:
+        import locale
+        loc = (locale.getlocale()[0] or "").lower()
+        if loc.startswith(("zh", "chinese")):
+            return "zh"
+        if loc:
+            return "en"
+    except Exception:
+        pass
+    return "en"
+
+
+def _set_setting_line(path, section, key, value):
+    """改写 settings.yaml 里 <section>.<key> 那一行的值, 保留注释与其它内容。"""
+    import re
+    with open(path, encoding="utf-8") as f:
+        lines = f.readlines()
+    in_sec = False
+    for i, line in enumerate(lines):
+        if re.match(r"^\S", line):
+            in_sec = line.startswith(section + ":")
+        if in_sec and re.match(rf"^\s+{re.escape(key)}\s*:", line):
+            lines[i] = f"  {key}: {value}\n"
+            break
+    else:
+        return
+    with open(path, "w", encoding="utf-8") as f:
+        f.writelines(lines)
 
 
 def _bundle_stamp(src, version):
