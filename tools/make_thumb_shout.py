@@ -198,6 +198,16 @@ def build(cut, a, out):
         im = chip(im, a.chip, tuple(a.chip_xy))
     lines = [[(t.upper(), c) for t, c in parse_words(s.strip())]
              for s in a.text.split("|") if s.strip()]
+    size = a.size                                   # 标题自动缩到不怼上人像
+    while size > 60:
+        f = ImageFont.truetype(FONTS["shout"], size)
+        sp = f.getlength(" ") * 1.15
+        if max(sum(f.getlength(t) for t, _ in ln) + sp * (len(ln) - 1) for ln in lines) <= a.maxw:
+            break
+        size -= 2
+    if size != a.size:
+        print("  标题按 maxw=%d 自动缩到 %dpx" % (a.maxw, size))
+    a.size = size
     font = ImageFont.truetype(FONTS["shout"], a.size)
     y = H - int(a.size * 1.12 * len(lines)) - 30
     for ln in lines:
@@ -233,6 +243,7 @@ def main():
     ap.add_argument("--ray", type=int, default=340, help="射线最远半径")
     ap.add_argument("--cone", type=int, default=28, help="喇叭光锥强度 0~150")
     ap.add_argument("--zoom", type=float, default=0.55, help="以嘴为中心的缩放模糊强度 0~1")
+    ap.add_argument("--maxw", type=int, default=720, help="标题最大宽度(px), 超了自动缩字号")
     ap.add_argument("--chip", help="嘴前指令卡文字")
     ap.add_argument("--chip-xy", default="300,300")
     a = ap.parse_args()
