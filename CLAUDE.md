@@ -137,6 +137,11 @@ v0.8.0(游戏1.4.7): 混合识别/指令复盘(F11)/语音数据共建/整活词
   经验: 先把源图紧裁到人物(把椅子/杂物裁出画框), 再 `remove(..., session=new_session("u2net_human_seg"), post_process_mask=True)`;
   人像贴画面右/下边缘让切边落在画框外; 白描边 = alpha 膨胀(MaxFilter)后填白。
 - 封面加字: `tools/thumb_text.py`(1280×720, `*词*` 黄色, `|` 分行, --style round/shout, --top 裁剪起点, --align)。
+- 喊话封面(自拍抠图镜像+声浪): `tools/make_thumb_shout.py`(rembg 抠图→镜像朝左贴右侧, 白描边+投影,
+  嘴部发出声波弧/射线/弱光锥, 以嘴为中心的缩放模糊给冲击感; `--base knight|field`,
+  field 是把大军底图整张左右翻转好让声波从右往左扫; `--cache` 存抠图结果避免重抠)。
+  经验: 白描边要求人像 alpha **不贴自己的包围盒边**(贴边=压出一条直线), 所以先四周补透明边,
+  且被画框裁断的那侧(身体下缘)必须留在画外; 底图自带的 UI 面板只能靠渐变压暗+模糊盖掉。
 - 成片叠指令注释卡 + YouTube 规格重编码: `tools/annotate_video.py`(转写定位指令, NVENC cq20, 音频 remux)。
 - 素材目录: 视频/封面产物在 `H:\2025录制\粗剪_语音指挥\剪映初稿\`; 模组宣传图在 `assets/art/`。
 - 文案: `docs/youtube-upload-kit.md`(标题/描述/标签/上传设置), `docs/nexus-description.md`。
