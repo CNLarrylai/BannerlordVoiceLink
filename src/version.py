@@ -2,7 +2,8 @@
 
 APP_NAME = "骑砍语音指挥"
 APP_EN = "Bannerlord Voice Commander"
-APP_VERSION = "0.9.8"   # 0.9.8: 模型下载重写(测速择优/续传换源/sha256), 修国内卡在 hf-mirror 美国 CDN
+APP_VERSION = "0.9.9"   # 0.9.9: 监听三模式(一直监听/按键开关/按住说话)+改键; 设置改动埋点(本地)
+                        # 0.9.8: 模型下载重写(测速择优/续传换源/sha256), 修国内卡在 hf-mirror 美国 CDN
                         # 0.9.7: 英文 attack them/get them/kill them 归就近集火(对齐中文"打他们")
                         # 0.9.6: 修打包版选 turbo 静默回退 small(缓存仓库名写死 Systran)
                         # 0.9.5: 英文识别加固(All->Or 口音容错/按词算占比/短噪音不误触)
