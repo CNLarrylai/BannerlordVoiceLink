@@ -297,6 +297,8 @@ _EN = {
     "👂 监听中…": "👂 Listening…",
     "说出指令即可": "just say a command",
     "说出指令即可 · 按 [{k}] 关闭": "say a command · [{k}] to turn off",
+    "语音识别已开启 · 轻点 {k} 关闭": "Voice commands ON · tap {k} to turn off",
+    "语音识别已关闭 · 轻点 {k} 开启": "Voice commands OFF · tap {k} to turn on",
     "🎧 监听方式": "🎧 Listening Mode",
     "一直监听": "Always On",
     "按键开关": "Toggle Key",

@@ -162,6 +162,7 @@ class App:
         # 监听门: 手动开关 + 战斗自动门。listen_on=手动状态; battle_on=模组报的战斗中
         self.listen_on = self.mode != "toggle"      # 按键模式启动时是关的, 点一下才开
         self._unhook_toggle = None
+        self._notify_q = None
         self.battle_on = not self.auto_battle_gate   # 不开自动门时恒真
         self.dry_run = "--dry-run" in sys.argv
         self.samplerate = settings["audio"]["samplerate"]
@@ -527,6 +528,35 @@ class App:
         state = "开" if self.listen_on else "关"
         print(f"[监听] 命令识别已{state}。")
         self._idle()
+        self._announce_listen()
+
+    def _listen_state_text(self):
+        k = hotkeys.pretty(self.toggle_key)
+        if self.listen_on:
+            return t("语音识别已开启 · 轻点 {k} 关闭").format(k=k)
+        return t("语音识别已关闭 · 轻点 {k} 开启").format(k=k)
+
+    def _announce_listen(self):
+        """按键模式的开关状态推进游戏: 顶部横幅 + 左下战斗记录(模组 notify 本就是双通道)。
+        用户 2026-09-22 实测提: 只有桌面浮层显示开关, 全屏游戏里看不到, 不知道开没开。
+        发送走独立线程排队: 键盘钩子回调里不能等 TCP(最长 ~1s), 连按两下也要按序到达。
+        不在战斗 = 模组没开端口, 静默失败; 进入战斗时 _battle_poll 会补报一次当前状态。"""
+        if not self.modlink or self.dry_run:
+            return
+        if self._notify_q is None:
+            import queue
+            self._notify_q = queue.Queue()
+
+            def worker():
+                while self.running:
+                    text = self._notify_q.get()
+                    try:
+                        self.modlink.notify(text)
+                    except Exception:
+                        pass
+
+            threading.Thread(target=worker, daemon=True).start()
+        self._notify_q.put(self._listen_state_text())
 
     def _register_review_hotkey(self):
         key = self.settings["control"].get("review_key") or ""
@@ -558,18 +588,25 @@ class App:
         """现在该不该处理命令: 手动开着 且 (没开自动门 或 在战斗中)。"""
         return self.listen_on and self.battle_on
 
-    def _battle_gate_poll(self):
-        """后台轮询伴侣模组: ping 通=在战斗中(模组的 socket 只在战斗开)。"""
+    def _battle_poll(self):
+        """后台轮询伴侣模组: ping 通=在战斗中(模组的 socket 只在战斗开)。两个用途:
+        战斗自动门(进出战斗开关识别) / 按键模式进战斗时在游戏里报一次当前开关状态
+        (大地图上按的开关推不进游戏, 进了战斗得让玩家知道现在是开还是关)。"""
         import threading
         import time as _t
 
         def loop():
+            in_battle = False
             while self.running:
                 on = bool(self.modlink and self.modlink.ping())
-                if on != self.battle_on:
-                    self.battle_on = on
-                    print(f"[监听] 战斗自动门: {'进入战斗, 开始识别' if on else '离开战斗, 已静音'}")
-                    self._idle()
+                if on != in_battle:
+                    in_battle = on
+                    if self.auto_battle_gate:
+                        self.battle_on = on
+                        print(f"[监听] 战斗自动门: {'进入战斗, 开始识别' if on else '离开战斗, 已静音'}")
+                        self._idle()
+                    if on and self.mode == "toggle":
+                        self._announce_listen()
                 _t.sleep(2.0)
 
         threading.Thread(target=loop, daemon=True).start()
@@ -776,7 +813,8 @@ class App:
         self._register_review_hotkey()
         if self.auto_battle_gate:
             print("[监听] 战斗自动门已开: 大地图/菜单静音, 进入战斗自动识别。")
-            self._battle_gate_poll()
+        if self.auto_battle_gate or self.mode == "toggle":
+            self._battle_poll()
         if self.mode == "push_to_talk":
             self.loop_ptt()
         else:
