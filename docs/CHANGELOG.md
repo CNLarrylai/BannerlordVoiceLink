@@ -4,6 +4,26 @@
 > 创意工坊的 Change Notes(写进 tools/steamcmd/item.vdf), 发版前跑一下即可。
 > 写给玩家看的: 说"你会感受到什么", 不说"改了哪个函数"。
 
+## 0.9.9 — 2026-09-22
+
+### 中文
+- **新增:三种监听方式**(「音频与模型设置」里选):
+  - **一直监听**:说话就识别,不占任何按键(和以前一样)。
+  - **按键开关**:轻点一下开始听,再点一下停,启动时默认是关的。默认键是**左 Alt**,只认"轻点",Alt+Tab、游戏里按住 Alt 看部队标记都不会误触。直播跟观众聊天时关掉,要指挥时再打开。
+  - **按住说话**:按住键说话,松开识别(默认 Caps Lock)。
+- **按键可以改**:点「修改…」按下想用的键即可;游戏要用的键(F1~F9、数字键、WASD 等)会提示换一个。
+- **游戏里能看到开关状态**(需伴侣模组):按键模式下每次开/关,顶部横幅和左下角战斗记录都会提示;每次进入战斗也会提醒一次当前是开还是关。
+- 注意:以前"一直监听"下按 F12 临时静音的功能取消了 —— 想随时开关,请改用「按键开关」模式。
+
+### English
+- **New: three listening modes** (pick one in Audio & Model Setup):
+  - **Always On**: just speak, no key needed (same as before).
+  - **Toggle Key**: tap once to start listening, tap again to stop; starts off. Default key is **Left Alt**, and only a quick tap counts, so Alt+Tab or holding Alt to show troop markers in-game won't flip it. Handy for streamers: turn it off while chatting, on when commanding.
+  - **Push to Talk**: hold the key while you speak, release to send (default Caps Lock).
+- **Rebind the key**: click "Change…" and press the key you want; keys the game needs (F1-F9, number keys, WASD…) are rejected with a hint.
+- **See the on/off state in-game** (companion mod): in Toggle Key mode every switch shows in the top banner and the bottom-left battle log, and each battle start reminds you whether voice commands are on or off.
+- Note: the old F12 quick-mute in Always On mode is gone; if you want to switch recognition on and off, use Toggle Key mode.
+
 ## 0.9.8 — 2026-09-22
 
 ### 中文
