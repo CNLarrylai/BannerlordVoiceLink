@@ -92,12 +92,17 @@
   心跳三行 + usage.csv 尾部。
 - 模拟新用户: `tools/fresh_user.py start|restore|status`(藏起数据目录与 HF 模型缓存,
   可逆不删)。2026-09-09 首测即抓到: hf-mirror.com 已变 308 跳转, 模型下载必失败。
+- **模型下载与国内体检**(2026-09-22 查实国内"下不了"根因): hf-mirror 没关站, 是**按地区**
+  308(海外跳 hf.co, 国内正常), 但 model.bin 302 到 HF 美国 xet CDN, 国内通而极慢/卡死不抛错。
+  现在 models.download = 自己的 HTTP 下载器(各源并行真下几 MB 测速择优 / Range 续传 /
+  卡住换源 / sha256), 不用 snapshot_download。海外机器测不出国内问题 —— 用
+  `tools/cn_check.py`(Globalping 大陆探针 + 本机真下载 + HF 黑洞模拟国内), 退出码 1=有问题。
 
 ## 当前状态 (2026-09-09)
 
 v0.9.7 已上工坊(ItemID 3775571491, Unlisted; 模组显示名 Voice Commander, 新封面)。
-本版要点: 战术层第二批 / 相对站位 / 5~8 队与半队全指令 / 模型下载改多源回退(hf.co →
-镜像 → 魔搭, HF 系先 4s 探通) / CUDA 库下载并行测速 / 首启跟随系统语言 / 启动器分步重排。
+本版要点: 战术层第二批 / 相对站位 / 5~8 队与半队全指令 / 模型下载改多源回退(0.9.8 起改为
+各源测速择优+续传换源) / CUDA 库下载并行测速 / 首启跟随系统语言 / 启动器分步重排。
 待办: 工坊简介双语化; 魔搭这条路等真实国内用户反馈; 若不稳再考虑把 turbo 打进包(+1.6GB)。
 发版四步见 mod/PUBLISH.md:
 build --release → 写 docs/CHANGELOG.md(中文+English) → tools/release_notes.py
