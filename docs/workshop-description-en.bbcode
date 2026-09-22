@@ -1,0 +1,61 @@
+[h1]🎙 Voice Commander — command your army with your voice [BETA][/h1]
+
+Shout "Cavalry, charge!" into your mic and your troops do it. Speech recognition runs entirely on your PC and no audio is ever uploaded. Subscribe and play: the voice panel starts with the game. English and Chinese commands are both supported.
+
+Demo: https://youtu.be/2qlqocS7WX8
+
+[b]Heads-up:[/b] this is still a BETA. If something doesn't work, tell me in the comments and include:
+[list]
+[*]your game version
+[*]any other mods you run alongside it
+[*]the zip from the launcher's "📦 Pack Logs" button (it contains no audio)
+[/list]
+
+[h2]✨ What it does[/h2]
+[list]
+[*][b]Every order by voice[/b]: charge, advance, fall back, retreat, shield wall, loose formation, circle / square / skein, fire at will, hold fire, mount / dismount, delegate to AI… said the way you'd naturally say it
+[*][b]True targeting[/b]: "Cavalry, attack their archers!" locks your cavalry onto the enemy archer formation through the game API, no aiming the crosshair
+[*][b]Focus fire[/b]: "Attack them!" sends the formation at the enemy group nearest to you
+[*][b]Split and flank[/b]: "Cavalry, split", then "cavalry left, attack the archers" / "group five, follow me"; groups 5-8 and split halves take every order
+[*][b]Tactics the keyboard can't reach[/b]: flank, hold the high ground, horse-archer skirmish, advance carefully, protect the flank. Your troops stay under your command, and any direct order stops the tactic
+[*][b]Relative positioning[/b]: "Cavalry, go to the right of the archers", "Infantry, move 20 meters to the right", "Horse archers, fall back 50 meters"
+[*][b]On-screen feedback[/b]: every order is confirmed in the top banner and the bottom-left battle log
+[/list]
+
+[h2]🎧 Three listening modes (Audio & Model Setup)[/h2]
+[list]
+[*][b]Always On[/b]: just speak, no key needed
+[*][b]Toggle Key[/b]: tap once to start listening, tap again to stop (default Left Alt; only a quick tap counts, so Alt+Tab or holding Alt for troop markers won't flip it). Great for streamers: off while chatting, on while commanding. The on/off state shows in the game's banner and battle log
+[*][b]Push to Talk[/b]: hold the key while you speak (default Caps Lock)
+[/list]
+You can rebind the key.
+
+[h2]🧠 It learns your voice[/h2]
+[list]
+[*][b]Practice[/b]: read the commands once and misheard words are learned into your personal dictionary
+[*][b]Command Review (F11)[/b]: see what each phrase was heard as and what it triggered, and fix mismatches on the spot
+[/list]
+
+[h2]🚀 Getting started[/h2]
+[list]
+[*]Subscribe → [b]let Steam finish downloading[/b] (about 1.2 GB) → tick [b]Voice Commander[/b] on the launcher's Mods tab → play
+[*]Two prompts on launch are expected: "unverified code" (the mod opens a local port) and a Windows admin prompt (needed to send key presses). Allow both
+[*]When the voice panel appears: ① Audio & Model Setup (pick your mic and listening mode) → ② Practice (optional) → Start Voice Command → give orders in battle
+[/list]
+
+[h2]💻 Requirements[/h2]
+[list]
+[*]Windows 10/11 and any microphone
+[*]Works without a graphics card (CPU mode). With an NVIDIA GPU, a first-run prompt enables GPU acceleration in one click for faster, more accurate recognition
+[*]Larger recognition models download from Audio & Model Setup; the fastest source is picked automatically and interrupted downloads resume
+[/list]
+
+[h2]❓ FAQ[/h2]
+[list]
+[*][b]Subscribed but it's not in the Mods list?[/b] Steam usually hasn't finished the 1.2 GB download. Check Steam → Library → Bannerlord → Properties → Workshop, then [b]restart the game launcher[/b]. Still missing? Check that your antivirus didn't block BannerlordVoice.exe, that Steam isn't in offline mode, and that you own the Steam version (Xbox / Epic versions can't use the Workshop)
+[*][b]Antivirus warning?[/b] A common false positive for PyInstaller-built programs; there's no malicious code
+[*][b]A command gets misheard?[/b] Fix it in Command Review (F11) or run Practice once; it improves quickly
+[/list]
+
+[h2]🔒 Privacy[/h2]
+Recognition runs entirely on your PC and no audio is uploaded (the internet is only used to download models). "Voice data donation" is optional and off by default: you can choose to keep your own command clips and export them manually to help train a better model.
