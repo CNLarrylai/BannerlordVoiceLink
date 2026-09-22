@@ -88,6 +88,13 @@
   (`tools/fresh_user.py` 里的 `run_outside()`: WMI Win32_Process.Create 起的进程没有包
   身份, 写真实目录); 读到的日志时间对不上时先 `os.path.realpath` 看是不是影子层。
   `~/.cache/huggingface` 不在 AppData, 不受影响。
+- **全局热键在 AI 工具环境里测不了**(2026-09-22 实测): 容器内进程和 WMI 容器外进程
+  (session 0, 无桌面)的 keyboard 钩子都收不到任何事件, 连自己 send 的都收不到。
+  热键逻辑靠假 keyboard 单测(tests/test_hotkeys.py), 真按键只能用户实测。
+- 监听三模式 control.mode: continuous(不占键) / toggle(轻点 listen_toggle_key, 默认左 Alt,
+  启动是关的) / push_to_talk。toggle 只认"0.5s 内松开且期间没按别的键"(Alt+Tab、游戏里
+  按住 Alt 看标记、AltGr 都不算), 见 src/hotkeys.py。
+- 埋点 src/telemetry.py: 只落本地 logs/events.jsonl(匿名安装 ID), 打包日志带上; 上传未接。
 - 排错流程: 用户从启动器测, 报问题看 app.log 最后一个"新会话"段落 + mod.log
   心跳三行 + usage.csv 尾部。
 - 模拟新用户: `tools/fresh_user.py start|restore|status`(藏起数据目录与 HF 模型缓存,
