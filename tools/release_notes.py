@@ -40,7 +40,10 @@ def parse(md):
             if line.startswith("### "):
                 cur = "en" if "english" in line.lower() else "zh"
             elif line.startswith("- ") and cur:
-                entry[cur].append(line[2:].strip())
+                entry[cur].append([line[2:].strip(), []])
+            elif re.match(r"^\s+- ", line) and cur and entry[cur]:
+                # 缩进的子条目挂到上一条下面(教训 v0.9.9: 曾被静默丢掉, 工坊只剩标题)
+                entry[cur][-1][1].append(line.strip()[2:].strip())
         out.append(entry)
     return out
 
@@ -58,7 +61,12 @@ def render(entry):
             continue
         lines.append(f"[h3]{tag}[/h3]")
         lines.append("[list]")
-        lines += [f"[*]{_md_inline_to_bbcode(x)}" for x in entry[key]]
+        for text, subs in entry[key]:
+            lines.append(f"[*]{_md_inline_to_bbcode(text)}")
+            if subs:
+                lines.append("[list]")
+                lines += [f"[*]{_md_inline_to_bbcode(x)}" for x in subs]
+                lines.append("[/list]")
         lines.append("[/list]")
     return "\n".join(lines)
 
