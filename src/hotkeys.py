@@ -32,7 +32,8 @@ def on_tap(key, callback, kb=None):
             return False
         name = (e.name or "").lower()
         # 左右 Alt/Ctrl/Shift 扫描码相同, 只能靠事件名分左右
-        if key.startswith("left ") and name.startswith("right"):
+        # 英式/欧式布局的右 Alt 是 AltGr, 事件名 "alt gr"(还会顺带假按一下左 Ctrl)
+        if key.startswith("left ") and (name.startswith("right") or "gr" in name):
             return False
         if key.startswith("right ") and not name.startswith("right"):
             return False

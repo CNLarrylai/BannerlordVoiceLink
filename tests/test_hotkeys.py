@@ -87,6 +87,13 @@ def test_right_alt_does_not_trigger_left_alt():
     assert hits == []
 
 
+def test_altgr_does_not_trigger_left_alt():
+    kb, hits, _ = _setup()
+    kb.send("down", 29, "left ctrl"); kb.send("down", 56, "alt gr")
+    kb.send("up", 56, "alt gr"); kb.send("up", 29, "left ctrl")
+    assert hits == []
+
+
 def test_unhook_stops_listening():
     kb, hits, off = _setup()
     off()
