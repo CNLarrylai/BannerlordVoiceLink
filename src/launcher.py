@@ -281,6 +281,8 @@ class Launcher:
         except Exception as e:
             self._set(t("切换失败: {e}").format(e=e), "#ff8a8a")
             return
+        import telemetry
+        telemetry.track_changes({"lang": self.lang}, {"lang": lang})
         self.lang = lang
         i18n.set_lang(lang)
         self._build_ui()   # 整个界面立即换语言
@@ -332,8 +334,8 @@ class Launcher:
         """一键把日志打包成 zip —— 报障时用户直接把这个文件发给作者。
 
         小白找不到 %LOCALAPPDATA% 那串路径, 与其教路径不如给个按钮。
-        只收诊断必需的三件: app.log(语音程序全过程) / mod.log(模组心跳) /
-        usage.csv(每条指令一行, 最适合分析错配)。不含任何录音。
+        只收诊断必需的: app.log(语音程序全过程) / mod.log(模组心跳) /
+        usage.csv(每条指令一行, 最适合分析错配) / events.jsonl(设置改动埋点)。不含任何录音。
         """
         import zipfile
         from datetime import datetime
@@ -342,7 +344,7 @@ class Launcher:
         from version import APP_VERSION
 
         d = log_dir()
-        wanted = ["app.log", "mod.log", "usage.csv"]
+        wanted = ["app.log", "mod.log", "usage.csv", "events.jsonl"]
         found = [f for f in wanted if os.path.exists(os.path.join(d, f))]
         if not found:
             self._set(t("还没有日志 (先运行一次语音指挥)"), DIM)

@@ -150,6 +150,28 @@ def test_first_install_follows_system_language():
     assert paths.system_lang() in ("zh", "en")
 
 
+def test_listen_mode_and_keys_survive_upgrade():
+    """监听模式/键位是用户选择, 升级保留; 但旧默认 F12(0.9.8 前一直监听下的静音键)
+    不算选择, 让新默认左 Alt 接管。"""
+    import re
+    for old_key, want in (('"f12"', '"left alt"'), ('"right ctrl"', '"right ctrl"')):
+        d = _fresh_dir(with_old=True)
+        try:
+            p = os.path.join(d, "settings.yaml")
+            txt = open(p, encoding="utf-8").read().replace(
+                "control:\n", "control:\n  mode: toggle\n  push_to_talk_key: \"v\"\n"
+                f"  listen_toggle_key: {old_key}\n")
+            with open(p, "w", encoding="utf-8") as f:
+                f.write(txt)
+            refresh_config(d, SRC)
+            st = open(p, encoding="utf-8").read()
+            assert re.search(r"^  mode: toggle$", st, re.M), "监听模式丢了"
+            assert 'push_to_talk_key: "v"' in st, "按住说话键丢了"
+            assert f"listen_toggle_key: {want}" in st, (old_key, "->", want)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+
 if __name__ == "__main__":
     for _s in (sys.stdout, sys.stderr):
         try:

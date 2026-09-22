@@ -66,7 +66,9 @@ def _seed_fun_packs(d):
 # 版本更新时仍保留的用户选择 (其余改动在 backup/ 里可手动找回)
 _KEEP_PREFS = (("audio", "device"), ("stt", "model"),
                ("stt", "device"), ("stt", "language"), ("stt", "engine"),
-               ("fun", "pack"))
+               ("fun", "pack"),
+               ("control", "mode"), ("control", "push_to_talk_key"),
+               ("control", "listen_toggle_key"))
 
 
 def refresh_config(d, src):
@@ -177,7 +179,9 @@ def _bundle_stamp(src, version):
 # 用户的值正好等于某个历史默认, 说明他从没主动改过 -> 交还给新版默认(auto),
 # 否则老用户永远被钉在旧模型上, 后续的默认升级对他们完全无效(2026-08 实测:
 # 老配置 model: base 让 0.9.0 的分档逻辑形同虚设)。
-_STALE_DEFAULTS = {("stt", "model"): {"base", "auto"}}
+_STALE_DEFAULTS = {("stt", "model"): {"base", "auto"},
+                   # 0.9.8 前 F12 是"一直监听"下的静音键(旧默认); 按键模式默认改左 Alt
+                   ("control", "listen_toggle_key"): {"f12"}}
 
 
 def _reapply_prefs(new_settings_path, old_text):

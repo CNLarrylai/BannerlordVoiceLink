@@ -37,16 +37,19 @@ stt:
   initial_prompt: "指挥军队。兵种：步兵、弓箭手、骑兵、骑射、骑射手、第四队。全军听令：全军、所有人、大家、全体、兄弟们。移动：前进、后退、冲锋、突击、停止、撤退、跟随我、跟我走、护驾。变换队形/阵型：线阵、盾墙、散阵、圆阵、方阵、三角阵、竖排、排成一列、乱阵、楔阵。射击：自由射击、停止射击。上马、下马、交给AI。"
 
 control:
-  # 模式: continuous(一直监听, 像 VoiceAttack) 或 push_to_talk(按住说话)
+  # 监听模式(音频设置里可选):
+  #   continuous   一直监听(像 VoiceAttack), 不占任何键
+  #   toggle       按键模式: 轻点一下 listen_toggle_key 开始听, 再点一下停; 启动时是关的
+  #   push_to_talk 按住 push_to_talk_key 说话, 松开识别
   mode: continuous
-  # push_to_talk 模式用的热键 (continuous 模式忽略它)
+  # 按住说话模式用的键 (其它模式忽略它)
   push_to_talk_key: "caps lock"
   # 热重载键: 改完词典(commands.yaml)按它一下, 立即载入运行中的引擎,
   # 不用关掉重启(Whisper 模型不重载, 秒生效)。留空则关闭此功能。
   reload_key: "f10"
-  # —— 监听开关键: 按一下"开/关命令识别"。直播跟观众聊天时关掉, 防止嘴里蹦出
-  #    "冲锋/盾墙"就误发指令; 要指挥时按开。避开游戏用的 F1~F9/数字键。留空则关闭。
-  listen_toggle_key: "f12"
+  # —— 按键模式的开关键(只在 mode: toggle 时生效)。默认左 Alt, 只认"轻点"(0.5 秒内
+  #    松开、期间没按别的键): Alt+Tab、游戏里按住 Alt 看部队标记都不会误触。
+  listen_toggle_key: "left alt"
   # —— 指令复盘键: 呼出复盘目录, 逐条看"听到什么→触发了什么", 发现错配当场
   #    改绑定学进个人词典。留空则关闭(启动器里也有入口)。
   review_key: "f11"

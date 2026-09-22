@@ -4,33 +4,19 @@
 	"publishedfileid"	"3775571491"
 	"contentfolder"		"C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord\Modules\BannerlordVoiceLink"
 	"previewfile"		"C:\Users\Victoria\bannerlord-voice\assets\workshop_preview.png"
-	"changenote"		"[h2]v0.9.7  (2026-09-09)[/h2]
+	"changenote"		"[h2]v0.9.8  (2026-09-22)[/h2]
 [h3]中文[/h3]
 [list]
-[*][b]重要修复:模型下载[/b]。原先依赖的 hf-mirror 镜像已关站,导致音频设置里'需联网下载'的模型谁都下不了。现在按顺序自动试 HuggingFace 官方 → 镜像 → [b]魔搭 ModelScope(国内直连可用)[/b],哪个通用哪个;都不通时会明确告诉你怎么办(挂代理,或把模型文件夹放到 %LOCALAPPDATA%\BannerlordVoice\models\<模型名>\)。
-[*][b]GPU 加速库下载提速[/b]:下载前并行测速各个源,谁快用谁。原先固定国内镜像优先,海外或挂代理的机器只有 2 MB/s,现在能跑满带宽。
-[*][b]战术层第二批[/b](需伴侣模组):占高地(弓箭手占高地)、游击(骑射游击/放风筝)、稳步推进(步兵稳步推进,盾墙贴着弓箭手射程走)、护翼(骑兵保护左翼/右翼:站到弓箭手侧翼不挡射线,有敌军逼近就打,退开归位;'骑兵保护弓箭手'自动选离敌近的一侧)。这些是键盘摸不到的 AI 层,但部队[b]不交给 AI 托管[/b]、始终归你指挥,对它下任何直接指令就自动停。
-[*][b]相对站位 / 位置微调[/b](需伴侣模组):'骑兵去弓箭手右边''步兵到骑射前面三十米''骑射往后退五十米';英文 'Cavalry, go to the right of the archers''Infantry, move 20 meters to the right'。左右按你的视角、前后按朝敌方向,默认 20 米;一次性移动令,随时可改。护卫目标也放开到任意己方兵种(骑兵保护骑射)。
-[*][b]第 5~8 队与左右半队支持全部指令[/b]:阵型、射击、上下马、战术、站位都能对'第六队''骑兵左队'下达,不再只有六条派遣令。
-[*][b]英文就近集火[/b]:'attack them / get them / kill them / attack the nearest enemy' 和中文'打他们'一样,让编队集火离你最近的那支敌军(需伴侣模组);'charge / attack' 仍是普通冲锋。
-[*][b]游戏内横幅跟随语言[/b]:英文模式下定向进攻、分队、战术播报全部英文。
-[*][b]启动器按使用顺序重排[/b]:① 音频与模型设置(没选麦克风时高亮提醒)→ ② 跟读练习(可选)→ 开始语音指挥(旁边是小号的测试模式)→ 玩过之后再看的指令复盘 / 指令词典。
-[*][b]首次打开跟随系统语言[/b]:中文 Windows 默认中文,其它系统默认英文;之后你在启动器里切过的语言一直保留。
-[*][b]跟读练习升级[/b]:默认「完整练习」按当前词典生成题库,把支持的全部指令(含分队、左右队、第N队、战术层)各念一遍,约 6 分钟;原来的常用指令模式保留为「快速」。每条录音附带标注,勾选'语音数据共建'后导出会一起带上。
-[*][b]模组在游戏启动器里改名为 Voice Commander[/b],与工坊页一致;新封面。
+[*][b]重要修复:国内下载模型卡住不动[/b]。查实原因:国内能打开的镜像站只提供文件列表,真正的大文件还是从海外服务器下,速度极慢或直接卡死,而程序没发现卡住、一直在等。现在下载前会[b]同时给几个下载源测速[/b](HuggingFace / 镜像 / 魔搭 ModelScope),谁快用谁;国内一般会自动走魔搭。
+[*][b]断点续传 + 自动换源[/b]:下载中途卡住或太慢,会自动换到下一个源[b]接着下[/b],不从头来;关掉程序后再点下载也能接着上次的进度。
+[*][b]下完自动校验文件完整性[/b],损坏的文件不会被当成'已就绪'。
+[*]之前下载卡住的朋友:更新后在「音频与模型设置」里重新点一次下载即可。
 [/list]
 [h3]English[/h3]
 [list]
-[*][b]Important fix: model downloads[/b]. The hf-mirror site we relied on shut down, so any model marked 'needs download' failed for everyone. Downloads now try HuggingFace → mirror → [b]ModelScope (reachable from mainland China)[/b] in turn, and if nothing works you get a clear next step (use a proxy, or drop the model folder into %LOCALAPPDATA%\BannerlordVoice\models\<model>\).
-[*][b]Faster GPU library download[/b]: sources are speed-tested in parallel before downloading and the fastest wins. It used to pin a China mirror first, which crawls at ~2 MB/s from abroad or through a proxy.
-[*][b]Tactics, batch two[/b] (companion mod): hold the high ground, skirmish (horse archers kite them), advance carefully (shield wall, stays under archer cover), protect the left/right flank (cavalry holds the archers' flank without blocking their line of fire and engages anything closing in; 'protect the archers' auto-picks the side nearer the enemy). All reach the AI layer the keyboard cannot, without delegating the formation to the AI: it stays yours, and any direct order stops the tactic.
-[*][b]Relative positioning[/b] (companion mod): 'Cavalry, go to the right of the archers', 'Infantry, move in front of the horse archers, 30 meters', 'Horse archers, fall back 50 meters'. Left/right follow your camera view, front/back follow the enemy direction; default 20 m; a one-shot move order you can override any time. Guarding now works for any friendly formation ('cavalry, protect the horse archers').
-[*][b]Groups 5-8 and split halves take every order[/b]: formations, fire control, mount/dismount, tactics and positioning all work for 'group six' / 'cavalry left', not just the six basic orders.
-[*][b]Focus fire in English[/b]: 'attack them / get them / kill them / attack the nearest enemy' now behaves like the Chinese '打他们': the formation focuses the enemy formation nearest to you (companion mod); 'charge / attack' stays a plain charge.
-[*][b]In-game banners follow your language[/b]: targeted attacks, splits and tactics are announced in English in English mode.
-[*][b]Launcher reorganized in the order you actually use it[/b]: ① Audio & Model Setup (highlighted until you pick a mic) → ② Practice (optional) → Start Voice Command (with a small Test Mode beside it) → Review / Commands for later.
-[*][b]First launch follows your system language[/b]: Chinese Windows starts in Chinese, everything else in English; whatever you pick in the launcher afterwards sticks.
-[*][b]Practice upgraded[/b]: the default 'Full run' builds its drill from the current dictionary, so you read every supported command once (splits, halves, numbered groups and tactics included, ~6 min); the old common-commands mode stays as 'Quick'. Each recording is labelled and travels with a voice-data donation export.
-[*][b]The mod is now named Voice Commander in the game launcher[/b], matching the Workshop page; new cover art.
+[*][b]Important fix: model downloads stuck in mainland China[/b]. The mirror that works in China only serves the file list; the large model file still came from an overseas server that crawls or stalls, and the app kept waiting forever. Downloads now [b]speed-test every source in parallel[/b] first (HuggingFace / mirror / ModelScope) and use the fastest; users in China are routed to ModelScope automatically.
+[*][b]Resume + automatic source switching[/b]: if a download stalls or crawls, it switches to the next source and [b]continues where it stopped[/b] instead of restarting; closing the app and clicking download again also resumes.
+[*][b]Files are integrity-checked (sha256) after download[/b], so a corrupted file is never treated as ready.
+[*]If your download got stuck before: after updating, just click download again in Audio & Model Setup.
 [/list]"
 }

@@ -1,7 +1,8 @@
 """骑砍语音指挥 —— 主程序。
 
-两种模式:
-  continuous   一直监听, VAD 自动断句, 匹配到指令就发 (像 VoiceAttack)
+三种监听模式 (control.mode, 音频设置里可选):
+  continuous   一直监听, VAD 自动断句, 匹配到指令就发 (像 VoiceAttack); 不占任何键
+  toggle       按键模式: 轻点一下监听键(默认左 Alt)开, 再点一下关; 启动时是关的
   push_to_talk 按住热键说话, 松开识别
 
 数据流: 麦克风 -> Whisper识别 -> (可选口令前缀) -> 模糊匹配 -> 模拟按键
@@ -19,6 +20,7 @@ for _s in (sys.stdout, sys.stderr):
         pass
 
 import keyboard
+import hotkeys
 
 import relpos
 import numpy as np
@@ -148,13 +150,18 @@ class App:
         self.lang = settings["stt"].get("language", "zh")
         self._publish_lang()
         self.mode = c.get("mode", "continuous")
-        self.ptt = c.get("push_to_talk_key", "caps lock")
+        if self.mode not in ("continuous", "toggle", "push_to_talk"):
+            self.mode = "continuous"
+        self.ptt = c.get("push_to_talk_key") or "caps lock"
         self.reload_key = c.get("reload_key") or ""
-        self.toggle_key = c.get("listen_toggle_key") or ""
+        # 监听键只在按键模式(toggle)下生效; 一直监听模式不占键(用户 2026-09-22 定:
+        # 想在过程中关掉识别的人直接选按键模式)
+        self.toggle_key = (c.get("listen_toggle_key") or "left alt") if self.mode == "toggle" else ""
         self.auto_battle_gate = c.get("auto_battle_gate", False)
         self.prefixes = c.get("command_prefix") or []
         # 监听门: 手动开关 + 战斗自动门。listen_on=手动状态; battle_on=模组报的战斗中
-        self.listen_on = True
+        self.listen_on = self.mode != "toggle"      # 按键模式启动时是关的, 点一下才开
+        self._unhook_toggle = None
         self.battle_on = not self.auto_battle_gate   # 不开自动门时恒真
         self.dry_run = "--dry-run" in sys.argv
         self.samplerate = settings["audio"]["samplerate"]
@@ -450,15 +457,19 @@ class App:
         if not self._gate_open():
             if not self.listen_on:
                 self._set(t("🔇 已关闭识别"),
-                          t("按 [{k}] 开启").format(k=self.toggle_key.upper()),
+                          t("按 [{k}] 开启").format(k=hotkeys.pretty(self.toggle_key)),
                           "#9aa4ad")
             else:
                 self._set(t("🔇 战斗外静音"), t("进入战斗自动开启"), "#9aa4ad")
             return
-        if self.mode == "continuous":
+        if self.mode == "toggle":
+            self._set(t("👂 监听中…"), detail or t("说出指令即可 · 按 [{k}] 关闭").format(
+                k=hotkeys.pretty(self.toggle_key)), "#7Fd1ff")
+        elif self.mode == "continuous":
             self._set(t("👂 监听中…"), detail or t("说出指令即可"), "#7Fd1ff")
         else:
-            self._set(t("待命中…"), detail or t("按住 [{k}] 说话").format(k=self.ptt),
+            self._set(t("待命中…"), detail or t("按住 [{k}] 说话").format(
+                k=hotkeys.pretty(self.ptt)),
                       "#7Fd1ff")
 
     def reload_config(self):
@@ -505,9 +516,9 @@ class App:
         if not self.toggle_key:
             return
         try:
-            keyboard.add_hotkey(self.toggle_key, self._toggle_listen)
-            print(f"[监听] 按 [{self.toggle_key.upper()}] 可开/关命令识别 "
-                  f"(直播聊天时关掉防误触)。")
+            self._unhook_toggle = hotkeys.on_tap(self.toggle_key, self._toggle_listen)
+            print(f"[监听] 按键模式: 轻点 [{hotkeys.pretty(self.toggle_key)}] 开/关命令识别 "
+                  f"(现在是关的)。")
         except Exception as e:
             print(f"[监听] ⚠ 开关键 {self.toggle_key} 注册失败: {e}")
 
@@ -736,7 +747,7 @@ class App:
     def loop_ptt(self):
         self.recorder = Recorder(self.settings)
         self._idle()
-        print(f"\n>>> 按住 [{self.ptt}] 说话, 松开识别。Ctrl+C 退出。\n")
+        print(f"\n>>> 按住 [{hotkeys.pretty(self.ptt)}] 说话, 松开识别。Ctrl+C 退出。\n")
         while self.running:
             if not keyboard.is_pressed(self.ptt):
                 time.sleep(0.02)
@@ -755,22 +766,32 @@ class App:
 
     def loop(self):
         boost_thread_priority()
+        import telemetry
+        telemetry.track("session_start", mode=self.mode, lang=self.lang,
+                        model=self.settings["stt"].get("model"),
+                        key=hotkeys.pretty(self.toggle_key if self.mode == "toggle" else
+                                           self.ptt if self.mode == "push_to_talk" else ""))
         self._register_reload_hotkey()
         self._register_toggle_hotkey()
         self._register_review_hotkey()
         if self.auto_battle_gate:
             print("[监听] 战斗自动门已开: 大地图/菜单静音, 进入战斗自动识别。")
             self._battle_gate_poll()
-        if self.mode == "continuous":
-            self.loop_continuous()
-        else:
+        if self.mode == "push_to_talk":
             self.loop_ptt()
+        else:
+            self.loop_continuous()      # continuous / toggle 都是持续听, toggle 靠监听门开关
 
     def stop(self):
         self.running = False
         if self.listener:
             self.listener.stop()
-        for k in (self.reload_key, self.toggle_key):
+        if self._unhook_toggle:
+            try:
+                self._unhook_toggle()
+            except Exception:
+                pass
+        for k in (self.reload_key,):
             if k:
                 try:
                     keyboard.remove_hotkey(k)

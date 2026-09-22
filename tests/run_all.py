@@ -49,13 +49,17 @@ def main():
     if rc != 0:
         print("\n❌ 退化过滤测试有失败! 先修这个。")
         sys.exit(1)
-    rc = run("模型下载源回退 (hf.co → 镜像, 正确性门槛)", "test_models_download.py")
+    rc = run("模型下载 (测速择优/续传换源/校验, 正确性门槛)", "test_models_download.py")
     if rc != 0:
         print("\n❌ 模型下载源测试有失败! 先修这个。")
         sys.exit(1)
     rc = run("监听门 (手动开关/战斗自动门, 正确性门槛)", "test_gate.py")
     if rc != 0:
         print("\n❌ 监听门测试有失败! 先修这个。")
+        sys.exit(1)
+    rc = run("监听键轻点判定 (Alt+Tab/按住不算, 正确性门槛)", "test_hotkeys.py")
+    if rc != 0:
+        print("\n❌ 监听键测试有失败! 先修这个。")
         sys.exit(1)
     rc = run("校准/个人词典 (发音适配, 正确性门槛)", "test_calibrate.py")
     if rc != 0:
