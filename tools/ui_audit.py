@@ -175,6 +175,12 @@ def audit(lang):
     w = SetupWindow()
     bad = _full_check(w.root)
     shot(w.root, f"audio_setup_{lang}")
+    # 按键模式 + 最长的改键报错: 改键那一行最宽的状态
+    w.listen_mode.set("toggle")
+    w._on_listen_mode()
+    w.key_msg.config(text=i18n.t("这个键游戏里要用(指令菜单/编队/移动), 换一个"))
+    bad += _full_check(w.root)
+    shot(w.root, f"audio_setup_toggle_{lang}")
     w.close()
     fails += _report("audio_setup", lang, bad)
 

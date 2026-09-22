@@ -94,6 +94,26 @@ def current_stt():
     return str(s.get("model", "auto")), str(s.get("device", "auto"))
 
 
+def current_control():
+    with open(SETTINGS, encoding="utf-8") as f:
+        c = yaml.safe_load(f).get("control") or {}
+    mode = c.get("mode", "continuous")
+    if mode not in LISTEN_MODES:
+        mode = "continuous"
+    return {"mode": mode,
+            "toggle": c.get("listen_toggle_key") or "left alt",
+            "push_to_talk": c.get("push_to_talk_key") or "caps lock",
+            "taken": [c.get("reload_key"), c.get("review_key")]}
+
+
+# 监听模式: (配置值, 按钮文字, 说明)。按钮文字刻意短(英文宽 30~100%)。
+LISTEN_MODES = {
+    "continuous": ("一直监听", "说话就识别, 不占任何按键"),
+    "toggle": ("按键开关", "轻点一下开始听, 再点一下停; 启动时是关的"),
+    "push_to_talk": ("按住说话", "按住键说话, 松开识别"),
+}
+
+
 def detect_gpu():
     """探测 GPU 三态。返回 (状态, 说明)。
 
@@ -203,6 +223,7 @@ class SetupWindow:
                                font=("Microsoft YaHei", 11))
 
         self._build_engine_section()
+        self._build_listen_section()
 
         tk.Label(
             self.root, text=t("🎙 麦克风：对着说话，看哪根音量条在跳，选中它，点保存"),
@@ -296,6 +317,7 @@ class SetupWindow:
         self.cuda_bar.grid_remove()
 
         cur_model, cur_device = current_stt()
+        self._stt_before = (cur_model, cur_device)
 
         tk.Label(eng, text=t("模型:"), fg=FG, bg="#161c22",
                  font=("Microsoft YaHei", 10)).grid(
@@ -359,6 +381,99 @@ class SetupWindow:
         self._on_model_change()
         self.root.after(120, self._dl_poll)
         self.root.after(140, self._cuda_poll)
+
+    # ---------- 监听方式: 一直监听 / 按键开关 / 按住说话 + 改键 ----------
+    def _build_listen_section(self):
+        import hotkeys
+        self._hotkeys = hotkeys
+        PANEL = "#161c22"
+        box = tk.Frame(self.root, bg=PANEL, highlightthickness=1,
+                       highlightbackground="#2a323a")
+        box.pack(padx=24, pady=(0, 8), fill="x")
+        tk.Label(box, text=t("🎧 监听方式"), fg=GOLD, bg=PANEL,
+                 font=("Microsoft YaHei", 12, "bold")).grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=12, pady=(10, 4))
+
+        ctl = current_control()
+        self._ctl_before = dict(ctl)
+        self.keys = {"toggle": ctl["toggle"], "push_to_talk": ctl["push_to_talk"]}
+        self._taken = [k for k in ctl["taken"] if k]
+        self.listen_mode = tk.StringVar(value=ctl["mode"])
+
+        row = tk.Frame(box, bg=PANEL)
+        row.grid(row=1, column=0, columnspan=2, sticky="w", padx=12)
+        for val, (label, _) in LISTEN_MODES.items():
+            tk.Radiobutton(row, text=t(label), value=val, variable=self.listen_mode,
+                           command=self._on_listen_mode, fg=FG, bg=PANEL,
+                           selectcolor="#101418", activebackground=PANEL,
+                           activeforeground=FG, font=("Microsoft YaHei", 11),
+                           ).pack(side="left", padx=(0, 16))
+
+        self.listen_hint = tk.Label(box, text="", fg=DIM, bg=PANEL,
+                                    font=("Microsoft YaHei", 9), anchor="w", justify="left")
+        self.listen_hint.grid(row=2, column=0, columnspan=2, sticky="w", padx=12, pady=(4, 0))
+
+        self.key_row = tk.Frame(box, bg=PANEL)
+        self.key_row.grid(row=3, column=0, columnspan=2, sticky="w", padx=12, pady=(6, 10))
+        tk.Label(self.key_row, text=t("按键:"), fg=FG, bg=PANEL,
+                 font=("Microsoft YaHei", 10)).pack(side="left")
+        self.key_lbl = tk.Label(self.key_row, text="", fg="#101418", bg=GOLD,
+                                font=("Microsoft YaHei", 10, "bold"), padx=8)
+        self.key_lbl.pack(side="left", padx=(6, 8))
+        self.key_btn = tk.Button(self.key_row, text=t("修改…"), command=self._capture_key,
+                                 font=("Microsoft YaHei", 9), bg="#2a323a", fg=FG,
+                                 activebackground="#3a444e", relief="flat", padx=10)
+        self.key_btn.pack(side="left")
+        self.key_msg = tk.Label(self.key_row, text="", fg=DIM, bg=PANEL,
+                                font=("Microsoft YaHei", 9))
+        self.key_msg.pack(side="left", padx=(8, 0))
+        self._capturing = False
+        self._on_listen_mode()
+
+    def _on_listen_mode(self):
+        mode = self.listen_mode.get()
+        self.listen_hint.config(text=t(LISTEN_MODES[mode][1]))
+        if mode == "continuous":
+            self.key_row.grid_remove()
+        else:
+            self.key_row.grid()
+            self.key_lbl.config(text=self._hotkeys.pretty(self.keys[mode]))
+            self.key_msg.config(text="", fg=DIM)
+
+    def _capture_key(self):
+        if self._capturing:
+            return
+        self._capturing = True
+        self.key_lbl.config(text="…")
+        self.key_msg.config(text=t("请按下新按键 (Esc 取消)"), fg="#7Fd1ff")
+        self.root.focus_force()
+        self.root.bind("<KeyPress>", self._on_key_captured)
+
+    def _on_key_captured(self, event):
+        self.root.unbind("<KeyPress>")
+        self._capturing = False
+        mode = self.listen_mode.get()
+        if event.keysym == "Escape":
+            self._on_listen_mode()
+            return "break"
+        key = self._hotkeys.from_tk(event.keysym)
+        # 按键模式和按住说话同一时间只用一个, 两者用同一个键不算冲突
+        why = self._hotkeys.reject_reason(key, taken=self._taken)
+        if why:
+            self.key_lbl.config(text=self._hotkeys.pretty(self.keys[mode]))
+            self.key_msg.config(text=t(why), fg="#ff8a8a")
+            return "break"
+        self.keys[mode] = key
+        self.key_lbl.config(text=self._hotkeys.pretty(key))
+        self.key_msg.config(text=t("点「保存」生效"), fg=DIM)
+        return "break"      # Alt 等键别再触发窗口菜单
+
+    def _save_listen(self):
+        mode = self.listen_mode.get()
+        save_yaml_setting("control", "mode", mode)
+        save_yaml_setting("control", "listen_toggle_key", f'"{self.keys["toggle"]}"')
+        save_yaml_setting("control", "push_to_talk_key", f'"{self.keys["push_to_talk"]}"')
+        return mode
 
     # ---------- CUDA 加速库: 指定已有 / 下载 ----------
 
@@ -576,9 +691,21 @@ class SetupWindow:
                 save_yaml_setting("stt", "model", mv)
             if dv:
                 save_yaml_setting("stt", "device", dv)
+            mode = self._save_listen()
         except Exception as e:
             self.status.config(text=t("保存失败: {e}").format(e=e), fg="#ff8a8a")
             return
+        import telemetry        # 埋点: 玩家把设置改成了什么(不记麦克风名, 可能含个人信息)
+        b = self._ctl_before
+        telemetry.track_changes(
+            {"listen_mode": b["mode"], "toggle_key": b["toggle"],
+             "push_to_talk_key": b["push_to_talk"], "model": self._stt_before[0],
+             "stt_device": self._stt_before[1]},
+            {"listen_mode": mode, "toggle_key": self.keys["toggle"],
+             "push_to_talk_key": self.keys["push_to_talk"], "model": mv, "stt_device": dv})
+        self._ctl_before = {"mode": mode, "toggle": self.keys["toggle"],
+                            "push_to_talk": self.keys["push_to_talk"], "taken": self._taken}
+        self._stt_before = (mv, dv)
         shown = t("系统默认") if name is None else name
         self.status.config(
             text=t("✓ 已保存 · 麦克风:{mic} · 模型:{m} · 运行:{d}   "
