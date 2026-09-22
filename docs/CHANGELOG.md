@@ -4,6 +4,20 @@
 > 创意工坊的 Change Notes(写进 tools/steamcmd/item.vdf), 发版前跑一下即可。
 > 写给玩家看的: 说"你会感受到什么", 不说"改了哪个函数"。
 
+## 0.9.8 — 2026-09-22
+
+### 中文
+- **重要修复:国内下载模型卡住不动**。查实原因:国内能打开的镜像站只提供文件列表,真正的大文件还是从海外服务器下,速度极慢或直接卡死,而程序没发现卡住、一直在等。现在下载前会**同时给几个下载源测速**(HuggingFace / 镜像 / 魔搭 ModelScope),谁快用谁;国内一般会自动走魔搭。
+- **断点续传 + 自动换源**:下载中途卡住或太慢,会自动换到下一个源**接着下**,不从头来;关掉程序后再点下载也能接着上次的进度。
+- **下完自动校验文件完整性**,损坏的文件不会被当成"已就绪"。
+- 之前下载卡住的朋友:更新后在「音频与模型设置」里重新点一次下载即可。
+
+### English
+- **Important fix: model downloads stuck in mainland China**. The mirror that works in China only serves the file list; the large model file still came from an overseas server that crawls or stalls, and the app kept waiting forever. Downloads now **speed-test every source in parallel** first (HuggingFace / mirror / ModelScope) and use the fastest; users in China are routed to ModelScope automatically.
+- **Resume + automatic source switching**: if a download stalls or crawls, it switches to the next source and **continues where it stopped** instead of restarting; closing the app and clicking download again also resumes.
+- **Files are integrity-checked (sha256) after download**, so a corrupted file is never treated as ready.
+- If your download got stuck before: after updating, just click download again in Audio & Model Setup.
+
 ## 0.9.7 — 2026-09-09
 
 ### 中文
