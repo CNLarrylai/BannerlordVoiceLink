@@ -4,29 +4,19 @@
 	"publishedfileid"	"3775571491"
 	"contentfolder"		"C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord\Modules\BannerlordVoiceLink"
 	"previewfile"		"C:\Users\Victoria\bannerlord-voice\assets\workshop_preview.png"
-	"changenote"		"[h2]v0.9.9  (2026-09-22)[/h2]
+	"changenote"		"[h2]v0.9.10  (2026-09-25)[/h2]
 [h3]中文[/h3]
 [list]
-[*][b]新增:三种监听方式[/b](「音频与模型设置」里选):
-[list]
-[*][b]一直监听[/b]:说话就识别,不占任何按键(和以前一样)。
-[*][b]按键开关[/b]:轻点一下开始听,再点一下停,启动时默认是关的。默认键是[b]左 Alt[/b],只认'轻点',Alt+Tab、游戏里按住 Alt 看部队标记都不会误触。直播跟观众聊天时关掉,要指挥时再打开。
-[*][b]按住说话[/b]:按住键说话,松开识别(默认 Caps Lock)。
-[/list]
-[*][b]按键可以改[/b]:点「修改…」按下想用的键即可;游戏要用的键(F1~F9、数字键、WASD 等)会提示换一个。
-[*][b]游戏里能看到开关状态[/b](需伴侣模组):按键模式下每次开/关,顶部横幅和左下角战斗记录都会提示;每次进入战斗也会提醒一次当前是开还是关。
-[*]注意:以前'一直监听'下按 F12 临时静音的功能取消了 —— 想随时开关,请改用「按键开关」模式。
+[*][b]重要修复：指令可能指挥错部队[/b]。游戏里的数字键选的是“第几队”，而那一队装的是什么兵，可以在“战斗部署”界面里自己改。以前程序按默认顺序（步1 弓2 骑3 骑射4）发键，你改过编队顺序的话就会“弓箭手和骑兵反了”。现在程序会向伴侣模组问每一队 [b]实际的兵种成分[/b]（逐个数兵），按真实情况选队 —— 你怎么排部署都不会指错人。
+[*][b]重要修复：缺某个兵种时，误听不再变成全军令[/b]。游戏的行为是：按一个你没有的编队的数字键，会直接选中[b]全军[/b]。所以以前队里没骑兵时，一句听岔的“骑兵冲锋”就是全军冲锋。现在这种情况[b]一个键都不会发[/b]，改成在顶部横幅和左下战斗记录里提醒你“没有骑兵可指挥”。
+[*]定向进攻、战术层（绕后/占高地/护翼）、分队、相对站位、战场播报里的兵种名，也全部改成按真实成分认队。
+[*]新增排错工具：战斗中跑 tools/mod_probe.py 能直接看到“哪个数字键是哪个兵种、各多少人”。
 [/list]
 [h3]English[/h3]
 [list]
-[*][b]New: three listening modes[/b] (pick one in Audio & Model Setup):
-[list]
-[*][b]Always On[/b]: just speak, no key needed (same as before).
-[*][b]Toggle Key[/b]: tap once to start listening, tap again to stop; starts off. Default key is [b]Left Alt[/b], and only a quick tap counts, so Alt+Tab or holding Alt to show troop markers in-game won't flip it. Handy for streamers: turn it off while chatting, on when commanding.
-[*][b]Push to Talk[/b]: hold the key while you speak, release to send (default Caps Lock).
-[/list]
-[*][b]Rebind the key[/b]: click 'Change…' and press the key you want; keys the game needs (F1-F9, number keys, WASD…) are rejected with a hint.
-[*][b]See the on/off state in-game[/b] (companion mod): in Toggle Key mode every switch shows in the top banner and the bottom-left battle log, and each battle start reminds you whether voice commands are on or off.
-[*]Note: the old F12 quick-mute in Always On mode is gone; if you want to switch recognition on and off, use Toggle Key mode.
+[*][b]Important fix: orders could go to the wrong troops.[/b] In-game the number keys select a numbered formation slot, and which troops sit in each slot is something you can change in the Order of Battle screen. The app used to assume the default layout (1 infantry, 2 archers, 3 cavalry, 4 horse archers), so if you had rearranged your formations, 'archers' and 'cavalry' came out swapped. The app now asks the companion mod for each formation's [b]actual troop composition[/b] (counted unit by unit) and commands the right one, whatever your layout is.
+[*][b]Important fix: a misheard order no longer becomes an army-wide order when you lack that troop type.[/b] Bannerlord selects your [b]whole army[/b] if you press the number key of a formation you don't have. So with no cavalry in your party, a misheard 'Cavalry, charge!' charged everyone. Now [b]no key is sent at all[/b] — instead the top banner and the bottom-left battle log tell you 'No cavalry to command'.
+[*]Targeted attacks, tactics (flank / high ground / protect), splitting, relative positioning and the on-screen callouts all identify formations by real composition too.
+[*]New troubleshooting tool: run tools/mod_probe.py during a battle to see which number key is which troop type, and how many are in each.
 [/list]"
 }
