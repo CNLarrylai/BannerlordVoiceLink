@@ -4,6 +4,20 @@
 > 创意工坊的 Change Notes(写进 tools/steamcmd/item.vdf), 发版前跑一下即可。
 > 写给玩家看的: 说"你会感受到什么", 不说"改了哪个函数"。
 
+## 0.9.10 — 2026-09-25
+
+### 中文
+- **重要修复：指令可能指挥错部队**。游戏里的数字键选的是“第几队”，而那一队装的是什么兵，可以在“战斗部署”界面里自己改。以前程序按默认顺序（步1 弓2 骑3 骑射4）发键，你改过编队顺序的话就会“弓箭手和骑兵反了”。现在程序会向伴侣模组问每一队 **实际的兵种成分**（逐个数兵），按真实情况选队 —— 你怎么排部署都不会指错人。
+- **重要修复：缺某个兵种时，误听不再变成全军令**。游戏的行为是：按一个你没有的编队的数字键，会直接选中**全军**。所以以前队里没骑兵时，一句听岔的“骑兵冲锋”就是全军冲锋。现在这种情况**一个键都不会发**，改成在顶部横幅和左下战斗记录里提醒你“没有骑兵可指挥”。
+- 定向进攻、战术层（绕后/占高地/护翼）、分队、相对站位、战场播报里的兵种名，也全部改成按真实成分认队。
+- 新增排错工具：战斗中跑 `tools/mod_probe.py` 能直接看到“哪个数字键是哪个兵种、各多少人”。
+
+### English
+- **Important fix: orders could go to the wrong troops.** In-game the number keys select a *formation slot*, and which troops sit in each slot is something you can change in the Order of Battle screen. The app used to assume the default layout (1 infantry, 2 archers, 3 cavalry, 4 horse archers), so if you had rearranged your formations, "archers" and "cavalry" came out swapped. The app now asks the companion mod for each formation's **actual troop composition** (counted unit by unit) and commands the right one, whatever your layout is.
+- **Important fix: a misheard order no longer becomes an army-wide order when you lack that troop type.** Bannerlord selects your **whole army** if you press the number key of a formation you don't have. So with no cavalry in your party, a misheard "Cavalry, charge!" charged everyone. Now **no key is sent at all** — instead the top banner and the bottom-left battle log tell you "No cavalry to command".
+- Targeted attacks, tactics (flank / high ground / protect), splitting, relative positioning and the on-screen callouts all identify formations by real composition too.
+- New troubleshooting tool: run `tools/mod_probe.py` during a battle to see which number key is which troop type, and how many are in each.
+
 ## 0.9.9 — 2026-09-22
 
 ### 中文

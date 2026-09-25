@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -377,6 +377,14 @@ namespace BannerlordVoiceLink
                     return "ok battle=" + (InBattle() ? "1" : "0");
                 case "info":
                     return Info();
+                case "roster":
+                    return Roster();
+                case "select":
+                    return parts.Length < 2
+                        ? "err usage: select <group|all>"
+                        : DoSelect(parts[1]);
+                case "selected":
+                    return Selected();
                 case "attack":
                     return parts.Length < 3
                         ? "err usage: attack <group> <target>"
@@ -424,7 +432,8 @@ namespace BannerlordVoiceLink
             FormationClass fc;
             if (TryClass(name, out fc))
             {
-                f = player.GetFormation(fc);
+                // 先按真实成分找(玩家改过战斗部署时槽号≠兵种), 找不到再退回槽位
+                f = ByComposition(player, fc) ?? player.GetFormation(fc);
             }
             else if (name.StartsWith("form") && name.Length == 5 && char.IsDigit(name[4]))
             {
@@ -445,6 +454,164 @@ namespace BannerlordVoiceLink
             else return false;
             if (f == null || f.CountOfUnits == 0) { err = "err group_empty"; f = null; return false; }
             return true;
+        }
+
+        // ---------- 编队名册: 按"真实兵种成分"找队, 不按槽位号猜 ----------
+        // 2026-09-25 查实(YouTube 用户报 "archers 和 cavalry 反了"):
+        //   ① 数字键 1~8 选的是**槽位号**(GauntletOrderUIHandler 的 GameKey 79~86
+        //      → 槽 0~7), 而槽里装什么兵是玩家在"战斗部署 Order of Battle"界面
+        //      自己定的(OrderOfBattleFormationItemVM 有 DeploymentFormationClass
+        //      下拉框) —— 所以"键2=弓箭手"只是默认布局, 玩家一改就全错。
+        //   ② 更要命: 按了一个没兵的槽的键, 游戏走 MissionOrderTroopControllerVM
+        //      .OnSelectFormationWithIndex 的 else 分支 SelectAllFormations(),
+        //      **选中全军**。队伍缺个兵种时, 一句误听就变成全军令。
+        // 解决: 用 Formation.GetCountOfUnitsBelongingToPhysicalClass 逐个数 agent,
+        // 按真实人数找队; 找不到就明确报错, 让语音程序拒发按键并提示玩家。
+        // 注意别用 QuerySystem.MainClass —— 它有 15 秒缓存, 且空队上取值会抖。
+
+        private static readonly FormationClass[] Classes4 =
+        {
+            FormationClass.Infantry, FormationClass.Ranged,
+            FormationClass.Cavalry, FormationClass.HorseArcher
+        };
+
+        private static string ClassName(FormationClass fc)
+        {
+            switch (fc)
+            {
+                case FormationClass.Infantry: return "infantry";
+                case FormationClass.Ranged: return "archers";
+                case FormationClass.Cavalry: return "cavalry";
+                case FormationClass.HorseArcher: return "horse_archers";
+                default: return "-";
+            }
+        }
+
+        /// <summary>某编队里某类兵的真实人数(逐个 agent 数, 不看槽位标签)。</summary>
+        private static int CountOf(Formation f, FormationClass fc)
+        {
+            try { return f.GetCountOfUnitsBelongingToPhysicalClass(fc, false); }
+            catch { return 0; }
+        }
+
+        /// <summary>这支编队实际以哪类兵为主(占比最高的那类)。</summary>
+        private static FormationClass MainClassOf(Formation f)
+        {
+            var best = FormationClass.Infantry;
+            int bestN = -1;
+            foreach (var fc in Classes4)
+            {
+                int n = CountOf(f, fc);
+                if (n > bestN) { bestN = n; best = fc; }
+            }
+            return best;
+        }
+
+        /// <summary>按真实成分找"装着该兵种的那支编队": 该类人数最多的; 人数相同
+        /// 时该类占比更高的赢(混编队让位给纯队); 再相同取槽号小的。没有返回 null。</summary>
+        private static Formation ByComposition(Team player, FormationClass want)
+        {
+            Formation best = null;
+            int bestN = 0;
+            float bestRatio = 0f;
+            for (int i = 0; i < 8; i++)
+            {
+                var f = player.GetFormation((FormationClass)i);
+                if (f == null || f.CountOfUnits == 0) continue;
+                int n = CountOf(f, want);
+                if (n <= 0) continue;
+                float ratio = (float)n / f.CountOfUnits;
+                if (n > bestN || (n == bestN && ratio > bestRatio))
+                { best = f; bestN = n; bestRatio = ratio; }
+            }
+            return best;
+        }
+
+        /// <summary>播报用的兵种名, 按真实成分(玩家把骑兵塞进 2 号槽时,
+        /// 别再喊它"弓箭手")。</summary>
+        private static string CnOf(Formation f)
+        {
+            return Cn(MainClassOf(f));
+        }
+
+        /// <summary>"i118,r2" —— 成分速记, 只写有人的类。</summary>
+        private static string Mix(Formation f)
+        {
+            var tag = new[] { "i", "r", "c", "h" };
+            var sb = new StringBuilder();
+            for (int k = 0; k < 4; k++)
+            {
+                int n = CountOf(f, Classes4[k]);
+                if (n <= 0) continue;
+                if (sb.Length > 0) sb.Append(',');
+                sb.Append(tag[k]).Append(n);
+            }
+            return sb.Length > 0 ? sb.ToString() : "?";
+        }
+
+        /// <summary>名册: "ok infantry=1:120:i118,r2 archers=- cavalry=2:40:c40 ..."
+        /// 即 兵种=数字键:总人数:成分, 缺的兵种报 '-'。语音程序照这个发键 ——
+        /// 玩家怎么排部署都不会错, 缺的兵种一个键都不发。</summary>
+        private string Roster()
+        {
+            if (!InBattle())
+                return "err no_battle";
+            var player = Mission.Current.PlayerTeam;
+            var sb = new StringBuilder("ok");
+            foreach (var want in Classes4)
+            {
+                var f = ByComposition(player, want);
+                sb.Append(' ').Append(ClassName(want)).Append('=');
+                if (f == null) { sb.Append('-'); continue; }
+                sb.Append((int)f.FormationIndex + 1).Append(':')
+                  .Append(f.CountOfUnits).Append(':').Append(Mix(f));
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>直接用玩家的 OrderController 选队, 不发数字键 —— 从根上绕开
+        /// "空槽 = 选全军"那条分支。UI 会跟着变: MissionOrderVM.OrderController
+        /// 就是 Mission.PlayerTeam.PlayerOrderController, 且
+        /// MissionOrderTroopControllerVM 订阅了 OnSelectedFormationsChanged,
+        /// 编队卡片高亮同步。选完不恢复原选择 —— 后面的 F 键要落在它身上。</summary>
+        private string DoSelect(string name)
+        {
+            if (!InBattle())
+                return "err no_battle";
+            var player = Mission.Current.PlayerTeam;
+            var oc = player.PlayerOrderController;
+            if (oc == null)
+                return "err no_oc";
+            if (name == "all")
+            {
+                oc.SelectAllFormations(false);
+                return "ok all";
+            }
+            Formation f; string err;
+            if (!TryFormation(name, player, out f, out err))
+                return err;
+            // 活人为 0 的队游戏不让选, 硬选会触发 Debug.FailedAssert
+            if (!oc.IsFormationSelectable(f))
+                return "err group_dead";
+            oc.ClearSelectedFormations();
+            oc.SelectFormation(f);
+            Beacon("select " + name + " -> 槽" + (int)f.FormationIndex
+                   + " " + f.CountOfUnits + "人");
+            return "ok " + ((int)f.FormationIndex + 1) + ":" + f.CountOfUnits;
+        }
+
+        /// <summary>当前选中的编队(数字键号), 排错 / 闭环校验用。</summary>
+        private string Selected()
+        {
+            if (!InBattle())
+                return "err no_battle";
+            var oc = Mission.Current.PlayerTeam.PlayerOrderController;
+            if (oc == null)
+                return "err no_oc";
+            var sb = new StringBuilder("ok");
+            foreach (var f in oc.SelectedFormations)
+                sb.Append(' ').Append((int)f.FormationIndex + 1);
+            return sb.ToString();
         }
 
         private static bool TryClass(string name, out FormationClass fc)
@@ -723,7 +890,7 @@ namespace BannerlordVoiceLink
                 lastDesc = best.FormationIndex + ":" + best.CountOfUnits;
                 // 按兵种模式各队目标不同, 逐队报; 集火模式统一在循环外报一条
                 if (fixedTarget == null)
-                    Notify(Cn(g.FormationIndex) + T(" → 进攻敌方", " → attacking enemy ")
+                    Notify(CnOf(g) + T(" → 进攻敌方", " → attacking enemy ")
                            + Cn(best.FormationIndex) + Units(best.CountOfUnits));
             }
             if (fixedTarget != null && done > 0)
@@ -768,7 +935,7 @@ namespace BannerlordVoiceLink
             if (!TryClass(groupName, out gc))
                 return "err bad_group";
             var player = Mission.Current.PlayerTeam;
-            var src = player.GetFormation(gc);
+            var src = ByComposition(player, gc) ?? player.GetFormation(gc);
             int n0 = (src == null) ? -1 : src.CountOfUnits;
             Beacon("DoSplit " + gc + " src单位=" + n0);
             if (src == null || src.CountOfUnits < 2)
@@ -1023,7 +1190,7 @@ namespace BannerlordVoiceLink
             string sideCn = side == "left" ? "左边" : side == "right" ? "右边" : side == "front" ? "前面" : "后面";
             string sideEn = side == "left" ? "left of" : side == "right" ? "right of" : side == "front" ? "in front of" : "behind";
             string where = ward != f
-                ? T(Cn(ward.FormationIndex) + sideCn, sideEn + " the " + Cn(ward.FormationIndex))
+                ? T(CnOf(ward) + sideCn, sideEn + " the " + CnOf(ward))
                 : T("往" + sideCn.Substring(0, 1), side == "front" ? "forward" : side == "back" ? "back" : "to the " + side);
             Notify(Cn(gc) + T(" → 到" + where + " " + (int)dist + "米", " → moving " + (int)dist + "m " + where));
             return "ok moverel=" + gc + " units=" + f.CountOfUnits;
@@ -1115,7 +1282,7 @@ namespace BannerlordVoiceLink
                         FormationClass wc;
                         if (!string.IsNullOrEmpty(wardName) && TryClass(wardName, out wc))
                         {
-                            ward = player.GetFormation(wc);
+                            ward = ByComposition(player, wc) ?? player.GetFormation(wc);
                             if (ward == null || ward.CountOfUnits == 0)
                                 return "err no_ward";
                         }
@@ -1127,7 +1294,7 @@ namespace BannerlordVoiceLink
                             if (ward == null)
                                 return "err no_archers";
                         }
-                        string wardCn = Cn(ward.FormationIndex);
+                        string wardCn = CnOf(ward);
                         int side = verb == "guardleft" ? -1 : verb == "guardright" ? 1 : 0;
                         int n = 0;
                         foreach (var f in targets)

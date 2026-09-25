@@ -34,6 +34,7 @@ from executor import Executor
 from i18n import t
 from matcher import Matcher
 from modlink import ModLink
+import roster as rosters
 from overlay import Overlay
 from retry import RetryMemory
 from stt import Transcriber
@@ -173,6 +174,9 @@ class App:
         ml = settings.get("modlink") or {}
         self.modlink = (ModLink(port=ml.get("port", 35127))
                         if ml.get("enabled", True) else None)
+        # 选队用真实编队名册, 不信词典里写死的数字键 (见 roster.py 顶部注释)
+        self.roster = rosters.Roster(self.modlink)
+        self.mod_select = bool(c.get("mod_select", True))
         if self.modlink:
             print(f"[模组桥] 端口 {self.modlink.port}: 点名目标/打最近的 会先走"
                   f"游戏内模组(真锁定), 连不上自动退回按键+准星。")
@@ -269,6 +273,51 @@ class App:
             return {}
         return {cand["name"]: cand["alias"]}
 
+    def _select_group(self, g_key):
+        """选队前的三层防护 (2026-09-25, 起因: YouTube 用户报 archers/cavalry 反了)。
+
+        游戏里数字键选的是**槽位号**, 槽里装什么兵玩家能在"战斗部署"界面改;
+        而且按了一个没兵的槽的键, 游戏会**选中全军** —— 队伍缺个兵种时,
+        一句误听 "骑兵冲锋" 就是全军冲锋。所以:
+          1. 名册说玩家没有这支队 -> 一个键都不发 (返回 None)。
+          2. 模组在线 -> 让模组用 PlayerOrderController 按真实成分直接选队,
+             不发数字键, 从根上绕开那条"选全军"分支。
+          3. 模组选不了 -> 按名册给的真实数字键发键(玩家改过部署也对);
+             名册问不到(没模组/不在战斗)就照词典原样发, 维持老行为。
+
+        返回 (skip_select, select_key), 或 None = 拒发这条指令。
+        """
+        if not g_key or g_key == "all":
+            return (False, None)          # 全军键 0 不存在"空槽选全军"的问题
+        st, key, _n, _mix = self.roster.resolve(g_key)
+        if st == rosters.MISSING:
+            return None
+        if st == rosters.UNKNOWN:
+            return (False, None)
+        if self.mod_select and self.modlink and not self.dry_run:
+            r = self.modlink.select(g_key)
+            if r and r.startswith("ok"):
+                return (True, None)       # 模组已选好, 只发指令键
+        return (False, key)
+
+    def _no_such_group(self, g_key, o_key, desc, text, t_stt, engine):
+        """玩家没有这支队: 不发任何键, 在游戏里+浮层里说清楚为什么没反应。"""
+        name = _disp(self.commands["groups"][g_key], self.lang)
+        msg = t("没有{g}可指挥 · 指令未发出").format(g=name)
+        print(f"    ⚠ 听到「{text}」→ {desc}: {msg}")
+        print(f"      名册: {self.roster.line()}")
+        self._debug(t("上一条 ⚠ {m}").format(m=msg))
+        if self.modlink and not self.dry_run:
+            self.modlink.notify(msg)
+        usage.record(self.lang, "miss", g_key, o_key, "no_such_formation",
+                     t_stt, text, engine if self.fast else "", "")
+        try:
+            import telemetry
+            telemetry.track("no_such_formation", group=g_key, order=o_key)
+        except Exception:
+            pass
+        self._idle()
+
     def _try_modlink(self, parsed, g_key, o_key):
         """点名目标("骑兵进攻弓箭手")或打最近的 -> 走伴侣模组真锁定。
 
@@ -355,6 +404,7 @@ class App:
                 self._set(t("⚙ 分队要指定兵种"), t("例：骑兵分队"), "#ffb37f")
                 return False
             r = self.modlink.split(g_key)
+            self.roster.invalidate()   # 分完队人数/槽位都变了, 名册重取
         elif g_key.startswith("form"):        # 第N队 (form5..form8)
             tok = self._SIDE_ORDERS.get(o_key)
             if not tok:
@@ -487,6 +537,8 @@ class App:
         ml = settings.get("modlink") or {}
         self.modlink = (ModLink(port=ml.get("port", 35127))
                         if ml.get("enabled", True) else None)
+        self.roster = rosters.Roster(self.modlink)
+        self.mod_select = bool(c.get("mod_select", True))
         self.executor = Executor(settings, commands, dry_run=self.dry_run)
         self.prefixes = c.get("command_prefix") or []
         self.silence_rms = settings["audio"].get("silence_rms", self.silence_rms)
@@ -601,6 +653,7 @@ class App:
                 on = bool(self.modlink and self.modlink.ping())
                 if on != in_battle:
                     in_battle = on
+                    self.roster.invalidate()   # 换一场战斗, 编队全变了
                     if self.auto_battle_gate:
                         self.battle_on = on
                         print(f"[监听] 战斗自动门: {'进入战斗, 开始识别' if on else '离开战斗, 已静音'}")
@@ -736,7 +789,11 @@ class App:
             desc = (desc.replace("[目标(需准星锁定)]", "[模组已锁定✓]")
                         .replace("[target (aim at them!)]", "[locked by mod]"))
         else:
-            self.executor.execute(parsed)
+            sel = self._select_group(g_key)
+            if sel is None:          # 玩家没有这支队 -> 拒发, 免得变成全军令
+                self._no_such_group(g_key, o_key, desc, text, t_stt, engine)
+                return
+            self.executor.execute(parsed, select_key=sel[1], skip_select=sel[0])
             # 按键指令的战场回执: 推给模组打顶部快讯横幅 (定向进攻由模组
             # 自己播报更详细的, 不重复; 没模组/不在战斗则毫秒级静默失败)
             if self.modlink and not self.dry_run:

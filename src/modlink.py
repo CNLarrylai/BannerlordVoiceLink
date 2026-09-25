@@ -38,6 +38,21 @@ class ModLink:
     def info(self):
         return self._send("info")
 
+    def roster(self):
+        """编队名册: "ok infantry=1:120:i118,r2 archers=- cavalry=2:40:c40 ..."
+        即 兵种=数字键:人数:成分, 缺的兵种报 '-'。数字键按**真实兵种成分**给,
+        不按槽位号猜 —— 玩家改过"战斗部署"也不会指挥错人。见 roster.Roster。"""
+        return self._send("roster")
+
+    def select(self, group):
+        """让模组直接选中某编队(不发数字键), 后面的 F 键就落在它身上。
+        绕开游戏"按了空槽的键就选全军"那条分支。返回 "ok <键号>:<人数>"。"""
+        return self._send(f"select {group}")
+
+    def selected(self):
+        """当前选中的编队(数字键号), 排错用: "ok 2" / "ok 1 2 3 4"。"""
+        return self._send("selected")
+
     def attack(self, group, target):
         """group: infantry/archers/cavalry/horse_archers/all (None 视为 all);
         target: 同类名 或 nearest。返回模组回复("ok ..."/"err ...") 或 None。"""

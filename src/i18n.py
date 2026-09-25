@@ -332,6 +332,8 @@ _EN = {
     "上一条 ✗ 听到「{t}」→ 未匹配/聊天, 未执行":
         "Last ✗ heard \"{t}\" → no match / chat, not executed",
     "上一条 ⏸ 回声抑制「{t}」": "Last ⏸ echo suppressed \"{t}\"",
+    "没有{g}可指挥 · 指令未发出": "No {g} to command — order not sent",
+    "上一条 ⚠ {m}": "Last ⚠ {m}",
     "上一条 ✓ 听到「{t}」→ {d} · {how}（{s}s）":
         "Last ✓ heard \"{t}\" → {d} · {how} ({s}s)",
     "发键 {keys}": "keys {keys}",

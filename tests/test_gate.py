@@ -25,6 +25,9 @@ class _App:
         self.dry_run = False
         self.running = True
         self._notify_q = None
+        # _battle_poll 会让编队名册失效(换了一场战斗编队全变), 这里只需个假的
+        import roster as rosters
+        self.roster = rosters.Roster(None)
 
     def _idle(self, detail=""):
         pass

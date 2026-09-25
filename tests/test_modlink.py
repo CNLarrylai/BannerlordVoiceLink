@@ -140,6 +140,29 @@ def test_moverel_roundtrip():
     assert got[0] == "moverel infantry self back 5", got[0]
 
 
+def test_roster_over_real_socket():
+    """锁定模组和程序之间的名册线格式。字符串照 VoiceLinkBehavior.Roster()
+    的拼法手抄: 兵种=数字键:人数:成分, 缺的兵种报 '-'。改动任何一侧都要一起改。"""
+    wire = "ok infantry=1:120:i118,r2 archers=2:75:r75 cavalry=3:40:c40 horse_archers=-"
+    port, got = _fake_mod(wire)
+    import roster as rosters
+    r = rosters.Roster(ModLink(port=port))
+    assert got is not None
+    assert r.resolve("archers") == (rosters.OK, "2", 75, "r75")
+    assert r.resolve("infantry") == (rosters.OK, "1", 120, "i118,r2")
+    assert r.resolve("horse_archers")[0] == rosters.MISSING
+    assert got[0] == "roster", got[0]
+
+
+def test_select_and_selected_roundtrip():
+    port, got = _fake_mod("ok 2:40")
+    assert ModLink(port=port).select("cavalry") == "ok 2:40"
+    assert got[0] == "select cavalry", got[0]
+    port, got = _fake_mod("ok 1 2 3")
+    assert ModLink(port=port).selected() == "ok 1 2 3"
+    assert got[0] == "selected", got[0]
+
+
 def test_tactic_roundtrip():
     port, got = _fake_mod("ok tactic=flank n=1")
     r = ModLink(port=port).tactic("cavalry", "flank")

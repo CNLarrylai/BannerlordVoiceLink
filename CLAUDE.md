@@ -91,6 +91,20 @@
 - **全局热键在 AI 工具环境里测不了**(2026-09-22 实测): 容器内进程和 WMI 容器外进程
   (session 0, 无桌面)的 keyboard 钩子都收不到任何事件, 连自己 send 的都收不到。
   热键逻辑靠假 keyboard 单测(tests/test_hotkeys.py), 真按键只能用户实测。
+- **数字键选的是槽位号, 不是兵种**(2026-09-25 反编译查实, 起因: YouTube 用户报
+  "archers 和 cavalry 反了"): GauntletOrderUIHandler 的 GameKey 79~86 → 槽 0~7,
+  Formation.Index 恒等于 (int)FormationClass; 但槽里装什么兵是玩家在"战斗部署
+  Order of Battle"里选的(OrderOfBattleFormationItemVM 有 DeploymentFormationClass
+  下拉框) —— 玩家一改顺序, 词典里写死的 1/2/3/4 就指挥错人。更要命的:
+  按一个没兵的槽的键, MissionOrderTroopControllerVM.OnSelectFormationWithIndex
+  找不到就走 else **SelectAllFormations()** —— 缺兵种时一句误听=全军令。
+  现在走 src/roster.py + 模组 roster/select: 模组用
+  GetCountOfUnitsBelongingToPhysicalClass 逐个数兵算真实成分(别用 QuerySystem
+  .MainClass, 有 15s 缓存), 按成分选队; 模组在线就用 PlayerOrderController
+  直接选(不发数字键, UI 会同步: MissionOrderVM.OrderController 就是它, 且
+  MissionOrderTroopControllerVM 订阅了 OnSelectedFormationsChanged); 名册说玩家
+  没这支队就**一个键都不发**+横幅提醒。开关 control.mod_select。
+  实战排错: 战斗中跑 `tools/mod_probe.py` 看真实名册。
 - 监听三模式 control.mode: continuous(不占键) / toggle(轻点 listen_toggle_key, 默认左 Alt,
   启动是关的) / push_to_talk。toggle 只认"0.5s 内松开且期间没按别的键"(Alt+Tab、游戏里
   按住 Alt 看标记、AltGr 都不算), 见 src/hotkeys.py。
