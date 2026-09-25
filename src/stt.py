@@ -91,10 +91,53 @@ def resolve_stt_config(s: dict):
         # 按实际算力分档(2026-08 实测, 纯CPU/int8, TTS语料24条):
         #   base 0.56s 92% | small 1.70s 100% | medium 5.0s | turbo 6.2s
         # 有 CUDA(且运行库齐) -> turbo: GPU上~0.2s, 最准的兜底。
-        # 无 CUDA -> small: 命中拉满且 1.7s 可接受(兜底才走, 日常是快路0.1s);
+        # 无 CUDA -> small 若已下载就用它(命中拉满, 1.7s 可接受, 兜底才走,
+        #   日常是快路0.1s); 没下过就用内置 base —— 0.9.11 起包里只带 base,
+        #   不能让 auto 指向一个要联网下 464MB 的模型(否则新用户首启就卡在下载)。
         #   turbo 在 CPU 上 6 秒, 粉丝会以为卡死 —— 绝不能当默认。
-        model = "large-v3-turbo" if device == "cuda" else "small"
+        if device == "cuda":
+            model = "large-v3-turbo"
+        else:
+            model = "small" if model_available("small") else "base"
     return model, device, compute, hw
+
+
+def _own_dir(model: str):
+    """这个模型**自己**的本地目录(手动放的 / 内置进包的), 没有就 None。
+
+    必须和 bundled_model_path 分开: 后者带"找不到就退回内置 base"的兜底,
+    拿它判断"有没有 small"会永远为真(实测: small 缺失时它返回 base 的目录)。
+    """
+    try:
+        from paths import user_data_dir
+        manual = os.path.join(user_data_dir(), "models", model)
+        if os.path.isfile(os.path.join(manual, "model.bin")):
+            return manual
+    except Exception:
+        pass
+    base = getattr(sys, "_MEIPASS", None)
+    if base:
+        p = os.path.join(base, "models", f"faster-whisper-{model}")
+        if os.path.isdir(p):
+            return p
+    return None
+
+
+def model_available(model: str) -> bool:
+    """这个模型现在就能用吗(不用联网)? 内置进包 / 手动放的目录 / 已下载的缓存
+    三者任一都算。
+
+    别直接用 models.is_ready() 判断"要不要下载" —— 它只看缓存和手动目录,
+    看不见**内置进包**的模型, 于是打包版会把已经内置的 base 再下一遍
+    (新用户白下 145MB, listen.py 首启踩过)。
+    """
+    if _own_dir(model):
+        return True
+    try:
+        import models
+        return bool(models.is_ready(model))
+    except Exception:
+        return False
 
 
 def bundled_model_path(model: str) -> str:
@@ -108,19 +151,12 @@ def bundled_model_path(model: str) -> str:
     # %LOCALAPPDATA%\BannerlordVoice\models\<模型名>\ 比让他们手搓
     # ~/.cache/huggingface/hub/models--Systran--faster-whisper-x/snapshots/y
     # 那串路径靠谱得多 —— 目录名错一个字就前功尽弃(实测常见求助点)。
-    try:
-        from paths import user_data_dir
-        manual = os.path.join(user_data_dir(), "models", model)
-        if os.path.isfile(os.path.join(manual, "model.bin")):
-            return manual
-    except Exception:
-        pass
+    own = _own_dir(model)       # 手动放的目录 / 内置进包的目录
+    if own:
+        return own
     base = getattr(sys, "_MEIPASS", None)
     if not base:
-        return model
-    p = os.path.join(base, "models", f"faster-whisper-{model}")
-    if os.path.isdir(p):
-        return p
+        return model            # 源码形态: 交给 faster-whisper 自己找/下
     # 已下载到 HF 缓存的 => 交给 faster-whisper 按名字解析。仓库名必须走
     # models.model_repo 的映射, 不能写死 Systran: large-v3-turbo 在
     # mobiuslabsgmbh 下, 曾因此"永远找不到"而静默回退 small —— 打包版里

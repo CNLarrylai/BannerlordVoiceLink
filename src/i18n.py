@@ -91,6 +91,23 @@ _EN = {
          "After installing: better accuracy, and the fallback for tricky commands\n"
          "drops from ~1.7s to ~0.2s. It works fine without it too (CPU mode)."),
     "⬇ 下载并启用 GPU 加速": "⬇ Download & enable GPU acceleration",
+    # 无卡玩家的可选引导 (0.9.11 起包里只内置 base, small 改成按需下载)
+    "可选: 让兜底识别更准": "Optional: a more accurate fallback",
+    "🎯 想让识别再准一点吗?": "🎯 Want a bit more accuracy?",
+    ("没检测到可用的 N 卡, 你现在走 CPU 档 —— 日常指令由快路约 0.1 秒\n"
+     "直出, 完全能用。只有快路解不出的疑难句子才走兜底模型。\n\n"
+     "想把兜底也拉满, 可以下一个更大的兜底模型({size}, 一次性):\n"
+     "兜底命中率 92% → 100%, 代价是兜底耗时 0.6 秒 → 1.7 秒。\n"
+     "不下也没关系, 以后在「音频与模型设置」里随时可以下。"):
+        ("No usable NVIDIA GPU found, so you're in CPU mode — everyday commands\n"
+         "come straight from the fast engine (~0.1s) and work fine. Only tricky\n"
+         "phrases fall back to the Whisper model.\n\n"
+         "For the best fallback you can download a larger model ({size}, one-time):\n"
+         "fallback accuracy 92% → 100%, at 0.6s → 1.7s per fallback.\n"
+         "Skipping is fine — you can grab it later in Audio & Model Setup."),
+    "⬇ 下载更准的兜底模型": "⬇ Download the better fallback model",
+    "✓ 完成, 兜底模型已自动切成更准的那个":
+        "✓ Done — the better fallback model is now in use",
     "以后再说": "Maybe later",
     "正在下载… 可以先去玩, 下完会提示":
         "Downloading… feel free to play; you'll be notified when it's done",

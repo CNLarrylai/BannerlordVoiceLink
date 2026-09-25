@@ -4,6 +4,22 @@
 > 创意工坊的 Change Notes(写进 tools/steamcmd/item.vdf), 发版前跑一下即可。
 > 写给玩家看的: 说"你会感受到什么", 不说"改了哪个函数"。
 
+## 0.9.11 — 2026-09-25
+
+### 中文
+- **下载体积砍掉一半**：整包从约 1.2 GB 降到约 0.6 GB，订阅下载和硬盘占用都少一半。订阅后等 Steam 下完的时间也短一半 —— 之前"订阅了但 Mods 列表里没有"的求助，多数就是卡在这段下载上。
+- 怎么做到的：① 不再把 464 MB 的 **small** 兜底模型打进包（包里保留 142 MB 的 **base**，离线即用）；② 去掉一个 115 MB 的第三方库，它是做封面图的工具间接带进来的，程序本身从来不用。
+- **识别会变差吗？日常不会。** 你的指令绝大多数由快路引擎约 0.1 秒直接出结果，兜底模型只在遇到疑难句子时才上场。base 的兜底命中率约 92%，small 约 100%。
+- **想要满血兜底**：没有 N 卡的玩家首次启动会被问一次，点一下就能下 small（约 480 MB）；不想下就选「以后再说」，以后在「音频与模型设置」里随时能下。下完不用改任何设置，程序会自动优先用它。有 N 卡的玩家不受影响，照常走 GPU 的 turbo 档。
+- 顺手修了一个：测试模式以前会把**已经内置在包里**的模型再下载一遍（新用户白下 145 MB）。
+
+### English
+- **Half the download.** The package drops from about 1.2 GB to about 0.6 GB, so subscribing downloads faster and takes half the disk space. That also halves the wait after subscribing — the "subscribed but it's not in the Mods list" reports were mostly people still waiting on this download.
+- How: (1) the 464 MB **small** fallback model is no longer bundled (the 142 MB **base** model still is, so it works offline out of the box); (2) a 115 MB third-party library that only the cover-art tooling pulled in, and the app never used, is now excluded.
+- **Will recognition get worse? Not day to day.** The vast majority of your orders come straight from the fast engine in ~0.1s; the Whisper model is only a fallback for tricky phrases. Fallback accuracy is ~92% with base and ~100% with small.
+- **Want the best fallback?** Players without an NVIDIA GPU get asked once on first launch and can download small (~480 MB) with one click. Choose "Maybe later" and you can still get it any time from Audio & Model Setup. No settings to change afterwards — it's picked up automatically. Players with a GPU are unaffected and keep using the turbo model.
+- Also fixed: test mode used to re-download a model that was **already bundled** in the package (145 MB wasted for new users).
+
 ## 0.9.10 — 2026-09-25
 
 ### 中文
