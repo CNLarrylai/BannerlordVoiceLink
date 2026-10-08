@@ -277,9 +277,10 @@ def cover_en():
     center(d, W / 2, 566, "Offline · No cloud · Free · BETA", font("seguisb.ttf", 18), DIM)
     center(d, W / 2, 594, "本地离线识别 · 不联网不上传", font("msyh.ttc", 15), DIM)
 
-    for name in ("workshop_preview_en.png", "workshop_preview.png"):   # 后者=工坊 previewfile
-        img.save(os.path.join(ROOT, "assets", name))
-    print("双语封面: assets/workshop_preview.png (中文旧版留在 workshop_preview_zh.png)")
+    # 卡片版只留档; 工坊 previewfile(assets/workshop_preview.png) 改由
+    # tools/make_cover_painted.py 用 AI 绘画底图生成, 这里不再覆盖。
+    img.save(os.path.join(ROOT, "assets", "workshop_preview_en.png"))
+    print("双语卡片封面(留档): assets/workshop_preview_en.png")
 
 
 def main():
