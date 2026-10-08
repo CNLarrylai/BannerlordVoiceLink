@@ -180,6 +180,7 @@ C:\Users\Victoria\bannerlord-voice              main       集成 / 识别链路
 C:\Users\Victoria\bannerlord-voice-wt\matcher   wt/matcher 词典 + matcher + 回归用例
 C:\Users\Victoria\bannerlord-voice-wt\mod       wt/mod     C# 模组 (dotnet build 独立编译)
 C:\Users\Victoria\bannerlord-voice-wt\ui        wt/ui      UI/UX: 窗口文案 i18n / 布局 / 浮层提示 (不碰识别与匹配逻辑)
+C:\Users\Victoria\bannerlord-voice-wt\slim      wt/slim    包体瘦身: 只内置 base, small 按需下载 + 排掉 rembg 拖进来的 llvmlite (v0.9.11, 待合)
 ```
 - 每个 worktree 开自己的 Claude 会话; 新增: `git worktree add ../bannerlord-voice-wt/<名> -b wt/<名>`。
 - worktree 里没有 .venv 和 kws/models(gitignore): 跑测试用主目录的解释器
@@ -194,3 +195,9 @@ C:\Users\Victoria\bannerlord-voice-wt\ui        wt/ui      UI/UX: 窗口文案 i
 私有仓库 github.com/CNLarrylai/BannerlordVoiceLink, origin/main。
 开工前 git pull, 收工 git push。部署只在 Windows 游戏机。
 积累新教训时同步更新本文件(不只更新某台机器的记忆), 否则另一台掉队。
+
+## 交接协议（跨 Agent 共享约定，2026-10-09 起）
+
+- **开工先读项目根 `HANDOFF.md`**（本项目若用其它交接文件，根 `HANDOFF.md` 里有指向）；再读 `C:\Users\Victoria\agent-memory\projects\bannerlord-voicelink.md`。
+- **停手前覆写 `HANDOFF.md`**（额度将尽 / 会话结束 / 切任务 / 换模型都算停手）：用 `handoff` skill；模板 `C:\Users\Victoria\agent-memory\templates\HANDOFF.md`。重点写「已否决的方案与原因」和「谁在等我」。未验证的不写进「刚做完」。
+- 学到换项目也成立的事（Larry 的新偏好、通用教训）→ 追加到 `C:\Users\Victoria\agent-memory\log\YYYY-MM-DD.md`，不只留在本项目。
