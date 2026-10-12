@@ -1,5 +1,16 @@
 # HANDOFF — BannerlordVoiceLink（骑砍语音指挥 / Voice Commander）
 
+## 暂停点 2026-10-13 11:05（hermes-pc，代 Larry 写，项目搁置等他定下一步）
+- 停在：main `69dca87`。10-09 那批主目录改动已按分组提交成 4 个 commit（716561a / 2c681a0 / 51fc9f0 / 69dca87），**还没 push**（main ahead origin 4）。F12 说法已在 51fc9f0 改成 toggle/PTT。线上仍是 v0.9.10。
+- 明天第一步：问 Larry 下一步做哪条——A 合 `wt/slim`（v0.9.11 瘦身）并真打包发版（先做下方「下一步」第 2、3 条）/ B 英文介绍视频 + Nexus 上架 / C 继续搁置。没回答前不动代码、不 push、不发版。
+- 别重走：见下方「已否决的方案」，全部仍有效。
+- 等 Larry：①下一步选 A/B/C ②4 个本地 commit 要不要 push ③`config/settings.yaml` 的 `language: en`（未提交）保留还是恢复 zh。已同步 pending.md。
+- 后台在跑：无。
+- 夜间任务：无。
+
+---
+（以下为 2026-10-09 的完整交接，「下一步」第 1 条已完成，其余仍有效）
+
 > 更新：2026-10-09 01:25 Sydney · 写的人：Claude Code（Opus 5.5，main 会话，只读 review + 换行符清理）
 > 接手者先读本文件，再读共享仓库 `agent-memory/projects/bannerlord-voicelink.md`；动手前读「建议加载」里的 skill / lessons。
 
