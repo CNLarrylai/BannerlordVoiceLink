@@ -203,12 +203,18 @@ def main():
                               "encoder-epoch-99-avg-1.int8.onnx"),
                  os.path.join("VoiceApp", "_internal", "models",
                               "streaming-zipformer-zh-en", "tokens.txt"),
-                 # 无显卡玩家的 Whisper 兜底默认(缺了会静默退回 base=92%)
+                 # 内置的 Whisper 兜底(0.9.11 起只带 base; small 按需下载, 见 stt.resolve_stt_config)
                  os.path.join("VoiceApp", "_internal", "models",
-                              "faster-whisper-small", "model.bin")):
+                              "faster-whisper-base", "model.bin")):
         ok = os.path.exists(os.path.join(MOD_DST, must))
         print(f"  {'✓' if ok else '✗✗✗ 缺'} {must}")
         if not ok:
+            sys.exit(1)
+    # 包体瘦身的回归锁: small(464MB) 不许被重新打进包
+    for mustnt in (os.path.join("VoiceApp", "_internal", "models", "faster-whisper-small"),):
+        bad = os.path.exists(os.path.join(MOD_DST, mustnt))
+        print(f"  {'✗✗✗ 不该有' if bad else '✓ 未内置'} {mustnt}")
+        if bad:
             sys.exit(1)
     # 随包配置必须是"发行默认"(有内容 + 麦克风null + 中文) —— 防打空/带私人设备名
     shipped = os.path.join(MOD_DST, "VoiceApp", "_internal", "config",
