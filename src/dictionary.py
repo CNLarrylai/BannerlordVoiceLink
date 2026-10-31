@@ -36,10 +36,26 @@ def _merge_aliases(base, extra_by_key, src=""):
                         cur.append(a)
 
 
+def _normalize_keys(base):
+    """按键一律转成 str。旧版词典窗口改键写出 keys: [1, 2] 不带引号,
+    YAML 读成 int, 词典窗口 join 直接崩 (TypeError: expected str instance, int found)。
+    读入时统一修正, 已被写坏的用户词典也能直接用。"""
+    for section in ("groups", "orders"):
+        for d in (base.get(section) or {}).values():
+            if not isinstance(d, dict):
+                continue
+            if isinstance(d.get("keys"), list):
+                d["keys"] = [str(k) for k in d["keys"]]
+            for f in ("key", "select"):
+                if d.get(f) is not None and not isinstance(d[f], str):
+                    d[f] = str(d[f])
+
+
 def load_commands():
     """基础 + 个人词典 + 激活的整活包, 合并后的 commands (所有消费方统一入口)。"""
     with open(config_path("commands.yaml"), encoding="utf-8") as f:
         base = yaml.safe_load(f)
+    _normalize_keys(base)
     _merge_aliases(base, load_user())
     pack = active_fun_pack()
     if pack:

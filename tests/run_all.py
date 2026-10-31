@@ -85,6 +85,10 @@ def main():
     if rc != 0:
         print("\n❌ 整活词典测试有失败! 先修这个。")
         sys.exit(1)
+    rc = run("词典窗口改键 (数字键不崩/坏文件自愈, 正确性门槛)", "test_command_gui_keys.py")
+    if rc != 0:
+        print("\n❌ 词典改键测试有失败! 先修这个。")
+        sys.exit(1)
     if skip_bench:
         print("\n✓ 匹配回归通过 (已跳过识别基准)。")
         return

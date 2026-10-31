@@ -109,12 +109,18 @@ KEY_TOKEN_RE = re.compile(
 )
 
 
+def _yaml_key(k) -> str:
+    k = str(k)
+    return f'"{k}"' if k.isdigit() else k
+
+
 def set_keys_in_yaml(section: str, key: str, keys: list):
     """改写指令的按键序列 (orders 的 keys: [...] 或 groups 的 key: "..")。"""
     if section == "orders":
         return _edit_entry_line(
             section, key, r"^(\s+keys:\s*\[).*?(\]\s*)$",
-            lambda m: f"{m.group(1)}{', '.join(keys)}{m.group(2)}",
+            # 纯数字键必须加引号: 不加 YAML 会读成 int, 下次打开词典 join 崩
+            lambda m: f"{m.group(1)}{', '.join(_yaml_key(k) for k in keys)}{m.group(2)}",
         )
     return _edit_entry_line(
         section, key, r'^(\s+key:\s*)\S.*?(\s*)$',
