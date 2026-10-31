@@ -553,9 +553,19 @@ class SetupWindow:
     def _selected_model(self):
         return self.model_map.get(self.model_box.get())
 
-    @staticmethod
-    def _effective(mv):
-        return "base" if mv in (None, "", "auto") else mv
+    def _effective(self, mv):
+        """auto 实际会用哪个模型 —— 必须和运行时同一套解析(stt.resolve_stt_config):
+        有卡=turbo, 无卡=已下载 small 否则内置 base。写死 base 会让装了 small
+        的人看到 base, 有卡的人被提示去下 base。"""
+        if mv not in (None, "", "auto"):
+            return mv
+        import stt
+        dev = (self.device_map.get(self.device_box.get())
+               if hasattr(self, "device_box") else None) or "auto"
+        try:
+            return stt.resolve_stt_config({"model": "auto", "device": dev})[0]
+        except Exception:
+            return "base"
 
     def _on_model_change(self, event=None):
         import models
@@ -570,7 +580,10 @@ class SetupWindow:
             self.status.config(
                 text=t("⚠ CPU 上跑 {m} 会很慢(每句数秒), 无独显强烈建议 base")
                 .format(m=eff), fg="#ffcf70")
-        if models.is_ready(eff):
+        import stt
+        # 就绪看 stt.model_available: models.is_ready 看不见内置进包的 base,
+        # 打包版会误报"base 未下载"
+        if stt.model_available(eff):
             self.dl_status.config(
                 text=t("✓ {m} 已就绪（本地已有，直接用）").format(m=mv), fg=GREEN)
             self.dl_btn.grid_remove()
@@ -588,7 +601,8 @@ class SetupWindow:
             return
         mv = self._selected_model()
         eff = self._effective(mv)
-        if models.is_ready(eff):
+        import stt
+        if stt.model_available(eff):
             self._on_model_change()
             return
         self.downloading = True
