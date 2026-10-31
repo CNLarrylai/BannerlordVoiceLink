@@ -1,12 +1,19 @@
 # HANDOFF — BannerlordVoiceLink（骑砍语音指挥 / Voice Commander）
 
-## 暂停点 2026-10-13 11:05（hermes-pc，代 Larry 写，项目搁置等他定下一步）
-- 停在：main `69dca87`。10-09 那批主目录改动已按分组提交成 4 个 commit（716561a / 2c681a0 / 51fc9f0 / 69dca87），**还没 push**（main ahead origin 4）。F12 说法已在 51fc9f0 改成 toggle/PTT。线上仍是 v0.9.10。
-- 明天第一步：问 Larry 下一步做哪条——A 合 `wt/slim`（v0.9.11 瘦身）并真打包发版（先做下方「下一步」第 2、3 条）/ B 英文介绍视频 + Nexus 上架 / C 继续搁置。没回答前不动代码、不 push、不发版。
-- 别重走：见下方「已否决的方案」，全部仍有效。
-- 等 Larry：①下一步选 A/B/C ②4 个本地 commit 要不要 push ③`config/settings.yaml` 的 `language: en`（未提交）保留还是恢复 zh。已同步 pending.md。
-- 后台在跑：无。
-- 夜间任务：无。
+## 暂停点 2026-11-01 01:15（hermes-pc，Larry 批「push 并发布」，v0.9.11 已上工坊）
+- 已发布（已验证）：工坊 3775571491 time_updated=2026-11-01 01:11:39 Sydney，file_size 639,964,369（≈610 MB，较 0.9.10 减半），steamcmd「Committing update...Success」。changelog 页匿名访问返回 Error（Unlisted），未肉眼核对 Change Notes 显示——请 Larry 登录看一眼。
+- 内容：wt/slim 瘦身（合入 main）+ 词典改数字键崩溃修复（947341b，有回归测试）+ 音频设置 auto 模型解析/就绪判断改走 stt.resolve_stt_config / stt.model_available（20deb95）+ build_workshop 体检改为要求 base、禁止 small 回包（bafabb5）。程序 0.9.11，模组 v0.9.11.165。
+- 门槛：run_all --skip-bench 全过、ui_audit 双语无截断、release 体检全绿。**未做**：打包版 --dry-run（需 UAC）、fresh_user 无卡新用户首启弹 AccuracyOfferDialog 实测——留给 Larry 实机。
+- 本机 Modules 现在是 RELEASE 干净名字；继续开发前跑一次不带 --release 的 build_workshop 恢复 [DEV]，并注意 launcher 别与订阅版双勾。
+- 工作区保留：config/settings.yaml 的 language: en（未提交，待 Larry 定）；tests/results/ui 4 张未跟踪截图。
+
+## 暂停点 2026-10-22（hermes-pc，本轮仅核版本/推送/发布，不授权发版）
+- 已实查：main `f895b08`，APP_VERSION 0.9.10；`git ls-remote` 的 origin/main 仍是 `aff0434`，本地主线领先 5 个提交，未 push。
+- 工坊 Change Notes 最新 v0.9.10；Steam API time_updated=1790653444（悉尼 2026-09-29 13:44:04 +10:00），不是日志标题里的 09-25 发版日期；本机 Modules 与订阅目录 SubModule.xml 均为 v0.9.10.153。API banned=0，勿将网页隐藏警告模板误判为下架。
+- `wt/slim` 与远端同为 `0d41976`，版本 0.9.11，已推分支但未合 main、未发布；仍须下方「下一步」第 2、3 条验收，包体减半尚不能当实测结果。
+- 保持搁置：未改代码、未提交、未 push、未构建/上传。本轮仅更新本交接（未提交）；旧待决项仍保留，不新增催办。
+- 原等 Larry：下一步合 slim / 做英文视频和 Nexus / 继续搁置；main 本地提交是否 push；settings.yaml 的 language: en 是否保留。旧项已记录 pending.md。
+- 工作区保留：main 的 config/settings.yaml；slim 有 4 张未跟踪 UI 测试截图。本轮未启动后台任务，未检查/操作其他会话进程。
 
 ---
 （以下为 2026-10-09 的完整交接，「下一步」第 1 条已完成，其余仍有效）

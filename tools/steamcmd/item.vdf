@@ -4,19 +4,23 @@
 	"publishedfileid"	"3775571491"
 	"contentfolder"		"C:\Program Files (x86)\Steam\steamapps\common\Mount & Blade II Bannerlord\Modules\BannerlordVoiceLink"
 	"previewfile"		"C:\Users\Victoria\bannerlord-voice\assets\workshop_preview.png"
-	"changenote"		"[h2]v0.9.10  (2026-09-25)[/h2]
+	"changenote"		"[h2]v0.9.11  (2026-11-01)[/h2]
 [h3]中文[/h3]
 [list]
-[*][b]重要修复：指令可能指挥错部队[/b]。游戏里的数字键选的是“第几队”，而那一队装的是什么兵，可以在“战斗部署”界面里自己改。以前程序按默认顺序（步1 弓2 骑3 骑射4）发键，你改过编队顺序的话就会“弓箭手和骑兵反了”。现在程序会向伴侣模组问每一队 [b]实际的兵种成分[/b]（逐个数兵），按真实情况选队 —— 你怎么排部署都不会指错人。
-[*][b]重要修复：缺某个兵种时，误听不再变成全军令[/b]。游戏的行为是：按一个你没有的编队的数字键，会直接选中[b]全军[/b]。所以以前队里没骑兵时，一句听岔的“骑兵冲锋”就是全军冲锋。现在这种情况[b]一个键都不会发[/b]，改成在顶部横幅和左下战斗记录里提醒你“没有骑兵可指挥”。
-[*]定向进攻、战术层（绕后/占高地/护翼）、分队、相对站位、战场播报里的兵种名，也全部改成按真实成分认队。
-[*]新增排错工具：战斗中跑 tools/mod_probe.py 能直接看到“哪个数字键是哪个兵种、各多少人”。
+[*][b]下载体积砍掉一半[/b]：整包从约 1.2 GB 降到约 0.6 GB，订阅下载和硬盘占用都少一半。订阅后等 Steam 下完的时间也短一半 —— 之前'订阅了但 Mods 列表里没有'的求助，多数就是卡在这段下载上。
+[*]怎么做到的：① 不再把 464 MB 的 [b]small[/b] 兜底模型打进包（包里保留 142 MB 的 [b]base[/b]，离线即用）；② 去掉一个 115 MB 的第三方库，它是做封面图的工具间接带进来的，程序本身从来不用。
+[*][b]识别会变差吗？日常不会。[/b] 你的指令绝大多数由快路引擎约 0.1 秒直接出结果，兜底模型只在遇到疑难句子时才上场。base 的兜底命中率约 92%，small 约 100%。
+[*][b]想要满血兜底[/b]：没有 N 卡的玩家首次启动会被问一次，点一下就能下 small（约 480 MB）；不想下就选「以后再说」，以后在「音频与模型设置」里随时能下。下完不用改任何设置，程序会自动优先用它。有 N 卡的玩家不受影响，照常走 GPU 的 turbo 档。
+[*]顺手修了一个：测试模式以前会把[b]已经内置在包里[/b]的模型再下载一遍（新用户白下 145 MB）。
+[*][b]修复：在「指令词典」里把键位改成数字键后，词典再也打不开[/b]（报 expected str instance, int found）。现在数字键能正常保存；以前已经改坏的词典，升级后自动恢复，不用手动改文件。
 [/list]
 [h3]English[/h3]
 [list]
-[*][b]Important fix: orders could go to the wrong troops.[/b] In-game the number keys select a numbered formation slot, and which troops sit in each slot is something you can change in the Order of Battle screen. The app used to assume the default layout (1 infantry, 2 archers, 3 cavalry, 4 horse archers), so if you had rearranged your formations, 'archers' and 'cavalry' came out swapped. The app now asks the companion mod for each formation's [b]actual troop composition[/b] (counted unit by unit) and commands the right one, whatever your layout is.
-[*][b]Important fix: a misheard order no longer becomes an army-wide order when you lack that troop type.[/b] Bannerlord selects your [b]whole army[/b] if you press the number key of a formation you don't have. So with no cavalry in your party, a misheard 'Cavalry, charge!' charged everyone. Now [b]no key is sent at all[/b] — instead the top banner and the bottom-left battle log tell you 'No cavalry to command'.
-[*]Targeted attacks, tactics (flank / high ground / protect), splitting, relative positioning and the on-screen callouts all identify formations by real composition too.
-[*]New troubleshooting tool: run tools/mod_probe.py during a battle to see which number key is which troop type, and how many are in each.
+[*][b]Half the download.[/b] The package drops from about 1.2 GB to about 0.6 GB, so subscribing downloads faster and takes half the disk space. That also halves the wait after subscribing — the 'subscribed but it's not in the Mods list' reports were mostly people still waiting on this download.
+[*]How: (1) the 464 MB [b]small[/b] fallback model is no longer bundled (the 142 MB [b]base[/b] model still is, so it works offline out of the box); (2) a 115 MB third-party library that only the cover-art tooling pulled in, and the app never used, is now excluded.
+[*][b]Will recognition get worse? Not day to day.[/b] The vast majority of your orders come straight from the fast engine in ~0.1s; the Whisper model is only a fallback for tricky phrases. Fallback accuracy is ~92% with base and ~100% with small.
+[*][b]Want the best fallback?[/b] Players without an NVIDIA GPU get asked once on first launch and can download small (~480 MB) with one click. Choose 'Maybe later' and you can still get it any time from Audio & Model Setup. No settings to change afterwards — it's picked up automatically. Players with a GPU are unaffected and keep using the turbo model.
+[*]Also fixed: test mode used to re-download a model that was [b]already bundled[/b] in the package (145 MB wasted for new users).
+[*][b]Fixed: after changing an order's key to a number key in the Command Dictionary, the dictionary would no longer open[/b] (error expected str instance, int found). Number keys now save correctly, and a dictionary already broken by the old version repairs itself on upgrade — no manual file editing needed.
 [/list]"
 }
