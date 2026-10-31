@@ -65,6 +65,10 @@ def main():
     if rc != 0:
         print("\n❌ 编队名册测试有失败! 先修这个。")
         sys.exit(1)
+    rc = run("模型挑选 (包里只带 base 时 auto 落到 base, 正确性门槛)", "test_model_pick.py")
+    if rc != 0:
+        print("\n❌ 模型挑选测试有失败! 先修这个。")
+        sys.exit(1)
     rc = run("校准/个人词典 (发音适配, 正确性门槛)", "test_calibrate.py")
     if rc != 0:
         print("\n❌ 校准测试有失败! 先修这个。")

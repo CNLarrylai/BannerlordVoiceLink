@@ -88,9 +88,11 @@ class ListenGUI:
     def _worker(self):
         # 模型没下过就先下载(带进度), 再加载。都在线程里, 窗口先显示。
         import models
-        mdl = self.cfg["stt"].get("model", "base")
-        eff = "base" if mdl in (None, "", "auto") else mdl
-        if not models.is_ready(eff):
+        # 有效模型必须和真实引擎算的一样(以前这里写死 auto->base, 引擎却用 small,
+        # 于是测试模式白下一个用不上的模型); 内置进包的不再重复下载。
+        from stt import model_available, resolve_stt_config
+        eff = resolve_stt_config(self.cfg["stt"])[0]
+        if not model_available(eff):
             self._push("status", _t("首次下载模型 {m}（{size}）…").format(
                 m=eff, size=models.size_hint(eff)), GOLD)
             try:

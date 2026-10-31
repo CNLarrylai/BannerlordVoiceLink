@@ -152,11 +152,13 @@ def audit(lang):
         bad = _full_check(win.root)
         shot(win.root, f"launcher_{lang}")
         # 首次 GPU 引导弹窗 (新用户第一眼看到的对话框, 构建无副作用: 只在点下载后才联网)
-        from gpu_setup import GpuOfferDialog
-        dlg = GpuOfferDialog(win.root)
-        bad += _full_check(dlg.win)
-        shot(dlg.win, f"gpu_offer_{lang}")
-        dlg.win.destroy()
+        from gpu_setup import AccuracyOfferDialog, GpuOfferDialog
+        for _cls, _name in ((GpuOfferDialog, "gpu_offer"),
+                            (AccuracyOfferDialog, "accuracy_offer")):
+            dlg = _cls(win.root)
+            bad += _full_check(dlg.win)
+            shot(dlg.win, f"{_name}_{lang}")
+            dlg.win.destroy()
         win.root.destroy()
     finally:
         L._read_language = orig

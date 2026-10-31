@@ -46,10 +46,12 @@ for f in ("encoder-epoch-99-avg-1.int8.onnx", "decoder-epoch-99-avg-1.onnx",
         print(f"[spec] ⚠ 流式模型缺 {f}, 打出的包只有纯 Whisper")
 
 # 内置 Whisper 兜底模型 (免联网; 国内 HuggingFace 首次下载常失败)。
-#   small = 无显卡时的默认(CPU 1.7s/命中100%, base 只有92%);
-#   base  = 保底(极弱机器手动选, 0.56s)。turbo 不内置: CPU上要6秒不能当默认,
-#   有卡玩家下载 CUDA 库后由 faster-whisper 自行拉取(或手动选)。
-for _m in ("small", "base"):
+#   只内置 base (142MB): 免联网可用的保底, CPU 0.56s / 命中 92%。
+#   small (464MB) 不再内置 —— 它只比 base 准 8 个点, 却让**每个**订阅者多下
+#   464MB, 而绝大多数人日常走的是快路(0.1s), Whisper 只是兜底。改为
+#   "音频与模型设置"里一键下载(首启也会问一次), 装了自动优先用它
+#   (见 stt.resolve_stt_config)。turbo 同理不内置: CPU 上 6 秒不能当默认。
+for _m in ("base",):
     _snaps = glob.glob(os.path.expanduser(
         f"~/.cache/huggingface/hub/models--Systran--faster-whisper-{_m}/snapshots/*"))
     if not _snaps:
@@ -80,8 +82,13 @@ a = Analysis(
     hookspath=[],
     runtime_hooks=[],
     # CPU 版排除 CUDA 库(体积大); comtypes/pyttsx3 仅测试用; PIL/matplotlib 用不到
+    # CPU 版排除项。numba/llvmlite(115MB!)是 rembg->PyMatting 拖进来的 ——
+    # rembg 只给做封面抠图的工具用(tools/make_thumb_shout.py), 程序本身从不
+    # import 它; hf_xet 是 huggingface_hub 的传输后端, 0.9.8 自己写下载器后
+    # 就不走它了(models.py 只从 huggingface_hub 读一个缓存路径常量, 还带兜底)。
     excludes=["nvidia", "comtypes", "pyttsx3", "matplotlib", "PIL",
-              "pandas", "scipy", "IPython"],
+              "pandas", "scipy", "IPython",
+              "numba", "llvmlite", "rembg", "pymatting", "hf_xet"],
     noarchive=False,
 )
 pyz = PYZ(a.pure)

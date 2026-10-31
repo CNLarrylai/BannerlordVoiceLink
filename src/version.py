@@ -2,7 +2,8 @@
 
 APP_NAME = "骑砍语音指挥"
 APP_EN = "Bannerlord Voice Commander"
-APP_VERSION = "0.9.10"  # 0.9.10: 选队改按真实兵种成分(模组名册), 缺兵种不再误发成全军令
+APP_VERSION = "0.9.11"  # 0.9.11: 包体短一半(不再内置 small / 排掉 rembg 拖进来的 llvmlite)
+                        # 0.9.10: 选队改按真实兵种成分(模组名册), 缺兵种不再误发成全军令
                         # 0.9.9: 监听三模式(一直监听/按键开关/按住说话)+改键; 设置改动埋点(本地)
                         # 0.9.8: 模型下载重写(测速择优/续传换源/sha256), 修国内卡在 hf-mirror 美国 CDN
                         # 0.9.7: 英文 attack them/get them/kill them 归就近集火(对齐中文"打他们")
